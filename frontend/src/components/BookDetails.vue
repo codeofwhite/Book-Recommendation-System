@@ -1,6 +1,5 @@
 <template>
   <div class="book-details-layout" v-if="book">
-    <!-- 左侧栏 - 图书详细信息 -->
     <div class="book-details-container">
       <div class="book-header">
         <div class="book-cover">
@@ -8,50 +7,84 @@
         </div>
         <div class="book-info">
           <h1>{{ book.title }}</h1>
-          <h2 v-if="book.series">Part of {{ book.series }}</h2>
-          <p class="author">By {{ book.author }}</p>
+          <h2 v-if="book.series">系列：{{ book.series }}</h2>
+          <p class="author">作者：{{ book.author }}</p>
 
           <div class="rating">
             <span class="stars">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 - Math.round(book.rating))
               }}</span>
-            <span>({{ book.rating }} from {{ book.numRatings }} ratings)</span>
+            <span>({{ book.rating }} 来自 {{ book.numRatings }} 评分)</span>
           </div>
 
           <div class="meta">
-            <span><strong>Published:</strong> {{ book.publishDate }}</span>
-            <span><strong>Pages:</strong> {{ book.pages }}</span>
-            <span><strong>Price:</strong> ${{ book.price }}</span>
+            <span><strong>出版日期:</strong> {{ book.publishDate }}</span>
+            <span v-if="book.firstPublishDate"><strong>首次出版日期:</strong> {{ book.firstPublishDate }}</span>
+            <span><strong>页数:</strong> {{ book.pages }}</span>
+            <span><strong>价格:</strong> ${{ book.price }}</span>
+            <span v-if="book.language"><strong>语言:</strong> {{ book.language }}</span>
+            <span v-if="book.isbn"><strong>ISBN:</strong> {{ book.isbn }}</span>
+            <span v-if="book.bookFormat"><strong>格式:</strong> {{ book.bookFormat }}</span>
+            <span v-if="book.edition"><strong>版本:</strong> {{ book.edition }}</span>
+            <span v-if="book.publisher"><strong>出版社:</strong> {{ book.publisher }}</span>
+            <span v-if="book.bbeScore"><strong>BBE 评分:</strong> {{ book.bbeScore }} (来自 {{ book.bbeVotes }} 投票)</span>
           </div>
 
           <div class="genres">
             <span v-for="genre in book.genres" :key="genre" class="genre-tag">{{ genre }}</span>
           </div>
 
+          <div class="book-content">
+            <h3>内容简介</h3>
+            <p class="description">{{ book.description }}</p>
+          </div>
 
+          <div class="additional-info">
+            <div v-if="book.characters && book.characters.length > 0">
+              <h3>主要角色</h3>
+              <div class="characters-list">
+                <span v-for="character in book.characters" :key="character" class="character-tag">{{ character }}</span>
+              </div>
+            </div>
+
+            <div v-if="book.setting && book.setting.length > 0">
+              <h3>故事背景</h3>
+              <div class="setting-list">
+                <span v-for="loc in book.setting" :key="loc" class="setting-tag">{{ loc }}</span>
+              </div>
+            </div>
+
+            <div v-if="book.awards && book.awards.length > 0">
+              <h3>所获奖项</h3>
+              <ul class="awards-list">
+                <li v-for="(award, index) in book.awards" :key="index">{{ award }}</li>
+              </ul>
+            </div>
+
+            <div v-if="book.likedPercent">
+              <h3>喜欢度</h3>
+              <p>{{ book.likedPercent }}% 的用户喜欢这本书。</p>
+            </div>
+
+            <div v-if="book.ratingsByStars && Object.keys(book.ratingsByStars).length > 0">
+              <h3>评分分布</h3>
+              <div class="ratings-by-stars">
+                <div v-for="(count, star) in book.ratingsByStars" :key="star" class="star-row">
+                  <span>{{ star }} 星:</span>
+                  <div class="star-bar-container">
+                    <div class="star-bar" :style="{ width: (count / book.numRatings * 100) + '%' }"></div>
+                  </div>
+                  <span>({{ count }})</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="actions">
           <button @click="goBack">返回列表</button>
         </div>
       </div>
-
-      <div class="book-content">
-        <h3>Description</h3>
-        <p class="description">{{ book.description }}</p>
-
-        <div v-if="book.reviews && book.reviews.length > 0" class="reviews-section">
-          <h3>Reviews</h3>
-          <div v-for="review in book.reviews" :key="review.id" class="review">
-            <div class="review-header">
-              <span class="review-author">{{ review.author }}</span>
-              <span class="review-rating">{{ '★'.repeat(review.rating) }}</span>
-            </div>
-            <p class="review-content">{{ review.content }}</p>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- 右侧栏 - 豆瓣搜索结果 -->
     <div class="sidebar">
       <div class="douban-results">
         <div class="sidebar-header" @click="toggleDoubanResults">
@@ -77,7 +110,6 @@
         </transition>
       </div>
 
-      <!-- 可以在这里添加更多侧边栏内容 -->
       <div class="sidebar-section">
         <h3>相关推荐</h3>
         <p>更多推荐内容...</p>
@@ -86,10 +118,10 @@
   </div>
 
   <div v-else-if="loading" class="loading">
-    Loading book details...
+    正在加载图书详情...
   </div>
   <div v-else class="not-found">
-    Book not found
+    未找到该图书
   </div>
 </template>
 
@@ -161,6 +193,8 @@ export default {
   margin: 20px auto;
   gap: 30px;
   align-items: flex-start;
+  padding: 0 15px;
+  /* 增加左右内边距，避免边缘过于贴近 */
 }
 
 .book-details-container {
@@ -239,13 +273,18 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 15px;
+  border-top: 1px solid #eee;
+  /* 添加分隔线 */
+  padding-top: 15px;
 }
 
 .genres {
   margin-top: 15px;
 }
 
-.genre-tag {
+.genre-tag,
+.character-tag,
+.setting-tag {
   display: inline-block;
   background-color: #e0e0e0;
   color: #555;
@@ -257,10 +296,79 @@ export default {
   transition: all 0.2s;
 }
 
-.genre-tag:hover {
+.genre-tag:hover,
+.character-tag:hover,
+.setting-tag:hover {
   background-color: #d0d0d0;
   transform: translateY(-1px);
 }
+
+.additional-info {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px dashed #ddd;
+  /* 新增更多信息的分隔线 */
+}
+
+.additional-info h3 {
+  font-size: 1.3em;
+  color: #333;
+  margin-top: 20px;
+  margin-bottom: 15px;
+}
+
+.characters-list,
+.setting-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.awards-list {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding: 0;
+  color: #555;
+}
+
+.awards-list li {
+  margin-bottom: 5px;
+}
+
+.ratings-by-stars {
+  margin-top: 15px;
+}
+
+.star-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.star-row span:first-child {
+  width: 60px;
+  /* 统一星级标签宽度 */
+  flex-shrink: 0;
+}
+
+.star-bar-container {
+  flex-grow: 1;
+  background-color: #eee;
+  height: 8px;
+  border-radius: 4px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+
+.star-bar {
+  height: 100%;
+  background-color: #f39c12;
+  border-radius: 4px;
+}
+
 
 .actions {
   margin-top: 25px;

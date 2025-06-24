@@ -20,6 +20,7 @@ def load_books():
             row['characters'] = eval(row['characters']) if row['characters'] else []
             row['awards'] = eval(row['awards']) if row['awards'] else []
             row['ratingsByStars'] = eval(row['ratingsByStars']) if row['ratingsByStars'] else []
+            row['setting'] = eval(row['setting']) if row['setting'] else []
             books.append(row)
     return books
 
