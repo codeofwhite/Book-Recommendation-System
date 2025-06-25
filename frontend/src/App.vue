@@ -1,86 +1,135 @@
 <template>
   <div id="app">
     <nav class="main-nav">
-      <router-link to="/" class="nav-item">首页</router-link>
-      <router-link to="/books" class="nav-item">图书列表</router-link>
-      <router-link to="/about" class="nav-item">关于我们</router-link>
-      <router-link to="/auth" class="nav-item login-button">登录</router-link>
+      <router-link to="/" class="nav-item">The Grand Hall</router-link>
+      <router-link to="/books" class="nav-item">The Catalogue</router-link>
+      <router-link to="/about" class="nav-item">About Our Establishment</router-link>
+      <router-link to="/auth" class="nav-item login-button">Enter the Archives</router-link>
     </nav>
 
     <main class="app-content">
-      <router-view/>
+      <router-view />
     </main>
 
     <footer class="main-footer">
-      <p>&copy; 2025 图书管理系统. All rights reserved.</p>
+      <p>&copy; 2025 The Scriptorium. All rights reserved.</p>
     </footer>
   </div>
 </template>
 
 <script setup>
-
+// No specific script logic needed for this foundational layout
 </script>
 
 <style>
-/* 全局样式或 App.vue 特有样式 */
+/* Global Styles for the Grand Scriptorium */
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  /* Choosing a classic serif font for an authentic feel */
+  font-family: 'Georgia', 'Times New Roman', Times, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
-  min-height: 100vh; /* 让内容撑满整个视口高度 */
+  color: #3e2723;
+  /* Deep, rich brown reminiscent of aged wood or leather */
+  min-height: 100vh;
+  /* Ensures content fills the viewport height */
   display: flex;
-  flex-direction: column; /* 垂直布局，让页脚固定在底部 */
+  flex-direction: column;
+  /* Vertical layout to pin the footer to the bottom */
+  background-color: #fcf8f0;
+  /* Soft parchment white for the overall background */
 }
 
 .main-nav {
-  padding: 15px 20px;
-  background-color: #34495e; /* 深蓝色背景 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px 30px;
+  /* More generous padding for a stately feel */
+  background-color: #5d4037;
+  /* A deep, warm brown for the navigation bar */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  /* A subtle, elegant shadow */
   display: flex;
-  justify-content: center; /* 导航项居中 */
+  justify-content: center;
+  /* Centering navigation items */
   align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  /* A delicate bottom border */
 }
 
 .nav-item {
   font-weight: bold;
-  color: #ecf0f1; /* 浅灰色文字 */
+  color: #ede0d4;
+  /* A creamy, light beige for navigation text */
   text-decoration: none;
-  margin: 0 15px;
-  padding: 5px 0;
-  transition: color 0.3s ease;
+  margin: 0 25px;
+  /* Increased spacing between navigation items */
+  padding: 8px 0;
+  /* Slightly more vertical padding */
+  transition: color 0.3s ease, transform 0.2s ease;
+  /* Smooth transitions */
+  letter-spacing: 0.5px;
+  /* Subtle letter spacing for readability */
 }
 
-.nav-item:hover,
+.nav-item:hover {
+  color: #bcaaa4;
+  /* A muted, antique silver on hover */
+  transform: translateY(-2px);
+  /* A slight lift effect */
+}
+
 .nav-item.router-link-exact-active {
-  color: #42b983; /* 绿色高亮 */
+  color: #bcaaa4;
+  /* Muted silver for the active link */
+  border-bottom: 2px solid #bcaaa4;
+  /* A distinguished underline for the active link */
 }
 
-/* 登录按钮样式 */
+/* Login Button Styles */
 .login-button {
-  background-color: #28a745; /* 绿色按钮 */
+  background-color: #8d6e63;
+  /* A refined medium brown for the button */
   color: white;
-  padding: 8px 15px;
+  padding: 10px 20px;
+  /* Ample padding for the button */
   border-radius: 5px;
-  margin-left: 30px; /* 与其他导航项保持距离 */
-  transition: background-color 0.3s ease;
+  /* Subtle rounded corners */
+  margin-left: 40px;
+  /* More distance from other navigation items */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  /* Smooth transitions */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  /* A gentle shadow */
+  letter-spacing: 0.5px;
 }
 
 .login-button:hover {
-  background-color: #218838;
+  background-color: #795548;
+  /* Darker brown on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  /* Enhanced shadow on hover */
 }
 
 .app-content {
-  flex-grow: 1; /* 让主要内容区域占据所有可用空间，将页脚推到底部 */
-  padding: 20px; /* 内容区域内边距 */
+  flex-grow: 1;
+  /* Ensures the main content area occupies all available space, pushing the footer to the bottom */
+  padding: 40px;
+  /* More generous padding for content areas */
+  background-color: #fffaf0;
+  /* A soft, warm off-white for the content background */
 }
 
 .main-footer {
-  padding: 15px;
-  background-color: #34495e;
-  color: #ecf0f1;
-  font-size: 0.9em;
-  margin-top: auto; /* 将页脚推到底部 */
+  padding: 20px;
+  background-color: #5d4037;
+  /* Matching the navigation bar's deep brown */
+  color: #ede0d4;
+  /* Matching the navigation text color */
+  font-size: 0.95em;
+  /* Slightly larger font size for readability */
+  margin-top: auto;
+  /* Pushes the footer to the bottom */
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  /* A subtle top shadow */
+  letter-spacing: 0.5px;
 }
 </style>

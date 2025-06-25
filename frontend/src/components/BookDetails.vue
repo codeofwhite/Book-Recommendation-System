@@ -1,127 +1,135 @@
 <template>
-  <div class="book-details-layout" v-if="book">
-    <div class="book-details-container">
-      <div class="book-header">
-        <div class="book-cover">
-          <img :src="book.coverImg" :alt="book.title" />
+  <div class="ancient-scroll-page" v-if="book">
+    <div class="main-parchment-folio">
+      <div class="tome-unveiling-header">
+        <div class="tome-illumination">
+          <img :src="book.coverImg" :alt="book.title" class="tome-cover-illustration" />
         </div>
-        <div class="book-info">
-          <h1>{{ book.title }}</h1>
-          <h2 v-if="book.series">系列：{{ book.series }}</h2>
-          <p class="author">作者：{{ book.author }}</p>
+        <div class="tome-essential-data">
+          <h1 class="tome-grand-title">{{ book.title }}</h1>
+          <h2 v-if="book.series" class="tome-series-chapter">A Volume in The {{ book.series }} Chronicle</h2>
+          <p class="tome-scribe">Penned by {{ book.author }}</p>
 
-          <div class="rating">
-            <span class="stars">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 - Math.round(book.rating))
-              }}</span>
-            <span>({{ book.rating }} 来自 {{ book.numRatings }} 评分)</span>
+          <div class="celestial-judgement">
+            <span class="stars-bestowed">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 -
+              Math.round(book.rating))
+            }}</span>
+            <span class="whispers-of-appraisal">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
           </div>
 
-          <div class="meta">
-            <span><strong>出版日期:</strong> {{ book.publishDate }}</span>
-            <span v-if="book.firstPublishDate"><strong>首次出版日期:</strong> {{ book.firstPublishDate }}</span>
-            <span><strong>页数:</strong> {{ book.pages }}</span>
-            <span><strong>价格:</strong> ${{ book.price }}</span>
-            <span v-if="book.language"><strong>语言:</strong> {{ book.language }}</span>
-            <span v-if="book.isbn"><strong>ISBN:</strong> {{ book.isbn }}</span>
-            <span v-if="book.bookFormat"><strong>格式:</strong> {{ book.bookFormat }}</span>
-            <span v-if="book.edition"><strong>版本:</strong> {{ book.edition }}</span>
-            <span v-if="book.publisher"><strong>出版社:</strong> {{ book.publisher }}</span>
-            <span v-if="book.bbeScore"><strong>BBE 评分:</strong> {{ book.bbeScore }} (来自 {{ book.bbeVotes }} 投票)</span>
+          <div class="tome-provenance-details-grid">
+            <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
+            <div class="detail-item"><strong>Published:</strong> {{ book.publishDate }}</div>
+            <div class="detail-item"><strong>Folios:</strong> {{ book.pages }}</div>
+            <div class="detail-item"><strong>Appraisal:</strong> ${{ book.price }}</div>
+            <div class="detail-item" v-if="book.language"><strong>Tongue:</strong> {{ book.language }}</div>
+            <div class="detail-item" v-if="book.isbn"><strong>Cipher (ISBN):</strong> {{ book.isbn }}</div>
+            <div class="detail-item" v-if="book.bookFormat"><strong>Form:</strong> {{ book.bookFormat }}</div>
+            <div class="detail-item" v-if="book.edition"><strong>Edition:</strong> {{ book.edition }}</div>
+            <div class="detail-item" v-if="book.publisher"><strong>Printer:</strong> {{ book.publisher }}</div>
+            <div class="detail-item" v-if="book.bbeScore"><strong>BBE Oracle Score:</strong> {{ book.bbeScore }} (from
+              {{
+                book.bbeVotes }} Voices)</div>
           </div>
 
-          <div class="genres">
-            <span v-for="genre in book.genres" :key="genre" class="genre-tag">{{ genre }}</span>
+          <div class="scholarly-genres-seals">
+            <span v-for="genre in book.genres" :key="genre" class="genre-crest">{{ genre }}</span>
           </div>
+        </div>
+      </div>
 
-          <div class="book-content">
-            <h3>内容简介</h3>
-            <p class="description">{{ book.description }}</p>
+      <div class="tome-narrative-summary">
+        <h3 class="section-heading">The Chronicle's Essence</h3>
+        <p class="summary-parchment">{{ book.description }}</p>
+      </div>
+
+      <div class="tome-additional-annotations">
+        <div v-if="book.characters && book.characters.length > 0">
+          <h3 class="section-heading">Notable Figures Within</h3>
+          <div class="characters-of-note">
+            <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
+            }}</span>
           </div>
+        </div>
 
-          <div class="additional-info">
-            <div v-if="book.characters && book.characters.length > 0">
-              <h3>主要角色</h3>
-              <div class="characters-list">
-                <span v-for="character in book.characters" :key="character" class="character-tag">{{ character }}</span>
-              </div>
+        <div v-if="book.setting && book.setting.length > 0">
+          <h3 class="section-heading">Realms & Locales Described</h3>
+          <div class="settings-of-the-tale">
+            <span v-for="loc in book.setting" :key="loc" class="setting-marker">{{ loc }}</span>
+          </div>
+        </div>
+
+        <div v-if="book.awards && book.awards.length > 0">
+          <h3 class="section-heading">Laurels & Distinctions Awarded</h3>
+          <ul class="laurels-list">
+            <li v-for="(award, index) in book.awards" :key="index">{{ award }}</li>
+          </ul>
+        </div>
+
+        <div v-if="book.likedPercent || (book.ratingsByStars && Object.keys(book.ratingsByStars).length > 0)"
+          class="readership-stats-group">
+          <h3 class="section-heading">Affection & Distribution of Critiques</h3>
+          <div class="stats-content-flex">
+            <div v-if="book.likedPercent" class="affection-measure-container">
+              <p class="affection-measure">{{ book.likedPercent }}% of Readers Hold This Tome Dearly.</p>
             </div>
 
-            <div v-if="book.setting && book.setting.length > 0">
-              <h3>故事背景</h3>
-              <div class="setting-list">
-                <span v-for="loc in book.setting" :key="loc" class="setting-tag">{{ loc }}</span>
-              </div>
-            </div>
-
-            <div v-if="book.awards && book.awards.length > 0">
-              <h3>所获奖项</h3>
-              <ul class="awards-list">
-                <li v-for="(award, index) in book.awards" :key="index">{{ award }}</li>
-              </ul>
-            </div>
-
-            <div v-if="book.likedPercent">
-              <h3>喜欢度</h3>
-              <p>{{ book.likedPercent }}% 的用户喜欢这本书。</p>
-            </div>
-
-            <div v-if="book.ratingsByStars && Object.keys(book.ratingsByStars).length > 0">
-              <h3>评分分布</h3>
-              <div class="ratings-by-stars">
-                <div v-for="(count, star) in book.ratingsByStars" :key="star" class="star-row">
-                  <span>{{ star }} 星:</span>
-                  <div class="star-bar-container">
-                    <div class="star-bar" :style="{ width: (count / book.numRatings * 100) + '%' }"></div>
-                  </div>
-                  <span>({{ count }})</span>
+            <div v-if="book.ratingsByStars && Object.keys(book.ratingsByStars).length > 0"
+              class="critique-distribution">
+              <div v-for="(count, star) in book.ratingsByStars" :key="star" class="star-critique-row">
+                <span>{{ star }} Stars:</span>
+                <div class="star-bar-scroll-container">
+                  <div class="star-bar-illumination" :style="{ width: (count / book.numRatings * 100) + '%' }"></div>
                 </div>
+                <span>({{ count }})</span>
               </div>
             </div>
           </div>
         </div>
-        <div class="actions">
-          <button @click="goBack">返回列表</button>
-        </div>
+      </div>
+      <div class="tome-actions">
+        <button @click="goBack" class="return-to-catalogue-button">Return to the Grand Catalogue</button>
       </div>
     </div>
 
-    <div class="sidebar">
-      <div class="douban-results">
-        <div class="sidebar-header" @click="toggleDoubanResults">
-          <h2>豆瓣搜索结果 <span class="toggle-icon">{{ showDoubanResults ? '▼' : '▶' }}</span></h2>
+    <div class="scribe-notes-sidebar">
+      <div class="oracle-douban-section">
+        <div class="sidebar-section-header" @click="toggleDoubanResults">
+          <h2 class="sidebar-section-title">Douban Oracle's Prophecies <span class="toggle-rune">{{ showDoubanResults ?
+            '▼' : '▶' }}</span></h2>
         </div>
-        <transition name="slide">
-          <div v-show="showDoubanResults">
-            <ul v-if="doubanSearchResults.length > 0">
-              <li v-for="(doubanBook, index) in doubanSearchResults" :key="index">
-                <a :href="doubanBook.link" target="_blank" rel="noopener noreferrer">
+        <transition name="unfurl-scroll">
+          <div v-show="showDoubanResults" class="oracle-results-container">
+            <ul v-if="doubanSearchResults.length > 0" class="oracle-findings-list">
+              <li v-for="(doubanBook, index) in doubanSearchResults" :key="index" class="oracle-finding-item">
+                <a :href="doubanBook.link" target="_blank" rel="noopener noreferrer" class="oracle-link">
                   {{ doubanBook.title }}
                 </a>
-                <span class="douban-rating" v-if="doubanBook.rating">
+                <span class="douban-oracle-rating" v-if="doubanBook.rating">
                   {{ '★'.repeat(Math.round(doubanBook.rating)) }}{{ '☆'.repeat(5 - Math.round(doubanBook.rating)) }}
                   ({{ doubanBook.rating }})
                 </span>
               </li>
             </ul>
-            <p v-else-if="searched && doubanSearchResults.length === 0" class="no-results">
-              没有找到相关的豆瓣书籍。
+            <p v-else-if="searched && doubanSearchResults.length === 0" class="no-oracle-findings">
+              The Oracle finds no kindred spirits on Douban.
             </p>
           </div>
         </transition>
       </div>
 
-      <div class="sidebar-section">
-        <h3>相关推荐</h3>
-        <p>更多推荐内容...</p>
+      <div class="scribe-notes-section">
+        <h3 class="sidebar-section-title">Further Recommendations</h3>
+        <p class="sidebar-text">More recommended chronicles to behold...</p>
       </div>
     </div>
   </div>
 
-  <div v-else-if="loading" class="loading">
-    正在加载图书详情...
+  <div v-else-if="loading" class="scribe-at-work">
+    The Scribe is diligently retrieving the Tome's details...
   </div>
-  <div v-else class="not-found">
-    未找到该图书
+  <div v-else class="tome-vanished">
+    Alas, this Tome has vanished from our collection.
   </div>
 </template>
 
@@ -164,7 +172,7 @@ export default {
     },
     async performDoubanSearch(keyword) {
       if (!keyword.trim()) {
-        console.warn('豆瓣搜索关键词为空，跳过搜索。');
+        console.warn('Douban search keyword is empty, skipping search.');
         return;
       }
       this.searched = true;
@@ -186,412 +194,633 @@ export default {
 </script>
 
 <style scoped>
-/* 整体布局 */
-.book-details-layout {
+/* A Font of Ages: Evoking the Scribe's Hand */
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+/* The Ancient Scroll Layout */
+.ancient-scroll-page {
   display: flex;
-  max-width: 1200px;
-  margin: 20px auto;
-  gap: 30px;
+  max-width: 1300px;
+  margin: 3rem auto;
+  gap: 2.5rem;
   align-items: flex-start;
-  padding: 0 15px;
-  /* 增加左右内边距，避免边缘过于贴近 */
+  padding: 0 1.5rem;
+  font-family: 'Merriweather', serif;
+  color: #3b2f2f;
+  /* Deep Ink */
+  position: relative;
 }
 
-.book-details-container {
-  flex: 3;
-  padding: 20px;
-  background-color: #fff;
+/* Base Parchment Style */
+.main-parchment-folio,
+.scribe-notes-sidebar {
+  background: #fdfaf3;
+  /* Old Paper */
+  border: 1px solid #d4c7b2;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  position: relative;
 }
 
-.sidebar {
+.main-parchment-folio {
+  flex: 3;
+  min-width: 65%;
+}
+
+.scribe-notes-sidebar {
   flex: 1;
-  min-width: 300px;
+  min-width: 320px;
   position: sticky;
-  top: 20px;
+  top: 3rem;
+  height: fit-content;
 }
 
-/* 图书详情样式 */
-.book-header {
+/* Tome Unveiling Header */
+.tome-unveiling-header {
   display: flex;
-  gap: 30px;
-  margin-bottom: 30px;
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
   align-items: flex-start;
 }
 
-.book-cover img {
-  width: 180px;
-  height: auto;
-  border-radius: 5px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-}
-
-.book-cover img:hover {
-  transform: scale(1.03);
-}
-
-.book-info {
-  flex-grow: 1;
-}
-
-.book-info h1 {
-  font-size: 2.2em;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.book-info h2 {
-  font-size: 1.1em;
-  color: #666;
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-
-.book-info .author {
-  font-size: 1.1em;
-  color: #555;
-  margin-bottom: 15px;
-}
-
-.rating .stars {
-  color: #f39c12;
-  font-size: 1.3em;
-}
-
-.rating span {
-  font-size: 0.9em;
-  color: #777;
-  margin-left: 5px;
-}
-
-.meta {
-  margin-top: 15px;
-  font-size: 0.95em;
-  color: #666;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  border-top: 1px solid #eee;
-  /* 添加分隔线 */
-  padding-top: 15px;
-}
-
-.genres {
-  margin-top: 15px;
-}
-
-.genre-tag,
-.character-tag,
-.setting-tag {
-  display: inline-block;
-  background-color: #e0e0e0;
-  color: #555;
-  padding: 5px 10px;
-  border-radius: 3px;
-  margin-right: 8px;
-  margin-bottom: 8px;
-  font-size: 0.85em;
-  transition: all 0.2s;
-}
-
-.genre-tag:hover,
-.character-tag:hover,
-.setting-tag:hover {
-  background-color: #d0d0d0;
-  transform: translateY(-1px);
-}
-
-.additional-info {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px dashed #ddd;
-  /* 新增更多信息的分隔线 */
-}
-
-.additional-info h3 {
-  font-size: 1.3em;
-  color: #333;
-  margin-top: 20px;
-  margin-bottom: 15px;
-}
-
-.characters-list,
-.setting-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-.awards-list {
-  list-style-type: disc;
-  margin-left: 20px;
-  padding: 0;
-  color: #555;
-}
-
-.awards-list li {
-  margin-bottom: 5px;
-}
-
-.ratings-by-stars {
-  margin-top: 15px;
-}
-
-.star-row {
+.tome-illumination {
+  flex-shrink: 0;
+  width: 220px;
+  height: 320px;
+  overflow: hidden;
+  background-color: #e8e0d4;
   display: flex;
   align-items: center;
-  margin-bottom: 5px;
-  font-size: 0.9em;
-  color: #666;
+  justify-content: center;
+  border-right: 1px solid #d4c7b2;
+  position: relative;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.star-row span:first-child {
-  width: 60px;
-  /* 统一星级标签宽度 */
-  flex-shrink: 0;
+.tome-illumination::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(253, 250, 243, 0) 0%, rgba(253, 250, 243, 0.3) 100%);
+  pointer-events: none;
 }
 
-.star-bar-container {
-  flex-grow: 1;
-  background-color: #eee;
-  height: 8px;
-  border-radius: 4px;
-  margin: 0 10px;
-  overflow: hidden;
-}
-
-.star-bar {
+.tome-cover-illustration {
+  width: 100%;
   height: 100%;
-  background-color: #f39c12;
-  border-radius: 4px;
+  object-fit: cover;
+  border-radius: 6px;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tome-cover-illustration:hover {
+  transform: scale(1.05) rotateZ(1deg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.tome-essential-data {
+  flex-grow: 1;
+}
+
+.tome-grand-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.8em;
+  color: #5a4b41;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.tome-series-chapter {
+  font-family: 'Merriweather', serif;
+  font-size: 1.2em;
+  color: #7b6a5e;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.tome-scribe {
+  font-size: 1.1em;
+  color: #5a4b41;
+  margin-bottom: 1.5rem;
+}
+
+.celestial-judgement {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.stars-bestowed {
+  color: #e6b800;
+  /* Gold */
+  font-size: 1.8em;
+  margin-right: 0.6rem;
+  letter-spacing: 0.05em;
+}
+
+.whispers-of-appraisal {
+  font-size: 0.95em;
+  color: #8c7f73;
+}
+
+/* Optimized Provenance Details Grid */
+.tome-provenance-details-grid {
+  margin-top: 1.5rem;
+  font-size: 0.95em;
+  color: #7b6a5e;
+  display: grid;
+  /* Use CSS Grid for flexible columns */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* Adjust minmax as needed */
+  gap: 0.8rem 1.5rem;
+  /* Row and column gap */
+  padding-top: 1.5rem;
+  border-top: 1px dashed #e0d4c0;
+}
+
+.detail-item {
+  display: flex;
+  /* Ensures strong and text stay on one line if possible */
+  flex-wrap: wrap;
+  /* Allows wrapping if content is too long */
+  align-items: baseline;
+  /* Aligns first line of text */
+}
+
+.detail-item strong {
+  font-weight: 700;
+  margin-right: 0.3em;
+  /* Small space after label */
+  flex-shrink: 0;
+  /* Prevents label from shrinking */
 }
 
 
-.actions {
-  margin-top: 25px;
+.scholarly-genres-seals {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
-.actions button {
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.2s;
+.genre-crest,
+.character-sigil,
+.setting-marker {
+  display: inline-block;
+  background-color: #e0d4c0;
+  color: #5a4b41;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  /* margin-right removed as gap handles spacing */
+  /* margin-bottom removed as gap handles spacing */
+  font-size: 0.85em;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border: 1px solid #d4c7b2;
 }
 
-.actions button:hover {
-  background-color: #0056b3;
-}
-
-.book-content {
-  margin-top: 30px;
-}
-
-.book-content h3 {
-  font-size: 1.5em;
-  color: #333;
-  margin-bottom: 15px;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 5px;
-}
-
-.description {
-  line-height: 1.8;
-  color: #444;
-  text-align: justify;
-}
-
-.reviews-section {
-  margin-top: 30px;
-}
-
-.review {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 15px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
-}
-
-.review:hover {
-  transform: translateY(-2px);
+.genre-crest:hover,
+.character-sigil:hover,
+.setting-marker:hover {
+  background-color: #d4c7b2;
+  transform: translateY(-2px) rotateZ(-1deg);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.review-header {
+.tome-narrative-summary {
+  margin-top: 2.5rem;
+}
+
+.section-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8em;
+  color: #5a4b41;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0d4c0;
+}
+
+.summary-parchment {
+  line-height: 1.8;
+  color: #4b3e3e;
+  text-align: justify;
+}
+
+.tome-additional-annotations {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px dashed #d4c7b2;
+}
+
+.characters-of-note,
+.settings-of-the-tale {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.laurels-list {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  padding: 0;
+  color: #5a4b41;
+}
+
+.laurels-list li {
+  margin-bottom: 0.5rem;
+}
+
+/* Grouping Affection & Distribution for better layout */
+.readership-stats-group {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #d4c7b2;
+}
+
+.stats-content-flex {
+  display: flex;
+  flex-wrap: wrap;
+  /* Allow wrapping on smaller screens */
+  gap: 2rem;
+  /* Space between the two sections */
+  align-items: flex-start;
+}
+
+.affection-measure-container {
+  flex: 1;
+  min-width: 250px;
+  /* Ensure it doesn't get too narrow */
+}
+
+.affection-measure {
+  font-size: 1em;
+  color: #5a4b41;
+  font-style: italic;
+  margin-bottom: 1.5rem;
+  /* Space before next section if stacked */
+}
+
+.critique-distribution {
+  flex: 1.5;
+  /* Give more space to bars */
+  min-width: 300px;
+  /* Ensure it doesn't get too narrow */
+  margin-top: 0;
+  /* Reset margin if inherited */
+}
+
+.star-critique-row {
+  display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 0.5rem;
+  font-size: 0.95em;
+  color: #7b6a5e;
 }
 
-.review-author {
-  font-weight: bold;
-  color: #333;
+.star-critique-row span:first-child {
+  width: 70px;
+  flex-shrink: 0;
+  font-weight: 600;
 }
 
-.review-rating {
-  color: #f39c12;
-  font-size: 1.1em;
-}
-
-.review-content {
-  color: #555;
-  line-height: 1.6;
-}
-
-/* 侧边栏样式 */
-.sidebar-header {
-  cursor: pointer;
-  padding: 10px;
-  background-color: #f5f5f5;
+.star-bar-scroll-container {
+  flex-grow: 1;
+  background-color: #eee;
+  height: 10px;
   border-radius: 5px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  transition: background-color 0.2s;
+  margin: 0 0.8rem;
+  overflow: hidden;
+  border: 1px solid #d4c7b2;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.sidebar-header:hover {
-  background-color: #e9e9e9;
+.star-bar-illumination {
+  height: 100%;
+  background-color: #e6b800;
+  /* Gold */
+  border-radius: 5px;
+  transition: width 0.5s ease-out;
 }
 
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.2em;
-  color: #333;
-  display: flex;
-  align-items: center;
+/* Actions Section */
+.tome-actions {
+  margin-top: 2.5rem;
+  text-align: center;
+  border-top: 1px dashed #e0d4c0;
+  padding-top: 2rem;
 }
 
-.toggle-icon {
-  margin-left: 10px;
-  font-size: 0.8em;
+.return-to-catalogue-button {
+  padding: 0.8rem 1.8rem;
+  background-color: #8d6e63;
+  /* Deep Sepia */
+  color: #fdfaf3;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: all 0.3s ease-in-out;
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-.douban-results {
-  background-color: #fff;
+.return-to-catalogue-button:hover {
+  background-color: #6d5448;
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.return-to-catalogue-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Scribe Notes Sidebar */
+.sidebar-section-header {
+  cursor: pointer;
+  padding: 1rem;
+  background-color: #f0ebe0;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  border: 1px solid #d4c7b2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.douban-results ul {
+.sidebar-section-header:hover {
+  background-color: #e5e0d4;
+  transform: translateY(-2px);
+}
+
+.sidebar-section-title {
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5em;
+  color: #5a4b41;
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.toggle-rune {
+  margin-left: 1rem;
+  font-size: 0.7em;
+  color: #8c7f73;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-section-header:hover .toggle-rune {
+  transform: rotate(5deg);
+}
+
+.oracle-douban-section {
+  margin-bottom: 2rem;
+}
+
+.oracle-results-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e0d4c0;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.05);
+  padding: 1.2rem 1.5rem;
+}
+
+.oracle-findings-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.douban-results li {
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-  transition: background-color 0.2s;
+.oracle-finding-item {
+  padding: 0.8rem 0;
+  border-bottom: 1px dashed #e0d4c0;
+  transition: background-color 0.2s ease;
 }
 
-.douban-results li:last-child {
+.oracle-finding-item:last-child {
   border-bottom: none;
 }
 
-.douban-results li:hover {
-  background-color: #f9f9f9;
+.oracle-finding-item:hover {
+  background-color: #f9f7f0;
 }
 
-.douban-results a {
-  color: #007bff;
+.oracle-link {
+  color: #8d6e63;
+  /* Deep Sepia */
   text-decoration: none;
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
 }
 
-.douban-results a:hover {
+.oracle-link:hover {
   text-decoration: underline;
+  color: #6d5448;
 }
 
-.douban-rating {
-  color: #f39c12;
+.douban-oracle-rating {
+  color: #e6b800;
   font-size: 0.9em;
   display: block;
 }
 
-.no-results {
-  color: #777;
+.no-oracle-findings {
+  color: #7b6a5e;
   font-style: italic;
-  padding: 10px 0;
+  padding: 1rem 0;
+  text-align: center;
 }
 
-.sidebar-section {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  margin-bottom: 20px;
+.scribe-notes-section {
+  padding: 1.5rem;
 }
 
-.sidebar-section h3 {
-  font-size: 1.2em;
-  color: #333;
-  margin-top: 0;
-  margin-bottom: 15px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #eee;
+.scribe-notes-section .sidebar-section-title {
+  border-bottom: 1px dashed #e0d4c0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-/* 过渡动画 */
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.3s ease;
+.sidebar-text {
+  color: #5a4b41;
+  font-size: 0.95em;
+  line-height: 1.6;
+}
+
+/* Transition for Douban Results (Unfurl Scroll Effect) */
+.unfurl-scroll-enter-active,
+.unfurl-scroll-leave-active {
+  transition: all 0.4s ease-out;
   max-height: 500px;
   overflow: hidden;
 }
 
-.slide-enter,
-.slide-leave-to {
+.unfurl-scroll-enter-from,
+.unfurl-scroll-leave-to {
   max-height: 0;
   opacity: 0;
-  overflow: hidden;
+  transform: translateY(-20px);
 }
 
-/* 加载和未找到状态 */
-.loading,
-.not-found {
+
+/* Loading and Not Found States */
+.scribe-at-work,
+.tome-vanished {
   text-align: center;
-  padding: 50px;
-  font-size: 1.2em;
-  color: #777;
+  padding: 5rem;
+  font-size: 1.5em;
+  color: #7b6a5e;
   width: 100%;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .book-details-layout {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    min-width: auto;
-    position: static;
-  }
-
-  .book-header {
+/* Responsive Adaptations for Smaller Screens (Papyrus Roll Adjustment) */
+@media (max-width: 992px) {
+  .ancient-scroll-page {
     flex-direction: column;
     align-items: center;
   }
 
-  .book-info {
+  .main-parchment-folio,
+  .scribe-notes-sidebar {
+    min-width: auto;
+    width: 100%;
+    padding: 2rem;
+  }
+
+  .scribe-notes-sidebar {
+    position: static;
+    margin-top: 2.5rem;
+  }
+
+  .tome-unveiling-header {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .tome-illumination {
+    width: 250px;
+    height: 350px;
+    border-right: none;
+    border-bottom: 1px solid #d4c7b2;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .tome-illumination::before {
+    background: linear-gradient(to bottom, rgba(253, 250, 243, 0) 0%, rgba(253, 250, 243, 0.3) 100%);
+  }
+
+  .tome-essential-data {
     text-align: center;
   }
 
-  .meta {
+  .tome-grand-title {
+    font-size: 2.5em;
+  }
+
+  /* Adjust provenance details for smaller screens */
+  .tome-provenance-details-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    justify-items: center;
+    /* Center items in the grid */
+    text-align: center;
+  }
+
+  .celestial-judgement,
+  .scholarly-genres-seals,
+  .characters-of-note,
+  .settings-of-the-tale,
+  .stats-content-flex {
     justify-content: center;
+  }
+
+  .stats-content-flex {
+    flex-direction: column;
+    /* Stack on smaller screens */
+    align-items: center;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .ancient-scroll-page {
+    padding: 0 1rem;
+  }
+
+  .main-parchment-folio,
+  .scribe-notes-sidebar {
+    padding: 1.5rem;
+  }
+
+  .tome-grand-title {
+    font-size: 2.2em;
+  }
+
+  .section-heading {
+    font-size: 1.6em;
+  }
+
+  .tome-scribe,
+  .tome-series-chapter,
+  .summary-parchment,
+  .tome-provenance-details-grid .detail-item {
+    font-size: 0.95em;
+  }
+
+  .return-to-catalogue-button {
+    font-size: 1em;
+    padding: 0.7rem 1.5rem;
+  }
+
+  .sidebar-section-title {
+    font-size: 1.3em;
+  }
+
+  .tome-provenance-details-grid {
+    grid-template-columns: 1fr;
+    /* Stack on very small screens */
+    gap: 0.5rem;
+    text-align: left;
+    /* Align text left when stacked */
+  }
+
+  .detail-item {
+    justify-content: center;
+    /* Center content when stacked on small screens */
+  }
+}
+
+@media (max-width: 480px) {
+  .tome-illumination {
+    width: 180px;
+    height: 260px;
+  }
+
+  .tome-grand-title {
+    font-size: 1.8em;
+  }
+
+  .section-heading {
+    font-size: 1.4em;
+  }
+
+  .genre-crest,
+  .character-sigil,
+  .setting-marker {
+    font-size: 0.8em;
+    padding: 0.4rem 0.8rem;
   }
 }
 </style>

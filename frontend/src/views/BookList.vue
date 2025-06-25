@@ -1,43 +1,126 @@
 <template>
-  <div class="book-list">
-    <!-- 搜索区域 -->
-    <div class="search-bar flex justify-center mb-10 gap-4">
-      <input type="text" v-model="inputSearchKeyword" placeholder="搜索图书名称..." @keyup.enter="handleSearch"
-        class="flex-grow max-w-md p-3 border border-gray-300 rounded-lg shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-      <button @click="handleSearch"
-        class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
-        搜索
-      </button>
+  <div class="ancient-tome-container">
+    <div class="top-folio-controls">
+      <div class="search-quill-box">
+        <input type="text" v-model="inputSearchKeyword" placeholder="Inscribe thy quest here..."
+          @keyup.enter="handleSearch" class="quill-input" />
+        <button @click="handleSearch" class="seek-button">
+          Seek & Discover
+        </button>
+      </div>
+
+      <div class="astrolabe-filters-horizontal">
+        <div class="filter-section-inline">
+          <h3 class="filter-title-inline">By Genre's Lore:</h3>
+          <div class="genre-filter-wrapper">
+            <input type="text" v-model="genreSearchTerm" placeholder="Search genres..." class="genre-search-input" />
+            <div class="genre-pill-container">
+              <span v-for="genre in filteredAvailableGenres" :key="genre" class="genre-filter-pill"
+                :class="{ 'is-selected': selectedGenres.includes(genre) }" @click="toggleGenre(genre)">
+                {{ genre }}
+              </span>
+              <span v-if="filteredAvailableGenres.length === 0 && availableGenres.length > 0"
+                class="no-options-message">No matching genres.</span>
+              <span v-else-if="availableGenres.length === 0" class="no-options-message">No genres discovered.</span>
+            </div>
+            <button v-if="availableGenres.length > maxDisplayedGenres && !showAllGenres" @click="showAllGenres = true"
+              class="toggle-genre-button">Show All ({{ availableGenres.length - maxDisplayedGenres }} More)</button>
+            <button v-if="showAllGenres" @click="showAllGenres = false" class="toggle-genre-button">Show Less</button>
+          </div>
+        </div>
+
+        <div class="filter-section-inline">
+          <h3 class="filter-title-inline">By Celestial Judgement (Rating):</h3>
+          <select v-model="selectedRating" @change="applyFilters" class="filter-select-inline">
+            <option value="">Any Appraisal</option>
+            <option value="4">4 Stars & Above</option>
+            <option value="3">3 Stars & Above</option>
+            <option value="2">2 Stars & Above</option>
+            <option value="1">1 Star & Above</option>
+          </select>
+        </div>
+
+        <div class="filter-section-inline price-filter-group">
+          <h3 class="filter-title-inline">By Scrivener's Price:</h3>
+          <input type="number" v-model.number="minPrice" @input="applyFiltersDebounced" placeholder="Min."
+            class="filter-input-inline" />
+          <span> — </span>
+          <input type="number" v-model.number="maxPrice" @input="applyFiltersDebounced" placeholder="Max."
+            class="filter-input-inline" />
+        </div>
+
+        <div class="filter-section-inline">
+          <h3 class="filter-title-inline">By Inscription Year:</h3>
+          <select v-model="selectedYear" @change="applyFilters" class="filter-select-inline">
+            <option value="">All Epochs</option>
+            <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
+          </select>
+        </div>
+
+        <button @click="resetFilters" class="reset-filters-button-inline">Clear All Astrolabe Settings</button>
+      </div>
     </div>
-    <p v-if="loading">加载中...</p>
-    <p v-else-if="!books || books.length === 0">没有找到相关书籍。</p>
-    <div v-else v-for="book in books" :key="book.bookId" class="book-card">
-      <div class="book-cover">
-        <img :src="book.coverImg" :alt="book.title" class="rounded-lg shadow-md" />
-      </div>
-      <div class="book-details">
-        <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }"
-          class="text-blue-600 hover:underline">
-          <h2 class="text-2xl font-bold mb-1">{{ book.title }}</h2>
-        </router-link>
-        <h3 v-if="book.series" class="text-lg text-gray-600 mb-2">Part of {{ book.series }}</h3>
-        <p class="author text-gray-700 mb-2">By {{ book.author }}</p>
-        <div class="rating flex items-center mb-2">
-          <span class="stars text-yellow-500 text-xl mr-1">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 -
-            Math.round(book.rating)) }}</span>
-          <span class="text-sm text-gray-500">({{ book.rating }} from {{ book.numRatings }} ratings)</span>
+
+    <div class="parchment-scroll-wrapper">
+      <main class="catalogue-of-works">
+        <p v-if="loading" class="scribe-message">The Scribe is diligently turning pages...</p>
+        <p v-else-if="!filteredBooks || filteredBooks.length === 0" class="scribe-message">Alas, no such tome matches
+          these refined criteria.</p>
+        <transition-group name="book-fade" tag="div" class="tome-collection" v-else>
+          <div v-for="book in filteredBooks" :key="book.bookId" class="tome-folio">
+            <div class="illumination-plate">
+              <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
+            </div>
+            <div class="tome-inscriptions">
+              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link">
+                <h2 class="tome-title">{{ book.title }}</h2>
+              </router-link>
+              <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>
+              <p class="tome-author">Penned by {{ book.author }}</p>
+              <div class="celestial-guidance">
+                <span class="stars-illuminated">{{ '★'.repeat(Math.round(book.rating)) }}{{
+                  '☆'.repeat(5 - Math.round(book.rating)) }}</span>
+                <span class="whispers-of-critics">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
+              </div>
+              <p class="tome-summary">{{ truncateDescription(book.description) }}</p>
+              <div class="tome-provenance">
+                <span><strong>Incepted:</strong> {{ book.publishDate }}</span>
+                <span><strong>Folios:</strong> {{ book.pages }}</span>
+                <span><strong>Appraisal:</strong> ${{ book.price }}</span>
+              </div>
+              <div class="scholarly-genres">
+                <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
+                }}</span>
+                <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
+              </div>
+            </div>
+          </div>
+        </transition-group>
+      </main>
+
+      <aside class="oracle-sidebar">
+        <div class="oracle-header">
+          <h3 class="oracle-title">Whispers from the Oracle</h3>
+          <p class="oracle-subtitle">Guided by the Constellations of Thy Past Readings</p>
         </div>
-        <p class="description text-gray-800 leading-relaxed mb-3">{{ truncateDescription(book.description) }}</p>
-        <div class="meta flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 mb-3">
-          <span><strong>Published:</strong> {{ book.publishDate }}</span>
-          <span><strong>Pages:</strong> {{ book.pages }}</span>
-          <span><strong>Price:</strong> ${{ book.price }}</span>
+        <div class="oracle-list">
+          <transition-group name="recommendation-slide" tag="div">
+            <div v-for="(rec, index) in recommendations" :key="index" class="oracle-insight">
+              <div class="oracle-effigy">
+                <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
+              </div>
+              <div class="oracle-details">
+                <h4 class="oracle-insight-title">{{ rec.title }}</h4>
+                <p class="oracle-insight-author">{{ rec.author }}</p>
+                <div class="oracle-celestial-guidance">
+                  <span class="stars-illuminated-small">{{ '★'.repeat(Math.round(rec.rating)) }}</span>
+                  <span class="whispers-of-critics-small">({{ rec.rating }})</span>
+                </div>
+              </div>
+            </div>
+          </transition-group>
         </div>
-        <div class="genres flex flex-wrap gap-2">
-          <span v-for="genre in book.genres.slice(0, 5)" :key="genre"
-            class="genre-tag bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">{{ genre }}</span>
-        </div>
-      </div>
+      </aside>
     </div>
   </div>
 </template>
@@ -46,9 +129,8 @@
 import axios from 'axios';
 
 export default {
-  name: 'BookList',
+  name: 'BookListWithRecommendation',
   props: {
-    // 接收从 App.vue 传来的搜索关键词
     searchKeyword: {
       type: String,
       default: ''
@@ -56,58 +138,168 @@ export default {
   },
   data() {
     return {
-      // 用于输入框的双向绑定
       inputSearchKeyword: '',
-      // 实际用于触发图书列表更新的关键词
-      searchKeyword: '',
-      books: [],
+      initialSearchKeyword: '',
+      allBooks: [],
+      recommendations: [],
       loading: true,
+
+      // Filter states
+      availableGenres: [], // All unique genres found in books
+      genreSearchTerm: '', // For searching within genres
+      showAllGenres: false, // Control for showing all or limited genres
+      maxDisplayedGenres: 10, // Max number of genres to show initially
+
+      availableYears: [],
+      selectedGenres: [],
+      selectedRating: '',
+      minPrice: null,
+      maxPrice: null,
+      selectedYear: '',
+      priceDebounceTimer: null, // For debouncing price inputs
     };
   },
-  watch: {
-    // 监听 searchKeyword 变化，重新加载书籍列表
-    searchKeyword: {
-      immediate: true, // 立即执行一次，用于初始加载或无搜索词的情况
-      handler(newKeyword) {
-        this.fetchBooks(newKeyword);
-      },
+  computed: {
+    filteredAvailableGenres() {
+      const filtered = this.availableGenres.filter(genre =>
+        genre.toLowerCase().includes(this.genreSearchTerm.toLowerCase())
+      );
+      return this.showAllGenres ? filtered : filtered.slice(0, this.maxDisplayedGenres);
     },
+    filteredBooks() {
+      let filtered = [...this.allBooks];
+
+      // Apply keyword search
+      if (this.inputSearchKeyword) { // Use inputSearchKeyword for dynamic filtering
+        const lowerCaseKeyword = this.inputSearchKeyword.toLowerCase();
+        filtered = filtered.filter(book =>
+          book.title.toLowerCase().includes(lowerCaseKeyword) ||
+          book.author.toLowerCase().includes(lowerCaseKeyword)
+        );
+      }
+
+      // Filter by Genre
+      if (this.selectedGenres.length > 0) {
+        filtered = filtered.filter(book =>
+          this.selectedGenres.some(genre => book.genres.includes(genre))
+        );
+      }
+
+      // Filter by Rating
+      if (this.selectedRating) {
+        const minRating = parseFloat(this.selectedRating);
+        filtered = filtered.filter(book => book.rating >= minRating);
+      }
+
+      // Filter by Price
+      if (this.minPrice !== null && this.minPrice !== '') {
+        filtered = filtered.filter(book => book.price >= this.minPrice);
+      }
+      if (this.maxPrice !== null && this.maxPrice !== '') {
+        filtered = filtered.filter(book => book.price <= this.maxPrice);
+      }
+
+      // Filter by Year
+      if (this.selectedYear) {
+        filtered = filtered.filter(book => {
+          const publishYear = new Date(book.publishDate).getFullYear();
+          return publishYear == this.selectedYear;
+        });
+      }
+
+      return filtered;
+    }
+  },
+  created() {
+    this.initialSearchKeyword = this.searchKeyword;
+    this.inputSearchKeyword = this.initialSearchKeyword; // Initialize input with prop
+    this.fetchRecommendations();
+    this.fetchBooks(); // Fetch all books initially
+  },
+  watch: {
+    // Watch genreSearchTerm to update filteredAvailableGenres without affecting book list
+    genreSearchTerm() {
+      // No direct action needed here, computed property handles filtering
+    },
+    // Watch inputSearchKeyword for immediate filtering feedback without hitting Enter
+    inputSearchKeyword() {
+      this.applyFilters();
+    }
   },
   methods: {
-    /**
-     * 处理搜索操作，更新 searchKeyword 以触发监听器。
-     */
     handleSearch() {
-      // 当用户点击搜索或按回车时，更新 searchKeyword
-      this.searchKeyword = this.inputSearchKeyword;
+      // With inputSearchKeyword directly linked to filtering, this just ensures a refresh
+      this.applyFilters();
     },
-    /**
-     * 根据关键词获取图书列表。
-     * 如果关键词为空，则获取所有图书。
-     * @param {string} keyword - 搜索关键词。
-     */
-    async fetchBooks(keyword) {
+    async fetchBooks() {
       this.loading = true;
       try {
-        // 构建请求 URL，如果关键词存在则使用搜索接口，否则使用获取所有图书接口
-        const url = keyword
-          ? `http://localhost:5000/api/search_local_books?keyword=${encodeURIComponent(keyword)}`
-          : 'http://localhost:5000/api/books';
-
-        const response = await axios.get(url);
-        this.books = response.data;
+        // Always fetch all books from the API
+        const response = await axios.get('http://localhost:5000/api/books');
+        this.allBooks = response.data;
+        this.extractFilterOptions();
+        this.applyFilters(); // Apply filters initially
       } catch (error) {
         console.error('Error fetching books:', error);
-        this.books = []; // 清空数据或显示错误信息
+        this.allBooks = [];
       } finally {
         this.loading = false;
       }
     },
-    /**
-     * 截断描述文本，使其不超过指定长度并添加省略号。
-     * @param {string} desc - 原始描述文本。
-     * @returns {string} 截断后的描述文本。
-     */
+    async fetchRecommendations() {
+      try {
+        const response = await axios.get('http://localhost:5000/api/recommendations');
+        this.recommendations = response.data;
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        this.recommendations = [];
+      }
+    },
+    extractFilterOptions() {
+      const genres = new Set();
+      const years = new Set();
+      this.allBooks.forEach(book => {
+        book.genres.forEach(genre => genres.add(genre));
+        if (book.publishDate) {
+          const year = new Date(book.publishDate).getFullYear();
+          if (!isNaN(year)) {
+            years.add(year);
+          }
+        }
+      });
+      this.availableGenres = Array.from(genres).sort();
+      this.availableYears = Array.from(years).sort((a, b) => b - a);
+    },
+    toggleGenre(genre) {
+      const index = this.selectedGenres.indexOf(genre);
+      if (index > -1) {
+        this.selectedGenres.splice(index, 1);
+      } else {
+        this.selectedGenres.push(genre);
+      }
+      this.applyFilters();
+    },
+    applyFilters() {
+      // No direct assignment needed here, computed property `filteredBooks` reactively updates.
+      // This method primarily serves to trigger re-evaluation if other dependencies change.
+    },
+    applyFiltersDebounced() {
+      clearTimeout(this.priceDebounceTimer);
+      this.priceDebounceTimer = setTimeout(() => {
+        this.applyFilters();
+      }, 500); // Debounce by 500ms
+    },
+    resetFilters() {
+      this.selectedGenres = [];
+      this.selectedRating = '';
+      this.minPrice = null;
+      this.maxPrice = null;
+      this.selectedYear = '';
+      this.inputSearchKeyword = ''; // Reset search keyword
+      this.genreSearchTerm = ''; // Reset genre search term
+      this.showAllGenres = false; // Reset genre display
+      this.applyFilters();
+    },
     truncateDescription(desc) {
       if (!desc) return '';
       return desc.length > 200 ? desc.substring(0, 200) + '...' : desc;
@@ -117,214 +309,753 @@ export default {
 </script>
 
 <style scoped>
-.book-list {
+/* A Font of Ages: Evoking the Scribe's Hand */
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+/* The Grand Container of Lore */
+.ancient-tome-container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fdfaf3;
+  /* Old Paper */
+  border: 1px solid #d4c7b2;
+  border-radius: 8px;
+  box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.15);
+  font-family: 'Merriweather', serif;
+  color: #3b2f2f;
+  /* Deep Ink */
+  position: relative;
+  overflow: hidden;
+}
+
+/* The Subtle Grain of Parchment */
+.ancient-tome-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(253, 250, 243, 0.9) 0%, rgba(240, 235, 220, 0.9) 100%);
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* --- Top Folio Controls (Search & Horizontal Filters) --- */
+.top-folio-controls {
+  background: #f0ebe0;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d4c7b2;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2.5rem;
+}
+
+/* The Seeker's Scrutiny */
+.search-quill-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.quill-input {
+  flex-grow: 1;
+  max-width: 30rem;
+  padding: 0.85rem 1.25rem;
+  border: 2px solid #b3a08d;
+  border-radius: 6px;
+  background: #ffffff;
+  font-family: 'Merriweather', serif;
+  font-size: 1.1rem;
+  color: #3b2f2f;
+  transition: all 0.3s ease-in-out;
+}
+
+.quill-input::placeholder {
+  color: #8c7f73;
+}
+
+.quill-input:focus {
+  outline: none;
+  border-color: #8d6e63;
+  box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.3);
+}
+
+.seek-button {
+  padding: 0.85rem 1.8rem;
+  background: #8d6e63;
+  color: #fdfaf3;
+  font-weight: 700;
+  font-family: 'Playfair Display', serif;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease-in-out;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+
+.seek-button:hover {
+  background: #6d5448;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.seek-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(141, 110, 99, 0.4);
+}
+
+/* Astrolabe Filters - Horizontal Layout */
+.astrolabe-filters-horizontal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #d4c7b2;
+}
+
+.filter-section-inline {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  max-width: 900px;
-  margin: 0 auto;
+  align-items: flex-start;
+  flex-basis: auto;
+  /* Allow items to size naturally */
+  flex-grow: 1;
+  /* Allow growth */
+  min-width: 180px;
+  /* Minimum width for filter sections */
 }
 
-.book-card {
-  display: flex;
-  background-color: #fff;
-  border-radius: 12px;
-  /* 更大的圆角 */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  /* 更明显的阴影 */
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  /* 悬停动画 */
+.filter-title-inline {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #5a4b41;
+  margin-bottom: 0.8rem;
+  white-space: nowrap;
 }
 
-.book-card:hover {
-  transform: translateY(-5px);
-  /* 悬停时向上轻微浮动 */
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  /* 悬停时阴影更深 */
+.filter-select-inline,
+.filter-input-inline {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: 1px solid #b3a08d;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-family: 'Merriweather', serif;
+  font-size: 0.95rem;
+  color: #3b2f2f;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%235a4b41%22%20d%3D%22M287%2C197.3L159.2%2C69.5c-7.8-7.8-20.5-7.8-28.3%2C0L5.4%2C197.3c-7.8%2C7.8-7.8%2C20.5%2C0%2C28.3l14.2%2C14.2c7.8%2C7.8%2C20.5%2C7.8%2C28.3%2C0l102.2-102.2l102.2%2C102.2c7.8%2C7.8%2C20.5%2C7.8%2C28.3%2C0l14.2-14.2C294.8%2C217.8%2C294.8%2C205.1%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 0.8em top 50%;
+  background-size: 0.65em auto;
 }
 
-.book-cover {
-  flex-shrink: 0;
-  width: 150px;
-  /* 固定宽度 */
-  height: 220px;
-  /* 固定高度 */
-  overflow: hidden;
-  background-color: #f0f0f0;
-  /* 占位背景色 */
-  display: flex;
+.filter-select-inline:focus,
+.filter-input-inline:focus {
+  outline: none;
+  border-color: #8d6e63;
+  box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3);
+}
+
+.price-filter-group {
+  flex-direction: row;
   align-items: center;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.price-filter-group .filter-input-inline {
+  flex-grow: 1;
+}
+
+/* Genre Specific Styles */
+.genre-filter-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.genre-search-input {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid #b3a08d;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-family: 'Merriweather', serif;
+  font-size: 0.95rem;
+  color: #3b2f2f;
+  transition: all 0.2s ease;
+}
+
+.genre-search-input:focus {
+  outline: none;
+  border-color: #8d6e63;
+  box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3);
+}
+
+.genre-pill-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-height: 120px;
+  /* Limit height for overflow */
+  overflow-y: auto;
+  padding-right: 5px;
+  /* For scrollbar */
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: #8d6e63 #f0ebe0;
+  /* Firefox */
+}
+
+/* Scrollbar styles for Webkit (Chrome, Safari) */
+.genre-pill-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.genre-pill-container::-webkit-scrollbar-track {
+  background: #f0ebe0;
+  border-radius: 4px;
+}
+
+.genre-pill-container::-webkit-scrollbar-thumb {
+  background-color: #8d6e63;
+  border-radius: 4px;
+  border: 2px solid #f0ebe0;
+}
+
+
+.genre-filter-pill {
+  background-color: #e0d4c0;
+  color: #5a4b41;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #d4c7b2;
+  flex-shrink: 0;
+  /* Prevent shrinking */
+}
+
+.genre-filter-pill:hover {
+  background-color: #d4c7b2;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.genre-filter-pill.is-selected {
+  background-color: #8d6e63;
+  color: #fdfaf3;
+  border-color: #6d5448;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-genre-button {
+  background: #b3a08d;
+  color: #fdfaf3;
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 0.8rem;
+  transition: background-color 0.2s ease;
+  align-self: flex-end;
+}
+
+.toggle-genre-button:hover {
+  background: #8c7f73;
+}
+
+.reset-filters-button-inline {
+  padding: 0.8rem 1.5rem;
+  background: #6d5448;
+  color: #fdfaf3;
+  font-weight: 600;
+  font-family: 'Playfair Display', serif;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease-in-out;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  align-self: center;
+  /* Center horizontally */
+  margin-top: 1.5rem;
+  /* Space from filters above */
+  white-space: nowrap;
+}
+
+.reset-filters-button-inline:hover {
+  background: #5a4b41;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+}
+
+
+/* --- Main Content Area (Book Catalogue & Recommendations) --- */
+.parchment-scroll-wrapper {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
   justify-content: center;
 }
 
-.book-cover img {
+/* The Grand Library's Catalogue (Main Content Area) */
+.catalogue-of-works {
+  flex: 3;
+  min-width: 600px;
+}
+
+.scribe-message {
+  text-align: center;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: #5a4b41;
+  padding: 3rem 0;
+}
+
+.tome-collection {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.tome-folio {
+  display: flex;
+  background-color: #fdfaf3;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  border: 1px solid #e0d4c0;
+  position: relative;
+}
+
+.tome-folio:hover {
+  transform: translateY(-8px) rotate(-1deg);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.illumination-plate {
+  flex-shrink: 0;
+  width: 150px;
+  height: 220px;
+  overflow: hidden;
+  background-color: #e8e0d4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #d4c7b2;
+  position: relative;
+  z-index: 1;
+}
+
+.illumination-plate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(253, 250, 243, 0) 0%, rgba(253, 250, 243, 0.3) 100%);
+  pointer-events: none;
+}
+
+.tome-cover-art {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* 确保图片覆盖整个区域 */
   border-radius: 8px;
-  /* 图片圆角 */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.book-details {
-  padding: 20px;
+.tome-inscriptions {
+  padding: 1.8rem 2.2rem;
   text-align: left;
   flex-grow: 1;
 }
 
-.book-details h2 {
-  font-size: 1.8em;
-  color: #333;
-  margin-bottom: 5px;
+.tome-title-link {
+  text-decoration: none;
+  color: #5a4b41;
+  transition: color 0.3s ease;
 }
 
-.book-details h3 {
-  font-size: 1.1em;
-  color: #666;
-  margin-top: 0;
-  margin-bottom: 10px;
+.tome-title-link:hover {
+  color: #8d6e63;
+  text-decoration: underline;
 }
 
-.book-details .author {
-  font-size: 1em;
-  color: #555;
-  margin-bottom: 10px;
+.tome-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 
-.rating .stars {
-  color: #f39c12;
-  font-size: 1.2em;
+.tome-series {
+  font-family: 'Merriweather', serif;
+  font-size: 1.1rem;
+  color: #7b6a5e;
+  margin-bottom: 0.8rem;
+  font-style: italic;
 }
 
-.rating span {
-  font-size: 0.85em;
-  color: #777;
-  margin-left: 5px;
+.tome-author {
+  font-family: 'Merriweather', serif;
+  font-size: 1rem;
+  color: #5a4b41;
+  margin-bottom: 0.8rem;
 }
 
-.description {
+.celestial-guidance {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.stars-illuminated {
+  color: #e6b800;
+  font-size: 1.5rem;
+  margin-right: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.whispers-of-critics {
+  font-size: 0.9rem;
+  color: #8c7f73;
+}
+
+.tome-summary {
+  font-family: 'Merriweather', serif;
+  font-size: 1rem;
+  color: #3b2f2f;
   line-height: 1.6;
-  color: #444;
-  margin-bottom: 15px;
-  font-size: 0.95em;
+  margin-bottom: 1.2rem;
 }
 
-.meta {
-  margin-top: 10px;
-  font-size: 0.9em;
-  color: #666;
+.tome-provenance {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 0.8rem 1.5rem;
+  font-size: 0.9rem;
+  color: #7b6a5e;
+  margin-bottom: 1.2rem;
 }
 
-.genres {
-  margin-top: 15px;
+.tome-provenance strong {
+  font-weight: 700;
 }
 
-.genre-tag {
-  display: inline-block;
-  background-color: #e9ecef;
-  color: #495057;
-  padding: 4px 10px;
-  border-radius: 5px;
-  margin-right: 5px;
-  margin-bottom: 5px;
-  font-size: 0.8em;
-  text-transform: uppercase;
+.scholarly-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.loading,
-.not-found {
+.genre-seal {
+  background: #e0d4c0;
+  color: #5a4b41;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: all 0.2s ease;
+  border: 1px solid #d4c7b2;
+}
+
+.genre-seal:hover {
+  background: #d4c7b2;
+  color: #3b2f2f;
+}
+
+.genre-seal.more-genres {
+  cursor: default;
+  background-color: transparent;
+  border: none;
+  font-weight: 700;
+  color: #8c7f73;
+}
+
+/* The Oracle's Prognostications (Right Sidebar) */
+.oracle-sidebar {
+  flex: 0 0 280px;
+  background: #f0ebe0;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+  border: 1px solid #d4c7b2;
+}
+
+.oracle-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #c0b29b;
   text-align: center;
-  padding: 50px;
-  font-size: 1.2em;
-  color: #777;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .book-card {
+.oracle-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #5a4b41;
+  margin-bottom: 0.4rem;
+}
+
+.oracle-subtitle {
+  font-size: 0.9rem;
+  color: #8c7f73;
+  font-style: italic;
+}
+
+.oracle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.oracle-insight {
+  display: flex;
+  gap: 1rem;
+  padding: 0.8rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.oracle-insight:hover {
+  background-color: #e5e0d4;
+  transform: translateX(5px);
+  border-color: #c0b29b;
+}
+
+.oracle-effigy {
+  width: 70px;
+  height: 100px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d4c7b2;
+}
+
+.oracle-cover-mini {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.oracle-details {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.oracle-insight-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #3b2f2f;
+  margin-bottom: 0.2rem;
+}
+
+.oracle-insight-author {
+  font-size: 0.85rem;
+  color: #7b6a5e;
+  margin-bottom: 0.4rem;
+}
+
+.oracle-celestial-guidance {
+  display: flex;
+  align-items: center;
+}
+
+.stars-illuminated-small {
+  color: #e6b800;
+  font-size: 1.1rem;
+  margin-right: 0.3rem;
+}
+
+.whispers-of-critics-small {
+  font-size: 0.75rem;
+  color: #8c7f73;
+}
+
+/* Scroll Effects - Page Turning & Whispers */
+/* For the main book list */
+.book-fade-enter-active,
+.book-fade-leave-active {
+  transition: all 0.6s ease-in-out;
+}
+
+.book-fade-enter-from,
+.book-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50px);
+}
+
+.book-fade-leave-active {
+  position: absolute;
+}
+
+/* For recommendations */
+.recommendation-slide-enter-active,
+.recommendation-slide-leave-active {
+  transition: all 0.5s ease;
+}
+
+.recommendation-slide-enter-from,
+.recommendation-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.recommendation-slide-move {
+  transition: transform 0.5s ease;
+}
+
+
+/* Responsive Adaptations for Smaller Tomes */
+@media (max-width: 1200px) {
+  .parchment-scroll-wrapper {
     flex-direction: column;
     align-items: center;
+  }
+
+  .catalogue-of-works,
+  .oracle-sidebar {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .oracle-sidebar {
+    position: static;
+    margin-top: 2rem;
+  }
+
+  .astrolabe-filters-horizontal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .filter-section-inline {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .price-filter-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .ancient-tome-container {
+    padding: 1.5rem;
+  }
+
+  .search-quill-box {
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1rem;
+  }
+
+  .quill-input,
+  .seek-button {
+    width: 100%;
     text-align: center;
   }
 
-  .book-cover {
+  .tome-folio {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .illumination-plate {
     width: 100%;
     height: 250px;
-    /* 移动端封面高度 */
-    border-bottom: 1px solid #eee;
-    margin-bottom: 15px;
   }
 
-  .book-cover img {
-    border-radius: 8px 8px 0 0;
+  .tome-inscriptions {
+    padding: 1.5rem;
   }
 
-  .book-details {
-    padding: 15px;
+  .tome-title {
+    font-size: 1.8rem;
   }
 
-  .book-details h2 {
-    font-size: 1.5em;
-  }
-
-  .book-details h3 {
-    font-size: 1em;
-  }
-
-  .meta,
-  .genres {
+  .celestial-guidance {
     justify-content: center;
   }
+
+  .tome-provenance,
+  .scholarly-genres {
+    justify-content: center;
+  }
+
+  .astrolabe-filters-horizontal {
+    align-items: center;
+  }
+
+  .filter-section-inline {
+    text-align: center;
+    align-items: center;
+  }
+
+  .filter-title-inline {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .genre-pill-container {
+    max-height: 100px;
+    /* Adjust max height for smaller screens */
+  }
+
+  .reset-filters-button-inline {
+    width: 100%;
+  }
 }
 
-.search-bar {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 30px;
-  gap: 10px;
-}
+@media (max-width: 480px) {
+  .ancient-tome-container {
+    padding: 1rem;
+  }
 
-.search-bar input {
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  /* 圆角 */
-  font-size: 1em;
-  width: 300px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  /* 轻微阴影 */
-}
+  .tome-title {
+    font-size: 1.6rem;
+  }
 
-.search-bar button {
-  padding: 10px 20px;
-  background-color: #42b983;
-  /* 绿色按钮 */
-  color: white;
-  border: none;
-  border-radius: 8px;
-  /* 圆角 */
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  /* 过渡效果 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  /* 按钮阴影 */
-}
+  .tome-series,
+  .tome-author,
+  .tome-summary {
+    font-size: 0.9rem;
+  }
 
-.search-bar button:hover {
-  background-color: #369b6f;
-  /* 鼠标悬停时的颜色 */
-  transform: translateY(-2px);
-  /* 向上轻微移动 */
-}
-
-.search-bar button:active {
-  transform: translateY(0);
-  /* 点击时的效果 */
+  .oracle-title {
+    font-size: 1.5rem;
+  }
 }
 </style>

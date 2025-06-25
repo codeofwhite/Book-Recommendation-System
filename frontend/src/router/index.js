@@ -42,4 +42,15 @@ const router = createRouter({
   routes,
 });
 
+// 添加路由导航守卫
+router.afterEach((to) => {
+  if (window.dataLayer) {
+    window.dataLayer.push({
+      event: 'pageview',  // 自定义事件名称（需与GTM触发器匹配）
+      pagePath: to.fullPath,
+      pageTitle: to.meta.title || document.title,
+    });
+  }
+});
+
 export default router;
