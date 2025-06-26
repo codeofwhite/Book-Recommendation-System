@@ -3,11 +3,11 @@ from urllib.parse import quote_plus
 
 class Config:
     # 数据库配置 - 现在从环境变量获取，在docker-compose中设置
-    DB_USER = os.environ.get('DB_USER', 'cqu123')  # 默认使用普通用户
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', '123456')
-    DB_HOST = os.environ.get('DB_HOST', 'mysql_db')  # 关键变化：使用服务名
+    DB_USER = os.environ.get('DB_USER', 'auth_user')  # 默认使用普通用户
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'auth_password')
+    DB_HOST = os.environ.get('DB_HOST', 'auth_db')  # 关键变化：使用服务名
     DB_PORT = os.environ.get('DB_PORT', '3306')
-    DB_NAME = os.environ.get('DB_NAME', 'book_app_db')
+    DB_NAME = os.environ.get('DB_NAME', 'auth_db')
     
     # 安全地处理密码中的特殊字符
     encoded_password = quote_plus(DB_PASSWORD)

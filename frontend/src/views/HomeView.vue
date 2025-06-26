@@ -1,4 +1,3 @@
-<!-- 主页面 -->
 <template>
   <div class="home-view">
     <header class="hero-section">
@@ -15,86 +14,110 @@
       <div class="spinner"></div> The Quills are Busy, Kindly Stand By...
       </p>
 
-      <div v-else>
-        <section class="section-container" id="popular-books">
-          <div class="section-header">
-            <h2 class="section-title">Volumes of Esteem: Acclaimed by the Cognoscenti</h2>
-            <router-link to="/books" class="more-link">Peruse the Archives &gt;</router-link>
-          </div>
-          <div class="book-grid">
-            <div v-for="book in popularBooks" :key="book.id" class="book-card">
-              <img :src="book.coverImage" :alt="book.title" class="book-cover" />
-              <div class="book-info">
-                <h3 class="book-title">{{ book.title }}</h3>
-                <p class="book-author">Authored by: {{ book.author }}</p>
-                <p class="book-genre">Genre: {{ book.genre }}</p>
-                <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
-              </div>
+      <div v-else class="content-wrapper">
+        <div class="main-sections">
+          <section class="section-container" id="popular-books">
+            <div class="section-header">
+              <h2 class="section-title">Volumes of Esteem: Acclaimed by the Cognoscenti</h2>
+              <router-link to="/books" class="more-link">Peruse the Archives &gt;</router-link>
             </div>
-          </div>
-        </section>
-
-        <hr class="section-divider" />
-
-        <section class="section-container" id="personalized-books">
-          <div class="section-header">
-            <h2 class="section-title">Curated for Your Discerning Eye</h2>
-            <router-link to="/books" class="more-link">More Selections Befitting Your Taste &gt;</router-link>
-          </div>
-          <div class="book-grid">
-            <div v-for="book in personalizedBooks" :key="book.id" class="book-card">
-              <img :src="book.coverImage" :alt="book.title" class="book-cover" />
-              <div class="book-info">
-                <h3 class="book-title">{{ book.title }}</h3>
-                <p class="book-author">Authored by: {{ book.author }}</p>
-                <p class="book-genre">Genre: {{ book.genre }}</p>
-                <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <hr class="section-divider" />
-
-        <section class="section-container section-two-columns">
-          <div class="ranking-section-wrapper" id="rankings">
-            <div class="section-header-compact">
-              <h2 class="section-title-small">The Pantheon of Literary Distinction</h2>
-              <router-link to="/rankings" class="more-link-small">Behold the Full Register &gt;</router-link>
-            </div>
-            <div class="ranking-grid-compact">
-              <div v-for="(rankList, index) in bookRankings" :key="index" class="ranking-card-compact">
-                <h3>{{ rankList.title }}</h3>
-                <ul>
-                  <li v-for="(book, i) in rankList.books.slice(0, 5)" :key="book.id">
-                    <span class="rank-number">{{ i + 1 }}.</span>
-                    <router-link :to="`/books/${book.id}`" class="ranking-book-link">{{ book.title }}</router-link>
-                    <span class="rank-author-small"> - {{ book.author }}</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="activity-section-wrapper" id="activities">
-            <div class="section-header-compact">
-              <h2 class="section-title-small">Forthcoming Convocations & Salons</h2>
-              <router-link to="/activities" class="more-link-small">Discover More Gatherings &gt;</router-link>
-            </div>
-            <div class="activity-list-compact">
-              <div v-for="activity in activities.slice(0, 3)" :key="activity.id" class="activity-item-compact">
-                <img :src="activity.image" :alt="activity.title" class="activity-image-small" />
-                <div class="activity-info-compact">
-                  <h4>{{ activity.title }}</h4>
-                  <p>{{ activity.date }}</p>
-                  <button class="join-button-small">Graciously Attend</button>
+            <div class="book-grid">
+              <div v-for="book in popularBooks" :key="book.id" class="book-card">
+                <img :src="book.coverImage" :alt="book.title" class="book-cover" />
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">Authored by: {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+          <hr class="section-divider" />
+
+          <section class="section-container" id="personalized-books">
+            <div class="section-header">
+              <h2 class="section-title">Curated for Your Discerning Eye</h2>
+              <router-link to="/books" class="more-link">More Selections Befitting Your Taste &gt;</router-link>
+            </div>
+            <div class="book-grid">
+              <div v-for="book in personalizedBooks" :key="book.id" class="book-card">
+                <img :src="book.coverImage" :alt="book.title" class="book-cover" />
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">Authored by: {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <hr class="section-divider" />
+
+          <section class="section-container section-two-columns">
+            <div class="ranking-section-wrapper" id="rankings">
+              <div class="section-header-compact">
+                <h2 class="section-title-small">The Pantheon of Literary Distinction</h2>
+                <router-link to="/rankings" class="more-link-small">Behold the Full Register &gt;</router-link>
+              </div>
+              <div class="ranking-grid-compact">
+                <div v-for="(rankList, index) in bookRankings" :key="index" class="ranking-card-compact">
+                  <h3>{{ rankList.title }}</h3>
+                  <ul>
+                    <li v-for="(book, i) in rankList.books.slice(0, 5)" :key="book.id">
+                      <span class="rank-number">{{ i + 1 }}.</span>
+                      <router-link :to="`/books/${book.id}`" class="ranking-book-link">{{ book.title }}</router-link>
+                      <span class="rank-author-small"> - {{ book.author }}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="activity-section-wrapper" id="activities">
+              <div class="section-header-compact">
+                <h2 class="section-title-small">Forthcoming Convocations & Salons</h2>
+                <router-link to="/activities" class="more-link-small">Discover More Gatherings &gt;</router-link>
+              </div>
+              <div class="activity-list-compact">
+                <div v-for="activity in activities.slice(0, 3)" :key="activity.id" class="activity-item-compact">
+                  <img :src="activity.image" :alt="activity.title" class="activity-image-small" />
+                  <div class="activity-info-compact">
+                    <h4>{{ activity.title }}</h4>
+                    <p>{{ activity.date }}</p>
+                    <button class="join-button-small">Graciously Attend</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </main>
+
+    <button :class="['sidebar-toggle-button', { 'is-open': isSidebarOpen }]" @click="toggleSidebar">
+      <span v-if="!isSidebarOpen">每日一书</span>
+      <span v-else>&#x2715;</span> </button>
+
+    <div class="sidebar-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="toggleSidebar"></div>
+
+    <aside :class="['daily-book-sidebar', { 'is-open': isSidebarOpen }]">
+      <div class="daily-book-card">
+        <h2 class="sidebar-title">The Day's Chosen Volume</h2>
+        <div v-if="dailyBook" class="book-of-the-day">
+          <img :src="dailyBook.coverImage" :alt="dailyBook.title" class="daily-book-cover" />
+          <h3 class="daily-book-title">{{ dailyBook.title }}</h3>
+          <p class="daily-book-author">Authored by: {{ dailyBook.author }}</p>
+          <p class="daily-book-genre">Genre: {{ dailyBook.genre }}</p>
+          <button @click="viewBookDetails(dailyBook.id)" class="details-button">Unfold the Narrative</button>
+        </div>
+        <p v-else class="no-daily-book">
+          No book recommendation for today. Check back later!
+        </p>
+      </div>
+    </aside>
   </div>
 </template>
 
@@ -104,6 +127,7 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const loading = ref(true); // 控制加载状态
+const isSidebarOpen = ref(false); // 控制侧边栏展开/收起状态
 
 // 模拟数据
 const mockBooks = [
@@ -130,11 +154,22 @@ const activities = ref([
   { id: 'a4', title: '编程技术沙龙：Vue3新特性', date: '2025.07.25 10:00', image: 'https://th.bing.com/th/id/OIP.21XL-cVbf89_FE_pAvvX4gHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
 ]);
 
+const dailyBook = ref(null); // This will hold your daily recommended book
+
 // 模拟数据获取函数
 const fetchData = async () => {
   await new Promise(resolve => setTimeout(resolve, 1500)); // 模拟网络延迟
   popularBooks.value = [mockBooks[0], mockBooks[4], mockBooks[2], mockBooks[6]]; // 示例热门
   personalizedBooks.value = [mockBooks[1], mockBooks[3], mockBooks[5], mockBooks[7]]; // 示例个性化
+  
+  // Logic to fetch and set the daily recommended book
+  if (mockBooks.length > 0) {
+    const randomIndex = Math.floor(Math.random() * mockBooks.length);
+    dailyBook.value = mockBooks[randomIndex];
+  } else {
+    dailyBook.value = null;
+  }
+
   loading.value = false;
 };
 
@@ -144,6 +179,8 @@ onMounted(() => {
 
 const viewBookDetails = (bookId) => {
   router.push(`/books/${bookId}`);
+  // Close sidebar if open when navigating
+  isSidebarOpen.value = false;
 };
 
 const scrollToSection = (id) => {
@@ -151,6 +188,10 @@ const scrollToSection = (id) => {
   if (element) {
     element.scrollIntoView({ behavior: 'smooth' });
   }
+};
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value;
 };
 </script>
 
@@ -160,32 +201,25 @@ const scrollToSection = (id) => {
   padding: 0;
   max-width: 1400px;
   margin: 0 auto;
-  /* Choose a serif font for a classical feel */
   font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
   color: #3e2723;
-  /* Deep brown, mimicking ink */
   background-color: #fcf8f0;
-  /* Parchment white, simulating aged paper */
+  /* Ensure the body has no horizontal overflow due to sidebar */
+  overflow-x: hidden; 
 }
 
 /* Hero Section Styles */
 .hero-section {
-  /* Soft gradient, reminiscent of an aged scroll or painting */
   background: linear-gradient(135deg, #d4b896 0%, #ecd9c7 100%);
   color: #5d4037;
-  /* Deep brown text for contrast */
   text-align: center;
   padding: 100px 30px;
-  /* Increased padding */
   border-bottom-left-radius: 60px;
-  /* Softer rounded corners */
   border-bottom-right-radius: 60px;
   margin-bottom: 50px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-  /* Deeper, more pronounced shadow */
   position: relative;
   overflow: hidden;
-  /* Ensure pseudo-elements don't overflow */
 }
 
 .hero-section::before {
@@ -195,7 +229,6 @@ const scrollToSection = (id) => {
   left: 0;
   width: 100%;
   height: 100%;
-  /* Abstract texture, reminiscent of ancient art or subtle paper grain */
   background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2MDU0NDgiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0bC02LTMuMjctNiA2LjI3di0xMmMwLS41NS40NS0xIDEtMSAxIDAgLjgyLjM3IDEuMTguODhsMi43NiAyLjc2LTMuNjQtMy42NGEuOTk5Ljk5OSAwIDAg0C0xLjQxIDAgMSAxIDAgMCAwIDAgMS40MWwxNC4xMyAxNC4xM2ExLjAxIDEuMDEgMCAwIDAgMS40MiAwIDEgMSAwIDAgMCAwLTEuNDFMMzYgMzR6TTI4IDExbDE3LTE3YzEuMTgtMS4xOCAzLjI3LTEuMTggNC40NSAwIDEuMTguNDUuNzUgMS44MSAwIDIuNTlsLTYuMTIgNi4xMmEyNS40IDI1LjQgMCAwIDAgLjY3IDcuNjNsLTIuNjYtMi42NmMtLjE4LS4xOC0uNDItLjI4LS42Ny0uMjhINzguNWEyMCAyMCAwIDAg0S0yMCAyMHYyMGMwIDEuMTguODIgMiAxLjggMiAwIDAgLjgyLjM3IDEuMTguODhsMi43NiAyLjc2LTMuNjQtMy42NGEuOTk5Ljk5OSAwIDAg0C0xLjQxIDAgMSAxIDAgMCAwIDAgMS40MWwxNC4xMyAxNC4xM2ExLjAxIDEuMDEgMCAwIDAgMS40MiAwIDExIDExIDAgMCAwIDAgLTEuNDFMMzYgMzR6Ii8+PC9nPjwvZz48L3N2Z3U+');
   opacity: 0.1;
   background-repeat: repeat;
@@ -205,17 +238,14 @@ const scrollToSection = (id) => {
   max-width: 900px;
   margin: 0 auto;
   position: relative;
-  /* Ensure content is above texture */
   z-index: 1;
 }
 
 .hero-title {
   font-size: 3.8em;
-  /* Grand and imposing */
   margin-bottom: 20px;
   font-weight: 700;
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.1);
-  /* Soft shadow */
   line-height: 1.2;
 }
 
@@ -224,29 +254,23 @@ const scrollToSection = (id) => {
   opacity: 0.85;
   margin-bottom: 40px;
   font-style: italic;
-  /* Slight italic for elegance */
 }
 
 .explore-button {
   background-color: #8d6e63;
-  /* Dignified brown */
   color: white;
   border: 2px solid #5d4037;
-  /* Darker border */
   border-radius: 5px;
-  /* Clean, subtle corners */
   padding: 18px 45px;
   font-size: 1.3em;
   cursor: pointer;
   transition: all 0.4s ease;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   letter-spacing: 1px;
-  /* Increased letter spacing */
 }
 
 .explore-button:hover {
   background-color: #5d4037;
-  /* Even darker brown */
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
@@ -256,7 +280,6 @@ const scrollToSection = (id) => {
   text-align: center;
   font-size: 1.4em;
   color: #795548;
-  /* Soft brown */
   margin-top: 80px;
   display: flex;
   align-items: center;
@@ -267,14 +290,11 @@ const scrollToSection = (id) => {
 
 .spinner {
   border: 4px solid rgba(121, 85, 72, 0.2);
-  /* Light brown */
   border-top: 4px solid #8d6e63;
-  /* Brown */
   border-radius: 50%;
   width: 30px;
   height: 30px;
   animation: spin 1.2s linear infinite;
-  /* Slightly slower rotation */
 }
 
 @keyframes spin {
@@ -288,22 +308,23 @@ const scrollToSection = (id) => {
 }
 
 /* Main Content and Section Containers */
+/* Removed .content-with-sidebar as it's no longer needed for flex layout with fixed sidebar */
 .main-content {
   padding: 0 60px;
-  /* Increased horizontal padding */
+}
+
+.content-wrapper {
+  /* This div now wraps all your main sections */
+  padding-bottom: 50px; /* Add some space at the bottom */
 }
 
 .section-container {
   margin-bottom: 80px;
   background-color: #fffaf0;
-  /* Softer background, like fine paper */
   border-radius: 10px;
-  /* Gentle rounding */
   padding: 40px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-  /* Lighter shadow */
   border: 1px solid #e0e0e0;
-  /* Subtle border */
 }
 
 .section-header {
@@ -312,37 +333,30 @@ const scrollToSection = (id) => {
   align-items: center;
   margin-bottom: 40px;
   border-bottom: 1px dashed #c0b2a3;
-  /* Dashed separator for elegance */
   padding-bottom: 20px;
 }
 
 .section-title {
   font-size: 2.8em;
-  /* Larger title */
   color: #4e342e;
-  /* Deep coffee brown */
   font-weight: 600;
   position: relative;
   padding-left: 20px;
-  /* For the small ornament */
   letter-spacing: 0.5px;
 }
 
 .section-title::before {
   content: '§';
-  /* Section symbol, adds a classical touch */
   position: absolute;
   left: 0;
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.8em;
   color: #a1887f;
-  /* Muted decorative color */
 }
 
 .more-link {
   color: #8d6e63;
-  /* Soft brown */
   text-decoration: none;
   font-size: 1.2em;
   font-weight: 500;
@@ -358,39 +372,31 @@ const scrollToSection = (id) => {
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  /* Slightly larger cards */
   gap: 30px;
-  /* Card spacing */
   justify-content: center;
 }
 
 .book-card {
   background-color: #ffffff;
   border-radius: 8px;
-  /* Slightly smaller border-radius */
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  /* Softer shadow */
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   min-height: 420px;
-  /* Uniform card height */
   text-align: center;
   border: 1px solid #efebe9;
-  /* Subtle border */
 }
 
 .book-card:hover {
   transform: translateY(-8px);
-  /* More pronounced lift effect */
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
 }
 
 .book-cover {
   width: 100%;
   height: 200px;
-  /* Fixed cover height */
   object-fit: cover;
   display: block;
   border-bottom: 1px solid #f5f5f5;
@@ -424,12 +430,10 @@ const scrollToSection = (id) => {
   color: #795548;
   margin-bottom: 8px;
   font-style: italic;
-  /* Author and genre with slight italic */
 }
 
 .details-button {
   background-color: #a1887f;
-  /* Muted brownish-grey */
   color: white;
   border: none;
   border-radius: 5px;
@@ -458,11 +462,8 @@ const scrollToSection = (id) => {
 .section-two-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  /* Two equal columns */
   gap: 40px;
-  /* Space between columns */
   align-items: start;
-  /* Align content to the top */
 }
 
 /* Compact Headers for sub-sections */
@@ -503,7 +504,6 @@ const scrollToSection = (id) => {
   font-size: 1.05em;
   font-weight: 500;
   white-space: nowrap;
-  /* Prevent wrapping */
   transition: color 0.3s ease, text-decoration 0.3s ease;
 }
 
@@ -529,7 +529,6 @@ const scrollToSection = (id) => {
 }
 
 .ranking-card-compact {
-  /* Removed individual card background/shadow as it's within the wrapper */
   padding: 0;
   transition: transform 0.2s ease;
 }
@@ -632,7 +631,6 @@ const scrollToSection = (id) => {
 
 .activity-image-small {
   width: 90px;
-  /* Smaller image */
   height: 60px;
   object-fit: cover;
   border-radius: 4px;
@@ -678,12 +676,10 @@ const scrollToSection = (id) => {
   transform: translateY(-2px);
 }
 
-
 /* Responsive Design */
 @media (max-width: 992px) {
   .section-two-columns {
     grid-template-columns: 1fr;
-    /* Stack on medium screens */
     gap: 60px;
   }
 }
@@ -790,7 +786,6 @@ const scrollToSection = (id) => {
 
   .book-grid {
     grid-template-columns: 1fr;
-    /* Single column layout */
   }
 
   .book-card {
@@ -823,8 +818,166 @@ const scrollToSection = (id) => {
   .ranking-book-link,
   .rank-author-small {
     white-space: normal;
-    /* Allow wrapping for long titles/authors */
     text-overflow: unset;
+  }
+}
+
+/* --- Collapsible Sidebar Specific Styles --- */
+
+/* Sidebar itself */
+.daily-book-sidebar {
+  position: fixed; /* Fixed to the viewport */
+  top: 0;
+  right: 0; /* Starts off-screen to the right */
+  width: 300px; /* Fixed width of the sidebar */
+  height: 100%; /* Full height of the viewport */
+  background-color: #fffaf0; /* Match your parchment theme */
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1); /* Shadow indicating it slides in */
+  transform: translateX(100%); /* Start completely off-screen */
+  transition: transform 0.4s ease-in-out; /* Smooth slide animation */
+  z-index: 1000; /* Ensure it's above other content */
+  padding: 20px;
+  overflow-y: auto; /* Allow scrolling if content is too long */
+}
+
+.daily-book-sidebar.is-open {
+  transform: translateX(0); /* Slide into view */
+}
+
+/* Toggle button for the sidebar */
+.sidebar-toggle-button {
+  position: fixed;
+  right: 20px; /* Adjust as needed */
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg); /* Rotate to be vertical */
+  z-index: 1001; /* Above sidebar overlay */
+  background-color: #8d6e63; /* Match your theme buttons */
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  white-space: nowrap; /* Prevent text wrapping */
+  transform-origin: center; /* Ensure rotation is centered */
+}
+
+.sidebar-toggle-button:hover {
+  background-color: #5d4037;
+}
+
+.sidebar-toggle-button.is-open {
+  transform: translateY(-50%) rotate(0deg); /* Rotate back when open, reposition */
+  right: 320px; /* Adjust to sit left of the open sidebar (sidebar width + right padding) */
+  background-color: #5d4037; /* Change color when open */
+}
+
+/* Overlay that appears when sidebar is open */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  z-index: 999; /* Below sidebar, above content */
+  opacity: 0; /* Start invisible */
+  visibility: hidden; /* Hide from screen readers when not visible */
+  transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s; /* Fade and hide after transition */
+}
+
+.sidebar-overlay.is-visible {
+  opacity: 1; /* Fade in */
+  visibility: visible; /* Make visible */
+  transition-delay: 0s; /* No delay when appearing */
+}
+
+/* Adjust main content when sidebar is open (optional, but good UX) */
+.home-view.sidebar-open .main-content {
+  /* You might want to push the main content slightly, or dim it */
+  filter: blur(2px); /* Example: blur the background */
+  pointer-events: none; /* Disable interaction with main content */
+}
+
+/* Style for the daily book card inside the sidebar */
+.daily-book-card {
+  text-align: center;
+  padding: 20px; /* Add some padding inside the card */
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-title {
+  font-size: 1.8em; /* Slightly larger for prominence */
+  color: #4e342e;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px dashed #c0b2a3;
+  padding-bottom: 10px;
+}
+
+.book-of-the-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.daily-book-cover {
+  max-width: 180px; /* A bit larger cover */
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.daily-book-title {
+  font-size: 1.5em; /* More prominent title */
+  color: #4e342e;
+  margin-top: 1rem;
+  font-weight: 600;
+}
+
+.daily-book-author,
+.daily-book-genre {
+  font-size: 1em;
+  color: #795548;
+  font-style: italic;
+}
+
+.no-daily-book {
+  color: #777;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* Ensure body doesn't scroll when sidebar is open */
+body.no-scroll {
+  overflow: hidden;
+}
+
+/* Responsive adjustments for the sidebar toggle button */
+@media (max-width: 768px) {
+  .sidebar-toggle-button {
+    top: 20px; /* Move to top right corner on small screens */
+    right: 20px;
+    transform: rotate(0deg); /* Don't rotate on small screens */
+    padding: 8px 12px;
+    font-size: 0.9em;
+    border-radius: 4px;
+  }
+
+  .sidebar-toggle-button.is-open {
+    right: 20px; /* Stay in place when open */
+    transform: rotate(0deg); /* Remain unrotated */
+  }
+
+  .daily-book-sidebar {
+    width: 80%; /* Wider sidebar on small screens */
+    max-width: 350px; /* Cap max width */
+    padding: 15px;
   }
 }
 </style>

@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # --- Auth Service ---
+  auth_db:
+    image: mysql:8.0
+    container_name: auth_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: your_auth_root_password # 为每个数据库设置不同的密码
+      MYSQL_DATABASE: auth_db # 独立的 Auth 数据库
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_password
+    command:
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3307:3306" # Auth DB 映射到宿主机的 3307 端口，避免与 Book DB 冲突
+    volumes:
+      - auth_mysql_data:/var/lib/mysql
+    healthcheck: # 为数据库添加健康检查，确保服务完全可用才启动依赖它的服务
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  auth_service:
+    build: ./auth_service # 指向 auth_service 目录的 Dockerfile
+    ports:
+      - "5000:5000" # Auth Service 暴露在 5000 端口
+    environment:
+      DB_HOST: auth_db # 连接到 auth_db 服务
+      DB_USER: auth_user
+      DB_PASSWORD: auth_password
+      DB_NAME: auth_db
+    depends_on:
+      auth_db:
+        condition: service_healthy # 确保 auth_db 健康后再启动 auth_service
+
+  # --- Book Management Service ---
+  book_db:
+    image: mysql:8.0
+    container_name: book_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: your_book_root_password # 独立密码
+      MYSQL_DATABASE: book_manage_db # 独立的 Book Management 数据库
+      MYSQL_USER: book_user
+      MYSQL_password: book_password
+    command:
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3308:3306" # Book DB 映射到宿主机的 3308 端口
+    volumes:
+      - book_mysql_data:/var/lib/mysql
+    healthcheck: # 同样为数据库添加健康检查
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  book_manage:
+    build: ./book_manage # 指向 book_manage 目录的 Dockerfile
+    ports:
+      - "5001:5001" # Book Management Service 暴露在 5001 端口
+    environment:
+      DB_HOST: book_db # 连接到 book_db 服务
+      DB_USER: book_user
+      DB_PASSWORD: book_password
+      DB_NAME: book_manage_db
+    depends_on:
+      book_db:
+        condition: service_healthy # 确保 book_db 健康后再启动 book_manage
+
+  # --- r_s Service (如果你有的话，可以类似添加) ---
+  # r_s:
+  #   build: ./r_s
+  #   ports:
+  #     - "5002:5002"
+  #   # ... 可能有自己的数据库，或者依赖其他服务
+
+  # --- user_profile_service (如果你有的话，可以类似添加) ---
+  # user_profile_service:
+  #   build: ./user_profile_service
+  #   ports:
+  #     - "5003:5003"
+  #   # ...
+
+volumes:
+  auth_mysql_data: # 为 Auth DB 创建持久化数据卷
+  book_mysql_data: # 为 Book Management DB 创建持久化数据卷

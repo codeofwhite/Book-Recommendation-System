@@ -254,7 +254,8 @@ export default {
       this.loading = true;
       try {
         const bookId = this.$route.params.bookId;
-        const response = await axios.get(`http://localhost:5000/api/books/${bookId}`);
+        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+        const response = await axios.get(`/service-b/api/books/${bookId}`);
         this.book = response.data;
       } catch (error) {
         console.error('Error fetching book details:', error);
@@ -269,13 +270,15 @@ export default {
       const userId = 'current_user_id'; // This should be dynamically obtained from your authentication system
 
       try {
-        const likeResponse = await axios.get(`http://localhost:5000/api/books/${this.book.id}/like_status`, {
+        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+        const likeResponse = await axios.get(`/service-b/api/books/${this.book.id}/like_status`, {
           params: { userId }
         });
         this.isLiked = likeResponse.data.isLiked;
         this.likeCount = likeResponse.data.likeCount;
 
-        const collectResponse = await axios.get(`http://localhost:5000/api/books/${this.book.id}/collect_status`, {
+        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+        const collectResponse = await axios.get(`/service-b/api/books/${this.book.id}/collect_status`, {
           params: { userId }
         });
         this.isCollected = collectResponse.data.isCollected;
@@ -291,7 +294,8 @@ export default {
       if (!this.book || !this.book.id) return;
 
       const userId = 'current_user_id';
-      const endpoint = `http://localhost:5000/api/books/${this.book.id}/like`;
+      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+      const endpoint = `/service-b/api/books/${this.book.id}/like`;
 
       try {
         const response = await axios.post(endpoint, { userId });
@@ -307,7 +311,8 @@ export default {
       if (!this.book || !this.book.id) return;
 
       const userId = 'current_user_id';
-      const endpoint = `http://localhost:5000/api/books/${this.book.id}/collect`;
+      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+      const endpoint = `/service-b/api/books/${this.book.id}/collect`;
 
       try {
         const response = await axios.post(endpoint, { userId });
@@ -323,7 +328,8 @@ export default {
       const userId = 'current_user_id';
 
       try {
-        const response = await axios.get(`http://localhost:5000/api/books/${this.book.id}/reviews`, {
+        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+        const response = await axios.get(`/service-b/api/books/${this.book.id}/reviews`, {
           params: { userId }
         });
         this.bookReviews = response.data.map(review => ({
@@ -347,7 +353,8 @@ export default {
       const reviewerName = 'Current User';
 
       try {
-        const response = await axios.post(`http://localhost:5000/api/books/${this.book.id}/reviews`, {
+        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+        const response = await axios.post(`/service-b/api/books/${this.book.id}/reviews`, {
           userId: userId,
           reviewerName: reviewerName,
           content: this.newReviewContent,
@@ -364,7 +371,8 @@ export default {
     },
     async toggleReviewLike(review) {
       const userId = 'current_user_id';
-      const endpoint = `http://localhost:5000/api/reviews/${review.id}/like`;
+      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+      const endpoint = `/service-b/api/reviews/${review.id}/like`;
 
       try {
         const response = await axios.post(endpoint, { userId });
@@ -377,7 +385,8 @@ export default {
     },
     async toggleReviewCollect(review) {
       const userId = 'current_user_id';
-      const endpoint = `http://localhost:5000/api/reviews/${review.id}/collect`;
+      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
+      const endpoint = `/service-b/api/reviews/${review.id}/collect`;
 
       try {
         const response = await axios.post(endpoint, { userId });
@@ -398,8 +407,9 @@ export default {
       this.searched = true;
       this.doubanSearchResults = [];
       try {
+        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
         const response = await axios.get(
-          `http://localhost:5000/api/search_douban?keyword=${encodeURIComponent(keyword)}`
+          `/service-b/api/search_douban?keyword=${encodeURIComponent(keyword)}`
         );
         this.doubanSearchResults = response.data;
       } catch (error) {

@@ -12,7 +12,7 @@ CORS(app)
 
 def load_books():
     books = []
-    with open('backend/book_manage/data/books.csv', 'r', encoding='utf-8') as f:
+    with open('books.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             # Convert string representations of lists to actual lists
@@ -131,4 +131,4 @@ def search_local_books():
     return jsonify(filtered_books)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=5001, debug=True)

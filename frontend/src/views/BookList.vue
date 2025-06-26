@@ -91,7 +91,7 @@
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                  }}</span>
+                }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>
@@ -103,7 +103,8 @@
             &laquo; Prior Folio
           </button>
           <span v-for="page in paginationPages" :key="page" class="page-number"
-            :class="{ 'is-current': page === currentPage, 'is-ellipsis': page === '...' }" @click="page !== '...' && goToPage(page)">
+            :class="{ 'is-current': page === currentPage, 'is-ellipsis': page === '...' }"
+            @click="page !== '...' && goToPage(page)">
             {{ page }}
           </span>
           <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="pagination-button">
@@ -301,7 +302,7 @@ export default {
       this.loading = true;
       try {
         // Always fetch all books from the API
-        const response = await axios.get('http://localhost:5000/api/books');
+        const response = await axios.get('/service-b/api/books');
         this.allBooks = response.data;
         this.extractFilterOptions();
         this.applyFilters(); // Apply filters initially
@@ -314,7 +315,7 @@ export default {
     },
     async fetchRecommendations() {
       try {
-        const response = await axios.get('http://localhost:5000/api/recommendations');
+        const response = await axios.get('/service-b/api/recommendations');
         this.recommendations = response.data;
       } catch (error) {
         console.error('Error fetching recommendations:', error);
@@ -1128,8 +1129,10 @@ export default {
     padding: 1rem;
   }
 
-  .pagination-button, .page-number {
-    flex-basis: 45%; /* Allow buttons to wrap */
+  .pagination-button,
+  .page-number {
+    flex-basis: 45%;
+    /* Allow buttons to wrap */
     margin: 0.25rem;
   }
 }
@@ -1221,10 +1224,12 @@ export default {
     font-size: 1.5rem;
   }
 
-  .pagination-button, .page-number {
+  .pagination-button,
+  .page-number {
     padding: 0.6rem 0.8rem;
     font-size: 0.85rem;
-    flex-basis: auto; /* Allow items to size content */
+    flex-basis: auto;
+    /* Allow items to size content */
   }
 }
 </style>

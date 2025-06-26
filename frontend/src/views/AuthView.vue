@@ -133,7 +133,7 @@ const handleSubmit = async () => {
   isError.value = false;
   loading.value = true;
 
-  const endpoint = isRegister.value ? '/api/auth/register' : '/api/auth/login';
+  const endpoint = isRegister.value ? '/service-a/api/auth/register' : '/service-a/api/auth/login';
   const payload = isRegister.value
     ? { username: username.value, email: email.value, password: password.value }
     : { username: username.value, password: password.value };
