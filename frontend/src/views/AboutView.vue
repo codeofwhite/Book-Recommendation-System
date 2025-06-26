@@ -1,3 +1,4 @@
+<!-- 关于页面 -->
 <template>
     <div class="establishment-container">
         <h1 class="main-heading">Concerning The Scriptorium: Our Endeavour</h1>

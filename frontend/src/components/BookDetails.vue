@@ -1,3 +1,4 @@
+<!-- 书籍细节信息页面 -->
 <template>
   <div class="ancient-scroll-page" v-if="book">
     <div class="main-parchment-folio">

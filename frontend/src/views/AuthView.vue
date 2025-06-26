@@ -1,3 +1,4 @@
+<!-- 登录页面 -->
 <template>
   <div class="auth-container">
     <h1>{{ isRegister ? '注册新用户' : '用户登录' }}</h1>

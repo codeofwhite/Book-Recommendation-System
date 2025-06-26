@@ -1,3 +1,4 @@
+<!-- 书籍展示页面 -->
 <template>
   <div class="ancient-tome-container">
     <div class="top-folio-controls">
