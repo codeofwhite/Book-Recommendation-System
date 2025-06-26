@@ -1,0 +1,34 @@
+// Network Topology and Deployment Strategy
+digraph {
+	rankdir=LR splines=ortho
+	subgraph cluster_private {
+		fillcolor=lightyellow label="On-Premise Data Center / Private Cloud" labelloc=b style=filled
+		mysql_cluster [label="MySQL Cluster
+(Master-Slave Replication + Read/Write Splitting)" fillcolor=lightblue shape=box style=filled]
+		auth_service [label="User Auth & Access Management Service" fillcolor=lightblue shape=box style=filled]
+		vpn_gateway [label="VPN / Dedicated Line Gateway" fillcolor=lightcoral shape=hexagon style=filled]
+	}
+	subgraph cluster_public {
+		fillcolor=lightcyan label="Public Cloud Platform" labelloc=b style=filled
+		cdn [label="CDN Acceleration" fillcolor=lightgreen shape=cds style=filled]
+		frontend_app [label="Frontend Application (Vue.js)" fillcolor=lightpink shape=box style=filled]
+		k8s_cluster [label="Kubernetes Cluster
+(Backend Microservices, Recommendation Service)" fillcolor=lightblue shape=box style=filled]
+		object_storage [label="Object Storage
+(Static Resources)" fillcolor=lightgrey shape=cylinder style=filled]
+		elastic_search [label="Elasticsearch Cluster" fillcolor=lightblue shape=box style=filled]
+		hbase_cluster [label="HBase Cluster" fillcolor=lightblue shape=box style=filled]
+		flink_spark [label="PyFlink / PySpark
+(Data Processing/Model Training)" fillcolor=lightblue shape=box style=filled]
+	}
+	vpn_gateway -> k8s_cluster [label="Secure Communication"]
+	vpn_gateway -> mysql_cluster [label="Secure Communication"]
+	frontend_app -> cdn [label="Requests Static Resources" dir=back]
+	frontend_app -> k8s_cluster [label="API Requests"]
+	k8s_cluster -> elastic_search [label="Data Retrieval"]
+	k8s_cluster -> hbase_cluster [label="Real-time Features/Logs"]
+	k8s_cluster -> mysql_cluster [label="Non-sensitive Data Access"]
+	flink_spark -> hbase_cluster [label="Read/Write Big Data"]
+	flink_spark -> mysql_cluster [label="Read/Write Raw Data"]
+	object_storage -> frontend_app [label="Serves Static Resources" dir=back]
+}

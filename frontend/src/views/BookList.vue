@@ -64,10 +64,10 @@
     <div class="parchment-scroll-wrapper">
       <main class="catalogue-of-works">
         <p v-if="loading" class="scribe-message">The Scribe is diligently turning pages...</p>
-        <p v-else-if="!filteredBooks || filteredBooks.length === 0" class="scribe-message">Alas, no such tome matches
+        <p v-else-if="!paginatedBooks || paginatedBooks.length === 0" class="scribe-message">Alas, no such tome matches
           these refined criteria.</p>
         <transition-group name="book-fade" tag="div" class="tome-collection" v-else>
-          <div v-for="book in filteredBooks" :key="book.bookId" class="tome-folio">
+          <div v-for="book in paginatedBooks" :key="book.bookId" class="tome-folio">
             <div class="illumination-plate">
               <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
             </div>
@@ -90,12 +90,26 @@
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                }}</span>
+                  }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>
           </div>
         </transition-group>
+
+        <div v-if="totalPages > 1" class="pagination-controls">
+          <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-button">
+            &laquo; Prior Folio
+          </button>
+          <span v-for="page in paginationPages" :key="page" class="page-number"
+            :class="{ 'is-current': page === currentPage, 'is-ellipsis': page === '...' }" @click="page !== '...' && goToPage(page)">
+            {{ page }}
+          </span>
+          <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="pagination-button">
+            Next Folio &raquo;
+          </button>
+        </div>
+
       </main>
 
       <aside class="oracle-sidebar">
@@ -140,7 +154,7 @@ export default {
     return {
       inputSearchKeyword: '',
       initialSearchKeyword: '',
-      allBooks: [],
+      allBooks: [], // This will hold ALL fetched books
       recommendations: [],
       loading: true,
 
@@ -157,6 +171,11 @@ export default {
       maxPrice: null,
       selectedYear: '',
       priceDebounceTimer: null, // For debouncing price inputs
+
+      // Pagination states
+      currentPage: 1,
+      itemsPerPage: 5, // Number of books per page
+      pageRange: 2, // Number of pages to show around the current page
     };
   },
   computed: {
@@ -166,15 +185,17 @@ export default {
       );
       return this.showAllGenres ? filtered : filtered.slice(0, this.maxDisplayedGenres);
     },
+    // This computed property now returns ALL filtered books, BEFORE pagination
     filteredBooks() {
       let filtered = [...this.allBooks];
 
       // Apply keyword search
-      if (this.inputSearchKeyword) { // Use inputSearchKeyword for dynamic filtering
+      if (this.inputSearchKeyword) {
         const lowerCaseKeyword = this.inputSearchKeyword.toLowerCase();
         filtered = filtered.filter(book =>
           book.title.toLowerCase().includes(lowerCaseKeyword) ||
-          book.author.toLowerCase().includes(lowerCaseKeyword)
+          book.author.toLowerCase().includes(lowerCaseKeyword) ||
+          (book.description && book.description.toLowerCase().includes(lowerCaseKeyword))
         );
       }
 
@@ -208,27 +229,71 @@ export default {
       }
 
       return filtered;
+    },
+    totalPages() {
+      return Math.ceil(this.filteredBooks.length / this.itemsPerPage);
+    },
+    paginatedBooks() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.filteredBooks.slice(start, end);
+    },
+    paginationPages() {
+      const pages = [];
+      const total = this.totalPages;
+      const current = this.currentPage;
+      const range = this.pageRange;
+
+      if (total <= 1) return [];
+
+      // Always include first page
+      pages.push(1);
+
+      // Add pages around current page
+      for (let i = current - range; i <= current + range; i++) {
+        if (i > 1 && i < total) {
+          pages.push(i);
+        }
+      }
+
+      // Always include last page
+      if (total > 1) {
+        pages.push(total);
+      }
+
+      // Remove duplicates and sort
+      const uniquePages = [...new Set(pages)].sort((a, b) => a - b);
+
+      const finalPages = [];
+      let lastPage = 0;
+      for (let i = 0; i < uniquePages.length; i++) {
+        const page = uniquePages[i];
+        if (page - lastPage > 1) {
+          finalPages.push('...');
+        }
+        finalPages.push(page);
+        lastPage = page;
+      }
+      return finalPages;
     }
   },
   created() {
     this.initialSearchKeyword = this.searchKeyword;
-    this.inputSearchKeyword = this.initialSearchKeyword; // Initialize input with prop
+    this.inputSearchKeyword = this.initialSearchKeyword;
     this.fetchRecommendations();
     this.fetchBooks(); // Fetch all books initially
   },
   watch: {
-    // Watch genreSearchTerm to update filteredAvailableGenres without affecting book list
-    genreSearchTerm() {
-      // No direct action needed here, computed property handles filtering
+    // Watch filteredBooks to reset currentPage when filters change
+    filteredBooks() {
+      this.currentPage = 1; // Reset to first page whenever filters change
     },
-    // Watch inputSearchKeyword for immediate filtering feedback without hitting Enter
     inputSearchKeyword() {
       this.applyFilters();
-    }
+    },
   },
   methods: {
     handleSearch() {
-      // With inputSearchKeyword directly linked to filtering, this just ensures a refresh
       this.applyFilters();
     },
     async fetchBooks() {
@@ -280,8 +345,8 @@ export default {
       this.applyFilters();
     },
     applyFilters() {
-      // No direct assignment needed here, computed property `filteredBooks` reactively updates.
-      // This method primarily serves to trigger re-evaluation if other dependencies change.
+      // Re-evaluates computed properties `filteredBooks` and `paginatedBooks`
+      // `currentPage` is reset by the `filteredBooks` watcher
     },
     applyFiltersDebounced() {
       clearTimeout(this.priceDebounceTimer);
@@ -304,6 +369,16 @@ export default {
       if (!desc) return '';
       return desc.length > 200 ? desc.substring(0, 200) + '...' : desc;
     },
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+        // Optionally scroll to top of book list when page changes
+        const catalogue = this.$el.querySelector('.catalogue-of-works');
+        if (catalogue) {
+          catalogue.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
   },
 };
 </script>
@@ -793,6 +868,82 @@ export default {
   color: #8c7f73;
 }
 
+/* --- Pagination Controls --- */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 3rem;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: #f0ebe0;
+  border-radius: 12px;
+  border: 1px solid #d4c7b2;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-button {
+  padding: 0.8rem 1.2rem;
+  background: #b3a08d;
+  color: #fdfaf3;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #8c7f73;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pagination-button:disabled {
+  background: #d4c7b2;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.page-number {
+  padding: 0.8rem 1rem;
+  min-width: 40px;
+  text-align: center;
+  background: #ffffff;
+  color: #5a4b41;
+  border: 1px solid #d4c7b2;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Merriweather', serif;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.page-number:hover:not(.is-current):not(.is-ellipsis) {
+  background-color: #e8e0d4;
+  border-color: #b3a08d;
+}
+
+.page-number.is-current {
+  background: #6d5448;
+  color: #fdfaf3;
+  border-color: #5a4b41;
+  font-weight: 700;
+  cursor: default;
+}
+
+.page-number.is-ellipsis {
+  background: transparent;
+  border: none;
+  cursor: default;
+  color: #8c7f73;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+
 /* The Oracle's Prognostications (Right Sidebar) */
 .oracle-sidebar {
   flex: 0 0 280px;
@@ -969,6 +1120,17 @@ export default {
     width: 100%;
     justify-content: space-between;
   }
+
+  /* Pagination on smaller screens */
+  .pagination-controls {
+    flex-wrap: wrap;
+    padding: 1rem;
+  }
+
+  .pagination-button, .page-number {
+    flex-basis: 45%; /* Allow buttons to wrap */
+    margin: 0.25rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1056,6 +1218,12 @@ export default {
 
   .oracle-title {
     font-size: 1.5rem;
+  }
+
+  .pagination-button, .page-number {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+    flex-basis: auto; /* Allow items to size content */
   }
 }
 </style>
