@@ -18,6 +18,14 @@
             <span class="whispers-of-appraisal">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
           </div>
 
+          <div class="tome-interactive-actions">
+            <button @click="toggleLike" :class="{ 'action-button': true, 'liked': isLiked }">
+              <span class="icon">{{ isLiked ? '❤️' : '🤍' }}</span> {{ isLiked ? 'Liked' : 'Like' }} ({{ likeCount }})
+            </button>
+            <button @click="toggleCollect" :class="{ 'action-button': true, 'collected': isCollected }">
+              <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
+            </button>
+          </div>
           <div class="tome-provenance-details-grid">
             <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
             <div class="detail-item"><strong>Published:</strong> {{ book.publishDate }}</div>
@@ -41,7 +49,12 @@
 
       <div class="tome-narrative-summary">
         <h3 class="section-heading">The Chronicle's Essence</h3>
-        <p class="summary-parchment">{{ book.description }}</p>
+        <p class="summary-parchment">
+          {{ displayDescription }}
+          <span v-if="shouldShowDescriptionToggle" @click="toggleDescription" class="toggle-text-button">
+            {{ showFullDescription ? 'Show Less' : 'Show More' }}
+          </span>
+        </p>
       </div>
 
       <div class="tome-additional-annotations">
@@ -63,7 +76,10 @@
         <div v-if="book.awards && book.awards.length > 0">
           <h3 class="section-heading">Laurels & Distinctions Awarded</h3>
           <ul class="laurels-list">
-            <li v-for="(award, index) in book.awards" :key="index">{{ award }}</li>
+            <li v-for="(award, index) in displayAwards" :key="index">{{ award }}</li>
+            <li v-if="shouldShowAwardsToggle" @click="toggleAwards" class="toggle-list-item">
+              <a href="#" class="toggle-text-button">{{ showAllAwards ? 'Show Less' : 'Show More' }}</a>
+            </li>
           </ul>
         </div>
 
@@ -84,6 +100,46 @@
                 </div>
                 <span>({{ count }})</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tome-reviews-section">
+        <h3 class="section-heading">Reader's Reflections</h3>
+
+        <div class="review-submission-form">
+          <h4>Pen Your Own Reflection</h4>
+          <textarea v-model="newReviewContent" placeholder="Share your thoughts on this tome..." rows="5"
+            class="review-textarea"></textarea>
+          <div class="review-rating-input">
+            <label for="review-rating">Your Appraisal:</label>
+            <select v-model.number="newReviewRating" id="review-rating" class="review-rating-select">
+              <option value="0" disabled>Select a rating</option>
+              <option v-for="n in 5" :key="n" :value="n">{{ n }} Star{{ n > 1 ? 's' : '' }}</option>
+            </select>
+          </div>
+          <button @click="submitReview" class="submit-review-button">Inscribe Your Review</button>
+        </div>
+
+        <div class="existing-reviews-list">
+          <p v-if="bookReviews.length === 0" class="no-reviews-message">No reflections penned yet. Be the first!</p>
+          <div v-for="review in bookReviews" :key="review.id" class="review-entry">
+            <div class="review-header">
+              <span class="reviewer-name">{{ review.reviewerName }}</span>
+              <span class="review-date">{{ new Date(review.datePosted).toLocaleDateString() }}</span>
+              <span class="review-stars">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
+            </div>
+            <p class="review-content">{{ review.content }}</p>
+            <div class="review-actions">
+              <button @click="toggleReviewLike(review)"
+                :class="{ 'review-action-button': true, 'liked': review.isLikedByCurrentUser }">
+                <span class="icon">{{ review.isLikedByCurrentUser ? '❤️' : '🤍' }}</span> Like ({{ review.likeCount }})
+              </button>
+              <button @click="toggleReviewCollect(review)"
+                :class="{ 'review-action-button': true, 'collected': review.isCollectedByCurrentUser }">
+                <span class="icon">{{ review.isCollectedByCurrentUser ? '✅' : '➕' }}</span> Collect
+              </button>
             </div>
           </div>
         </div>
@@ -145,13 +201,52 @@ export default {
       loading: true,
       doubanSearchResults: [],
       searched: false,
-      showDoubanResults: true
+      showDoubanResults: true,
+      isLiked: false,
+      likeCount: 0,
+      isCollected: false,
+      bookReviews: [],
+      newReviewContent: '',
+      newReviewRating: 0,
+      // New: Data properties for "Show More" functionality
+      showFullDescription: false, // Controls whether to show full or truncated description
+      descriptionLimit: 300,      // Character limit for the description before truncating
+      showAllAwards: false,       // Controls whether to show all or limited awards
+      awardsLimit: 3,             // Number of awards to show initially
     };
+  },
+  computed: {
+    // New: Computed property for truncated/full description
+    displayDescription() {
+      if (!this.book || !this.book.description) return '';
+      if (this.showFullDescription || this.book.description.length <= this.descriptionLimit) {
+        return this.book.description;
+      }
+      return this.book.description.substring(0, this.descriptionLimit) + '...';
+    },
+    // New: Computed property to determine if the description toggle should be shown
+    shouldShowDescriptionToggle() {
+      return this.book && this.book.description && this.book.description.length > this.descriptionLimit;
+    },
+    // New: Computed property for truncated/full awards list
+    displayAwards() {
+      if (!this.book || !this.book.awards) return [];
+      if (this.showAllAwards || this.book.awards.length <= this.awardsLimit) {
+        return this.book.awards;
+      }
+      return this.book.awards.slice(0, this.awardsLimit);
+    },
+    // New: Computed property to determine if the awards toggle should be shown
+    shouldShowAwardsToggle() {
+      return this.book && this.book.awards && this.book.awards.length > this.awardsLimit;
+    }
   },
   async created() {
     await this.fetchBookDetails();
     if (this.book && this.book.title) {
       await this.performDoubanSearch(this.book.title);
+      await this.fetchBookReviews();
+      await this.fetchUserEngagementStatus();
     }
   },
   methods: {
@@ -166,6 +261,130 @@ export default {
         this.book = null;
       } finally {
         this.loading = false;
+      }
+    },
+    async fetchUserEngagementStatus() {
+      if (!this.book || !this.book.id) return;
+
+      const userId = 'current_user_id'; // This should be dynamically obtained from your authentication system
+
+      try {
+        const likeResponse = await axios.get(`http://localhost:5000/api/books/${this.book.id}/like_status`, {
+          params: { userId }
+        });
+        this.isLiked = likeResponse.data.isLiked;
+        this.likeCount = likeResponse.data.likeCount;
+
+        const collectResponse = await axios.get(`http://localhost:5000/api/books/${this.book.id}/collect_status`, {
+          params: { userId }
+        });
+        this.isCollected = collectResponse.data.isCollected;
+
+      } catch (error) {
+        console.error('Error fetching user engagement status for book:', error);
+        this.isLiked = false;
+        this.isCollected = false;
+        this.likeCount = this.book.likeCount || 0;
+      }
+    },
+    async toggleLike() {
+      if (!this.book || !this.book.id) return;
+
+      const userId = 'current_user_id';
+      const endpoint = `http://localhost:5000/api/books/${this.book.id}/like`;
+
+      try {
+        const response = await axios.post(endpoint, { userId });
+        this.isLiked = response.data.isLiked;
+        this.likeCount = response.data.likeCount;
+        console.log(`Book ${this.isLiked ? 'liked' : 'unliked'}! Current likes: ${this.likeCount}`);
+      } catch (error) {
+        console.error('Error toggling book like status:', error);
+        alert('Failed to update book like status. Please try again.');
+      }
+    },
+    async toggleCollect() {
+      if (!this.book || !this.book.id) return;
+
+      const userId = 'current_user_id';
+      const endpoint = `http://localhost:5000/api/books/${this.book.id}/collect`;
+
+      try {
+        const response = await axios.post(endpoint, { userId });
+        this.isCollected = response.data.isCollected;
+        console.log(`Book ${this.isCollected ? 'collected' : 'uncollected'}!`);
+      } catch (error) {
+        console.error('Error toggling book collect status:', error);
+        alert('Failed to update book collection status. Please try again.');
+      }
+    },
+    async fetchBookReviews() {
+      if (!this.book || !this.book.id) return;
+      const userId = 'current_user_id';
+
+      try {
+        const response = await axios.get(`http://localhost:5000/api/books/${this.book.id}/reviews`, {
+          params: { userId }
+        });
+        this.bookReviews = response.data.map(review => ({
+          ...review,
+          isLikedByCurrentUser: review.likedBy.includes(userId),
+          isCollectedByCurrentUser: review.collectedBy.includes(userId)
+        }));
+      } catch (error) {
+        console.error('Error fetching book reviews:', error);
+        this.bookReviews = [];
+      }
+    },
+    async submitReview() {
+      if (!this.book || !this.book.id) return;
+      if (!this.newReviewContent.trim() || this.newReviewRating === 0) {
+        alert('Please enter your review and select a rating.');
+        return;
+      }
+
+      const userId = 'current_user_id';
+      const reviewerName = 'Current User';
+
+      try {
+        const response = await axios.post(`http://localhost:5000/api/books/${this.book.id}/reviews`, {
+          userId: userId,
+          reviewerName: reviewerName,
+          content: this.newReviewContent,
+          rating: this.newReviewRating,
+        });
+        console.log('Review submitted:', response.data);
+        this.newReviewContent = '';
+        this.newReviewRating = 0;
+        await this.fetchBookReviews();
+      } catch (error) {
+        console.error('Error submitting review:', error);
+        alert('Failed to submit review. Please try again.');
+      }
+    },
+    async toggleReviewLike(review) {
+      const userId = 'current_user_id';
+      const endpoint = `http://localhost:5000/api/reviews/${review.id}/like`;
+
+      try {
+        const response = await axios.post(endpoint, { userId });
+        review.isLikedByCurrentUser = response.data.isLiked;
+        review.likeCount = response.data.likeCount;
+      } catch (error) {
+        console.error('Error toggling review like status:', error);
+        alert('Failed to update review like status. Please try again.');
+      }
+    },
+    async toggleReviewCollect(review) {
+      const userId = 'current_user_id';
+      const endpoint = `http://localhost:5000/api/reviews/${review.id}/collect`;
+
+      try {
+        const response = await axios.post(endpoint, { userId });
+        review.isCollectedByCurrentUser = response.data.isCollected;
+      } catch (error) {
+        console.error('Error toggling review collect status:', error);
+        alert('Failed to update review collection status. Please try again.');
       }
     },
     goBack() {
@@ -189,6 +408,13 @@ export default {
     },
     toggleDoubanResults() {
       this.showDoubanResults = !this.showDoubanResults;
+    },
+    // New methods for "Show More" functionality
+    toggleDescription() {
+      this.showFullDescription = !this.showFullDescription;
+    },
+    toggleAwards() {
+      this.showAllAwards = !this.showAllAwards;
     }
   }
 };
@@ -197,6 +423,54 @@ export default {
 <style scoped>
 /* A Font of Ages: Evoking the Scribe's Hand */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+/* Add some basic styling for the new buttons */
+.tome-interactive-actions {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.action-button {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.action-button:hover {
+  background-color: #e0e0e0;
+}
+
+.action-button.liked {
+  background-color: #ffebee;
+  /* Light red for liked */
+  border-color: #ef9a9a;
+  color: #d32f2f;
+  /* Darker red */
+}
+
+.action-button.collected {
+  background-color: #e8f5e9;
+  /* Light green for collected */
+  border-color: #a5d6a7;
+  color: #388e3c;
+  /* Darker green */
+}
+
+.action-button .icon {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
 
 /* The Ancient Scroll Layout */
 .ancient-scroll-page {
@@ -823,5 +1097,218 @@ export default {
     font-size: 0.8em;
     padding: 0.4rem 0.8rem;
   }
+}
+
+/* New styles for the Book Reviews Section */
+/* New styles for "Show More" buttons */
+.toggle-text-button {
+  color: #7a5f4c;
+  /* A darker earthy tone for the link */
+  cursor: pointer;
+  margin-left: 5px;
+  font-weight: bold;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.toggle-text-button:hover {
+  color: #5a3c2f;
+  /* Darker on hover */
+}
+
+.toggle-list-item {
+  list-style: none;
+  /* Remove bullet point for this specific list item */
+  text-align: right;
+  /* Align the "Show More" link to the right */
+  margin-top: 10px;
+}
+
+/* Existing styles for the Book Reviews Section */
+.tome-reviews-section {
+  background-color: #fdfaf2;
+  border: 1px solid #d4c29a;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tome-reviews-section .section-heading {
+  color: #5a3c2f;
+  font-family: 'Georgia', serif;
+  font-size: 1.8em;
+  margin-bottom: 20px;
+  text-align: center;
+  position: relative;
+}
+
+.tome-reviews-section .section-heading::after {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 2px;
+  background: #d4c29a;
+  margin: 10px auto 0;
+}
+
+.review-submission-form {
+  background-color: #fffbf5;
+  border: 1px dashed #d4c29a;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 25px;
+}
+
+.review-submission-form h4 {
+  color: #5a3c2f;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+}
+
+.review-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d4c29a;
+  border-radius: 4px;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  font-size: 1em;
+  color: #333;
+  resize: vertical;
+  margin-bottom: 10px;
+  background-color: #fefdfb;
+}
+
+.review-rating-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.review-rating-input label {
+  color: #5a3c2f;
+  font-weight: bold;
+}
+
+.review-rating-select {
+  padding: 8px;
+  border: 1px solid #d4c29a;
+  border-radius: 4px;
+  background-color: #fefdfb;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+}
+
+.submit-review-button {
+  background-color: #a08462;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  font-family: 'Georgia', serif;
+  transition: background-color 0.3s ease;
+}
+
+.submit-review-button:hover {
+  background-color: #8c735a;
+}
+
+.existing-reviews-list {
+  margin-top: 20px;
+}
+
+.no-reviews-message {
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  padding: 20px;
+  border: 1px dashed #e0d0b0;
+  border-radius: 5px;
+  background-color: #fffaf0;
+}
+
+.review-entry {
+  background-color: #fffef9;
+  border: 1px solid #e0d0b0;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.reviewer-name {
+  font-weight: bold;
+  color: #5a3c2f;
+  font-size: 1.1em;
+}
+
+.review-date {
+  font-size: 0.9em;
+  color: #777;
+  margin-left: auto;
+  padding-left: 10px;
+}
+
+.review-stars {
+  color: #f39c12;
+  font-size: 1.2em;
+  margin-left: 10px;
+}
+
+.review-content {
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.review-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border: 1px solid #d4c29a;
+  border-radius: 4px;
+  background-color: #fcf8f0;
+  color: #5a3c2f;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.review-action-button:hover {
+  background-color: #f0e6da;
+  border-color: #a08462;
+}
+
+.review-action-button .icon {
+  font-size: 1.1em;
+}
+
+.review-action-button.liked {
+  background-color: #ffebee;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.review-action-button.collected {
+  background-color: #e8f5e9;
+  border-color: #27ae60;
+  color: #27ae60;
 }
 </style>

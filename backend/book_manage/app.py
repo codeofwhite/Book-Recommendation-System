@@ -12,7 +12,7 @@ CORS(app)
 
 def load_books():
     books = []
-    with open('backend/book/data/books.csv', 'r', encoding='utf-8') as f:
+    with open('backend/book_manage/data/books.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             # Convert string representations of lists to actual lists
