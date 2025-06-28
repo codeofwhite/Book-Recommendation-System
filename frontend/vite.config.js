@@ -7,14 +7,14 @@ export default defineConfig({
     proxy: {
       // 代理到运行在 5000 端口的微服务
       "/service-a": {
-        target: "http://localhost:5000",
+        target: "http://132.232.210.47:5000",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/service-a/, ""), // 重写路径，移除 /service-a 前缀
       },
       // 代理到运行在 5001 端口的微服务
       "/service-b": {
-        target: "http://localhost:5001",
+        target: "http://132.232.210.47:5001",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/service-b/, ""), // 重写路径，移除 /service-b 前缀
