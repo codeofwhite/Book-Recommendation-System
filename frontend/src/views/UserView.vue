@@ -92,7 +92,7 @@ export default {
       }
       try {
         // 假设你的后端有一个获取用户信息的API
-        const response = await axios.get(`/api/users/${userId}`);
+        const response = await axios.get(`/service-a/api/users/${userId}`);
         this.user = response.data;
         this.editableNickname = this.user.nickname;
       } catch (error) {
@@ -105,7 +105,7 @@ export default {
       if (!userId) return;
       try {
         // 假设你的后端有一个获取用户收藏图书的API
-        const response = await axios.get(`/api/users/${userId}/favorite_books`);
+        const response = await axios.get(`/service-a/api/users/${userId}/favorite_books`);
         this.favoriteBooks = response.data;
       } catch (error) {
         console.error('Error fetching favorite books:', error);
@@ -116,7 +116,7 @@ export default {
       if (!userId) return;
       try {
         // 假设你的后端有一个获取用户收藏书评的API
-        const response = await axios.get(`/api/users/${userId}/favorite_reviews`);
+        const response = await axios.get(`/service-a/api/users/${userId}/favorite_reviews`);
         this.favoriteReviews = response.data;
       } catch (error) {
         console.error('Error fetching favorite reviews:', error);
@@ -134,7 +134,7 @@ export default {
         const userId = localStorage.getItem('user_id');
         if (!userId) return;
         // 假设你的后端有一个更新用户昵称的API
-        await axios.put(`/api/users/${userId}/nickname`, { nickname: this.editableNickname });
+        await axios.put(`/service-a/api/users/${userId}/nickname`, { nickname: this.editableNickname });
         this.user.nickname = this.editableNickname; // 更新本地数据
         alert('昵称更新成功！');
       } catch (error) {
@@ -156,7 +156,7 @@ export default {
         const formData = new FormData();
         formData.append('avatar', this.selectedAvatarFile);
         // 假设你的后端有一个上传头像的API
-        const response = await axios.post(`/api/users/${userId}/avatar`, formData, {
+        const response = await axios.post(`/service-a/api/users/${userId}/avatar`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
