@@ -28,12 +28,19 @@ spark.sparkContext.setLogLevel("WARN")
 mysql_record_schema = StructType([
     StructField("schema", StringType(), True),
     StructField("payload", StructType([
-        StructField("before", StringType(), True), # Old value (for updates/deletes)
+        StructField("before", StructType([ # before 和 after 的结构应该相同
+            StructField("id", IntegerType(), True),
+            StructField("username", StringType(), True),
+            StructField("email", StringType(), True),
+            StructField("password_hash", StringType(), True),
+            StructField("avatar_url", StringType(), True) # 新增字段
+        ]), True),
         StructField("after", StructType([
-            StructField("id", IntegerType(), True),          # <--- 匹配 MySQL 的 'id' 字段
-            StructField("username", StringType(), True),     # <--- 匹配 MySQL 的 'username' 字段
-            StructField("email", StringType(), True),        # <--- 匹配 MySQL 的 'email' 字段
-            StructField("password_hash", StringType(), True) # <--- 匹配 MySQL 的 'password_hash' 字段
+            StructField("id", IntegerType(), True),         # 匹配 MySQL 的 'id' 字段
+            StructField("username", StringType(), True),     # 匹配 MySQL 的 'username' 字段
+            StructField("email", StringType(), True),        # 匹配 MySQL 的 'email' 字段
+            StructField("password_hash", StringType(), True),# 匹配 MySQL 的 'password_hash' 字段
+            StructField("avatar_url", StringType(), True)    # 新增字段
         ]), True), # New value (for inserts/updates)
         StructField("source", StringType(), True),
         StructField("op", StringType(), True), # Operation type: 'c' (create), 'u' (update), 'd' (delete), 'r' (read - snapshot)
@@ -94,12 +101,14 @@ def process_user_data(df, epoch_id):
     users_df = df.select(from_json(col("value").cast("string"), mysql_record_schema).alias("data")) \
                  .filter("data.payload.op IN ('c', 'u', 'r')") \
                  .select(
-                     col("data.payload.after.id").cast(StringType()).alias("user_id"), # <--- 提取 'id' 并转换为字符串作为 'user_id'
-                     col("data.payload.after.username").alias("nickname"),             # <--- 提取 'username' 作为 'nickname'
+                     col("data.payload.after.id").alias("id"),                 # 直接映射为 'id'
+                     col("data.payload.after.username").alias("username"),     # 直接映射为 'username'
                      col("data.payload.after.email").alias("email"),
+                     col("data.payload.after.password_hash").alias("password_hash"), # 新增映射
+                     col("data.payload.after.avatar_url").alias("avatar_url"),     # 新增映射
                      lit(current_timestamp()).alias("last_sync_time") # 记录同步时间
                  ) \
-                 .filter(col("user_id").isNotNull()) # 添加过滤器，确保 user_id 不为空
+                 .filter(col("id").isNotNull()) # 添加过滤器，确保 id 不为空
 
     # 打印 DataFrame 内容以调试
     print(f"Batch {epoch_id} users_df schema:")

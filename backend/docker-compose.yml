@@ -21,6 +21,7 @@ services:
       - "3307:3306"
     volumes:
       - auth_mysql_data:/var/lib/mysql
+      - ./init_debezium_user.sql:/docker-entrypoint-initdb.d/init_debezium_user.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -41,18 +42,18 @@ services:
         condition: service_healthy
 
   # --- Book Management Service (MongoDB) ---
-  book_db_mongo: # 新的 MongoDB 服务名称
-    image: mongo:latest # 使用最新的 MongoDB 镜像
+  book_db_mongo:
+    build: ./mongo_custom_image # 指向你的自定义镜像 Dockerfile 路径
     container_name: book_mongo_db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: book_user # MongoDB 管理员用户名
-      MONGO_INITDB_ROOT_PASSWORD: book_password # MongoDB 管理员密码
-      MONGO_INITDB_DATABASE: book_manage_db # 初始数据库
+      MONGO_INITDB_ROOT_USERNAME: book_user
+      MONGO_INITDB_ROOT_PASSWORD: book_password
+      MONGO_INITDB_DATABASE: book_manage_db
     ports:
-      - "27017:27017" # MongoDB 默认端口
+      - "27017:27017"
     volumes:
-      - book_mongo_data:/data/db # MongoDB 数据持久化
-      - ./mongodb_keyfile.txt:/etc/mongo/mongodb_keyfile.txt:ro # 挂载 keyFile
+      - book_mongo_data:/data/db # 只保留数据持久化卷
+      # - ./mongodb_keyfile.txt:/etc/mongo/mongodb_keyfile.txt:ro # 这行必须删除！
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet", "-u", "book_user", "-p", "book_password", "--authenticationDatabase", "admin"]
       interval: 5s
@@ -63,8 +64,8 @@ services:
       - --replSet
       - dbrs
       - --keyFile
-      - /etc/mongo/mongodb_keyfile.txt # 指定 keyFile 路径
-      - --bind_ip_all # 允许从任何 IP 地址访问，在 Docker 环境中通常需要
+      - /etc/mongo/mongodb_keyfile.txt # Keyfile 现在在镜像内部
+      - --bind_ip_all
   
   # 初始化 MongoDB 副本集（Debezium 需要）
   mongo_setup:
@@ -221,6 +222,7 @@ services:
       - "3308:3306" # 映射到宿主机的 3308 端口
     volumes:
       - recommendation_mysql_data:/var/lib/mysql
+      - ./init_recommendation_db.sql:/docker-entrypoint-initdb.d/init_recommendation_db.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s

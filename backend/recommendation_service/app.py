@@ -1,5 +1,3 @@
-# recommendation_service/app.py
-
 import os
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -27,6 +25,7 @@ db = SQLAlchemy(app)
 
 # --- SQLAlchemy 模型定义 (映射 ETL 后加载到 recommendation_db 的表) ---
 # 注意：这些模型需要与你的 ETL 脚本将数据加载到的表结构一致
+
 class RecBook(db.Model):
     __tablename__ = 'rec_books' # 对应 ETL 加载的图书表
     book_id = db.Column(db.String(10), primary_key=True)
@@ -41,18 +40,20 @@ class RecBook(db.Model):
             'category': self.category
         }
 
-class RecUserProfile(db.Model): # 新增用户配置文件模型
+class RecUserProfile(db.Model): # 用户配置文件模型，已根据新字段结构更新
     __tablename__ = 'rec_user_profiles' # 对应 ETL 加载的用户表
-    user_id = db.Column(db.String(20), primary_key=True)
-    nickname = db.Column(db.String(100))
-    email = db.Column(db.String(100))
-    last_sync_time = db.Column(db.DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True) # 主键改为整型ID，与错误日志更匹配
+    username = db.Column(db.String(100), unique=True, nullable=False) # 昵称更名为用户名，设置为唯一且不可空
+    email = db.Column(db.String(100)) # 邮箱字段
+    avatar_url = db.Column(db.String(255), nullable=True) # 新增头像URL字段
+    last_sync_time = db.Column(db.DateTime, default=datetime.utcnow) # 数据同步时间
 
     def to_dict(self):
         return {
-            'user_id': self.user_id,
-            'nickname': self.nickname,
+            'id': self.id,
+            'username': self.username,
             'email': self.email,
+            'avatar_url': self.avatar_url,
             'last_sync_time': self.last_sync_time.isoformat() if self.last_sync_time else None
         }
 
@@ -135,7 +136,8 @@ def verify_users_etl():
     top_n = request.args.get('top_n', 10, type=int)
     
     try:
-        users = db.session.query(RecUserProfile).limit(top_n).all()
+        # 从 RecUserProfile 模型查询，现在主键是 'id'
+        users = db.session.query(RecUserProfile).limit(top_n).all() 
         if not users:
             return jsonify({"message": "No users found in 'rec_user_profiles' table. ETL might not be complete or data is empty.", "users": []}), 200
         
@@ -151,6 +153,8 @@ def get_user_offline_recommendations(user_id):
     """
     为指定用户提供离线推荐。
     在当前没有行为日志的情况下，作为占位符返回随机图书。
+    注意：此处的 user_id 路径参数仍是字符串。
+    如果你的推荐逻辑需要基于新的整型 'id' 来查询 RecUserProfile，你可能需要进行类型转换。
     """
     top_n = request.args.get('top_n', 10, type=int)
     recommendations = get_random_books_from_db(top_n=top_n)
@@ -165,11 +169,9 @@ if __name__ == '__main__':
     with app.app_context():
         try:
             # 检查并创建 rec_books 和 rec_user_profiles 表
-            if not db.engine.dialect.has_table(db.engine, 'rec_books'):
-                db.create_all() # 这会创建所有定义的模型对应的表
-                print("Tables 'rec_books' and 'rec_user_profiles' created in recommendation_db.")
-            else:
-                print("Tables already exist in recommendation_db.")
+            # db.create_all() 会根据所有定义的 db.Model 自动创建或更新表结构
+            db.create_all()
+            print("Tables checked/created for recommendation_db.")
         except Exception as e:
             print(f"Error checking/creating tables: {e}")
             print("Ensure recommendation_db is reachable and credentials are correct.")
