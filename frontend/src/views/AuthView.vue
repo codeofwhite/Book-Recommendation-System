@@ -83,14 +83,14 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'; // Import useRouter
 
-const router = useRouter();
+const router = useRouter(); // Initialize router
 
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const isRegister = ref(true); // true for register, false for login
+const isRegister = ref(false); // Default to login mode as requested by "这个就是登录界面"
 const message = ref('');
 const isError = ref(false);
 const loading = ref(false);
@@ -143,17 +143,40 @@ const handleSubmit = async () => {
     message.value = response.data.message;
     isError.value = false;
 
-    if (!isRegister.value && response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-      router.push('/');
-    }
+    if (!isRegister.value) {
+      // **--- 核心修改：登录成功逻辑 ---**
+      // 假设后端登录成功后返回 user_id, token, nickname, email, avatar_url
+      // 检查这些关键信息是否存在
+      const { user_id, token, nickname, email, avatar_url } = response.data;
 
-    if (isRegister.value) {
+      if (user_id && token) {
+        // 将关键用户数据存储到 localStorage
+        localStorage.setItem('user_id', user_id);
+        localStorage.setItem('auth_token', token); // 你的token命名保持不变
+        localStorage.setItem('user_nickname', nickname || username.value); // 存储昵称，如果没有返回则用用户名
+        localStorage.setItem('user_email', email || ''); // 存储邮箱
+        localStorage.setItem('user_avatar_url', avatar_url || 'https://via.placeholder.com/150'); // 存储头像URL，提供默认值
+
+        // *** ADD THIS LINE: Dispatch a custom event after successful login ***
+        window.dispatchEvent(new Event('user-logged-in'));
+
+        // 使用 router.push() 进行跳转到用户主页
+        router.push('/userview'); // 假设你的用户主页路由是 /dashboard
+      } else {
+        // 如果登录成功但缺少关键信息，也视为错误
+        isError.value = true;
+        message.value = '登录成功，但用户信息不完整，请联系管理员。';
+        console.error('Login successful but missing user_id or token in response:', response.data);
+      }
+    } else {
+      // 注册成功后的处理
       // After successful registration, clear fields and optionally switch to login mode
       username.value = '';
       email.value = '';
       password.value = '';
       // toggleMode(); // Uncomment to automatically switch to login after registration
+      // 可以给用户提示注册成功，并建议他们登录
+      message.value = '注册成功！请登录。';
     }
 
   } catch (err) {

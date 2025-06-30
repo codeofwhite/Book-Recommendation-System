@@ -1,0 +1,16 @@
+{
+  "name": "mongodb-book-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+    "tasks.max": "1",
+    "mongodb.connection.string": "mongodb://book_user:book_password@book_db_mongo:27017/?replicaSet=dbrs&authSource=admin",
+    "mongodb.user": "book_user",
+    "mongodb.password": "book_password",
+    "mongodb.authsource": "admin",
+    "collection.include.list": "book_manage_db.books",
+    "database.history.kafka.bootstrap.servers": "kafka:29092",
+    "database.history.kafka.topic": "dbhistory.book_db_mongo",
+    "snapshot.mode": "initial",
+    "topic.prefix": "book_db_cdc" 
+  }
+}

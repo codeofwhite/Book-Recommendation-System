@@ -4,7 +4,14 @@
       <router-link to="/" class="nav-item">The Grand Hall</router-link>
       <router-link to="/books" class="nav-item">The Catalogue</router-link>
       <router-link to="/about" class="nav-item">About Our Establishment</router-link>
-      <router-link to="/auth" class="nav-item login-button">Enter the Archives</router-link>
+
+      <template v-if="isLoggedIn">
+        <router-link to="/userview" class="nav-item user-dashboard-button">My Scriptorium</router-link>
+        <a href="#" @click.prevent="logout" class="nav-item logout-button">Depart the Archives</a>
+      </template>
+      <template v-else>
+        <router-link to="/auth" class="nav-item login-button">Enter the Archives</router-link>
+      </template>
     </nav>
 
     <main class="app-content">
@@ -18,7 +25,54 @@
 </template>
 
 <script setup>
-// No specific script logic needed for this foundational layout
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const isLoggedIn = ref(false);
+
+// Function to check login status
+const checkLoginStatus = () => {
+  // Check if a user token exists in localStorage
+  isLoggedIn.value = !!localStorage.getItem('auth_token');
+};
+
+// Function to handle logout
+const logout = () => {
+  // Clear all user-related data from localStorage
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user_nickname');
+  localStorage.removeItem('user_email');
+  localStorage.removeItem('user_avatar_url');
+
+  // Update login status
+  isLoggedIn.value = false;
+
+  // Redirect to home page or login page
+  router.push('/'); // Or '/auth' if you prefer to redirect directly to login
+  alert('您已成功登出。'); // Provide a logout message
+};
+
+// Listen for custom events to update login status
+const handleLoginEvent = () => {
+  checkLoginStatus();
+};
+
+onMounted(() => {
+  // Initial check when the component mounts
+  checkLoginStatus();
+  // Listen for a custom event from the Login component to update status
+  window.addEventListener('user-logged-in', handleLoginEvent);
+  // Listen for storage changes to react to logout in other tabs/windows
+  window.addEventListener('storage', checkLoginStatus);
+});
+
+onUnmounted(() => {
+  // Clean up event listeners when the component is unmounted
+  window.removeEventListener('user-logged-in', handleLoginEvent);
+  window.removeEventListener('storage', checkLoginStatus);
+});
 </script>
 
 <style>

@@ -22,3 +22,23 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
+
+# --- 添加 ADMIN 模型 ---
+class Admin(db.Model):
+    __tablename__ = 'ADMIN' # 确保表名与你的SQL创建语句一致
+    admin_id = db.Column(db.String(20), primary_key=True, comment='管理员账号')
+    password = db.Column(db.CHAR(64), nullable=False, comment='密码') # 存储哈希后的密码
+    verification_info = db.Column(db.Text, comment='验证信息')
+
+    def __init__(self, admin_id, raw_password, verification_info=None):
+        self.admin_id = admin_id
+        # 使用 bcrypt 对密码进行哈希
+        self.password = bcrypt.generate_password_hash(raw_password).decode('utf-8')
+        self.verification_info = verification_info
+
+    def check_password(self, raw_password):
+        # 验证密码
+        return bcrypt.check_password_hash(self.password, raw_password)
+
+    def __repr__(self):
+        return f'<Admin {self.admin_id}>'

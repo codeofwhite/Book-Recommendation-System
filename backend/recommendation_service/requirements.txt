@@ -1,0 +1,4 @@
+Flask==2.3.2
+Flask-SQLAlchemy==3.1.1 # 用于数据库ORM
+pymysql==1.1.0        # MySQL 数据库连接器
+pandas         # 用于数据处理，方便聚合
