@@ -1,0 +1,59 @@
+{
+    "job": {
+        "setting": {
+            "speed": {
+                "channel": 1
+            },
+            "errorLimit": {
+                "record": 0,
+                "percentage": 0.02
+            }
+        },
+        "content": [
+            {
+                "reader": {
+                    "name": "mongodbreader",
+                    "parameter": {
+                        "userName": "book_user",
+                        "userPassword": "book_password",
+                        "address": [
+                            "book_db_mongo:27017"
+                        ],
+                        "dbName": "book_manage_db",
+                        "collectionName": "books", 
+                        "column": [
+                            "{name: '_id', type: 'string'}",
+                            "{name: 'title', type: 'string'}",
+                            "{name: 'author', type: 'string'}",
+                            "{name: 'category', type: 'string'}",
+                            "{name: 'publish_date', type: 'date'}"
+                        ]
+                    }
+                },
+                "writer": {
+                    "name": "mysqlwriter",
+                    "parameter": {
+                        "username": "rec_user",
+                        "password": "rec_password",
+                        "column": [
+                            "mongo_id",
+                            "title",
+                            "author",
+                            "category",
+                            "publish_date"
+                        ],
+                        "preSql": ["TRUNCATE TABLE books_snapshot;"],
+                        "connection": [
+                            {
+                                "jdbcUrl": "jdbc:mysql://recommendation_db:3306/recommendation_db",
+                                "table": [
+                                    "books_snapshot"
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+}
