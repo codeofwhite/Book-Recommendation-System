@@ -119,6 +119,7 @@ services:
     volumes:
       - user_engagement_mysql_data:/var/lib/mysql
       # You might need an init script here if you want to pre-create Debezium user specifically for this DB
+      # 这边 auth 已经初始化了就要了
       # - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]

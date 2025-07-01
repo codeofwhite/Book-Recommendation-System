@@ -163,7 +163,7 @@ export default {
           // 然后，根据这些 review_id 去 service-c (User Engagement Service，因为它现在也处理书评内容)
           // 或者如果你的书评内容是在 service-b，则需要调用 service-b 的接口
           // 这里我们假设 service-c 有一个 /api/reviews/batch?ids=id1,id2 的接口
-          const reviewsDetailResponse = await axios.get(`/service-c/api/reviews/batch`, { // 假设 service-c 也有批量获取接口
+          const reviewsDetailResponse = await axios.get(`/service-c/api/reviews/batch`, { // service-c 有批量获取接口
             params: {
               ids: reviewIds.join(',')
             }
@@ -182,6 +182,8 @@ export default {
             }
             // 如果你的后端 Review 表里没有 likeCount 和 collectCount，这里需要从 engagement service 再次查询
             // 如果你的 review_engagement.py 后端能返回这些，则不需要额外查询
+
+
             return {
               ...review,
               reviewerNickname,

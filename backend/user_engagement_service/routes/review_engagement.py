@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
-from models import db, ReviewFavorite, ReviewLike # 从 models.py 导入 db 和模型
+from models import db, ReviewFavorite, ReviewLike, Review # 从 models.py 导入 db 和模型
 
 # 创建一个蓝图
 review_engagement_bp = Blueprint('review_engagement', __name__, url_prefix='/api/reviews')
@@ -97,3 +97,44 @@ def get_user_favorite_reviews():
     review_ids = [entry.review_id for entry in favorite_entries]
 
     return jsonify(review_ids) # 返回一个书评ID的列表
+
+# 新增 API 路由：批量获取书评详情 (从 SQLAlchemy/数据库)
+# 批量获取书评详情，并包含点赞和收藏计数
+@review_engagement_bp.route('/batch', methods=['GET'])
+def get_reviews_batch():
+    ids_param = request.args.get('ids')
+    if not ids_param:
+        return jsonify({"error": "Missing 'ids' parameter"}), 400
+
+    review_ids = ids_param.split(',')
+    
+    try:
+        reviews_data = Review.query.filter(Review.review_id.in_(review_ids)).all()
+        
+        serialized_reviews = []
+        for review in reviews_data:
+            # 查询该书评的点赞数
+            like_count = ReviewLike.query.filter_by(review_id=review.review_id).count()
+            # 查询该书评的收藏数
+            collect_count = ReviewFavorite.query.filter_by(review_id=review.review_id).count()
+
+            review_dict = {
+                'id': review.review_id, 
+                'bookId': review.book_id,
+                'userId': review.user_id,
+                'content': review.content,
+                'rating': review.rating,
+                'postTime': review.post_time.isoformat() if review.post_time else None, 
+                'likeCount': like_count,      # **这里是修改点：包含点赞计数**
+                'collectCount': collect_count, # **这里是修改点：包含收藏计数**
+                'status': review.status,      # 根据你的表结构添加
+                # ... 其他你希望返回的字段
+            }
+            serialized_reviews.append(review_dict)
+
+        return jsonify(serialized_reviews)
+    except Exception as e:
+        print(f"Error fetching reviews in batch: {e}")
+        import traceback
+        traceback.print_exc() 
+        return jsonify({"error": "Failed to retrieve reviews in batch", "details": str(e)}), 500
