@@ -1,0 +1,168 @@
+2025-07-01 10:00:24.747 [main] INFO  MessageSource - JVM TimeZone: GMT+08:00, Locale: zh_CN
+2025-07-01 10:00:24.751 [main] INFO  MessageSource - use Locale: zh_CN timeZone: sun.util.calendar.ZoneInfo[id="GMT+08:00",offset=28800000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+2025-07-01 10:00:24.829 [main] INFO  VMInfo - VMInfo# operatingSystem class => com.sun.management.internal.OperatingSystemImpl
+2025-07-01 10:00:24.837 [main] INFO  Engine - the machine info  => 
+
+	osInfo:	Linux amd64 5.15.167.4-microsoft-standard-WSL2
+	jvmInfo:	Oracle Corporation 11 11.0.16+8
+	cpu num:	2
+
+	totalPhysicalMemory:	-0.00G
+	freePhysicalMemory:	-0.00G
+	maxFileDescriptorCount:	-1
+	currentOpenFileDescriptorCount:	-1
+
+	GC Names	[G1 Young Generation, G1 Old Generation]
+
+	MEMORY_NAME                    | allocation_size                | init_size                      
+	CodeHeap 'profiled nmethods'   | 117.22MB                       | 2.44MB                         
+	G1 Old Gen                     | 1,024.00MB                     | 970.00MB                       
+	G1 Survivor Space              | -0.00MB                        | 0.00MB                         
+	CodeHeap 'non-profiled nmethods' | 117.22MB                       | 2.44MB                         
+	Compressed Class Space         | 1,024.00MB                     | 0.00MB                         
+	Metaspace                      | -0.00MB                        | 0.00MB                         
+	G1 Eden Space                  | -0.00MB                        | 54.00MB                        
+	CodeHeap 'non-nmethods'        | 5.56MB                         | 2.44MB                         
+
+
+2025-07-01 10:00:24.855 [main] INFO  Engine - 
+{
+	"setting":{
+		"speed":{
+			"channel":3
+		},
+		"errorLimit":{
+			"record":0,
+			"percentage":0.02
+		}
+	},
+	"content":[
+		{
+			"reader":{
+				"name":"mysqlreader",
+				"parameter":{
+					"username":"auth_user",
+					"password":"*************",
+					"column":[
+						"id",
+						"username",
+						"email",
+						"password_hash",
+						"avatar_url"
+					],
+					"splitPk":"id",
+					"connection":[
+						{
+							"jdbcUrl":[
+								"jdbc:mysql://auth_db:3306/auth_db"
+							],
+							"table":[
+								"users"
+							]
+						}
+					]
+				}
+			},
+			"writer":{
+				"name":"mysqlwriter",
+				"parameter":{
+					"username":"rec_user",
+					"password":"************",
+					"column":[
+						"id",
+						"username",
+						"email",
+						"password_hash",
+						"avatar_url"
+					],
+					"preSql":[
+						"TRUNCATE TABLE users_snapshot;"
+					],
+					"session":[
+						
+					],
+					"connection":[
+						{
+							"jdbcUrl":"jdbc:mysql://recommendation_db:3306/recommendation_db",
+							"table":[
+								"users_snapshot"
+							]
+						}
+					]
+				}
+			}
+		}
+	]
+}
+
+2025-07-01 10:00:24.911 [main] INFO  PerfTrace - PerfTrace traceId=job_-1, isEnable=false
+2025-07-01 10:00:24.912 [main] INFO  JobContainer - DataX jobContainer starts job.
+2025-07-01 10:00:24.914 [main] INFO  JobContainer - Set jobId = 0
+2025-07-01 10:00:25.938 [job-0] INFO  OriginalConfPretreatmentUtil - Available jdbcUrl:jdbc:mysql://auth_db:3306/auth_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true.
+2025-07-01 10:00:26.029 [job-0] INFO  OriginalConfPretreatmentUtil - table:[users] has columns:[id,username,email,password_hash,avatar_url].
+2025-07-01 10:00:26.444 [job-0] INFO  OriginalConfPretreatmentUtil - table:[users_snapshot] all columns:[
+id,username,email,password_hash,avatar_url
+].
+2025-07-01 10:00:26.483 [job-0] INFO  OriginalConfPretreatmentUtil - Write data [
+INSERT INTO %s (id,username,email,password_hash,avatar_url) VALUES(?,?,?,?,?)
+], which jdbcUrl like:[jdbc:mysql://recommendation_db:3306/recommendation_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true&tinyInt1isBit=false]
+2025-07-01 10:00:26.484 [job-0] INFO  JobContainer - jobContainer starts to do prepare ...
+2025-07-01 10:00:26.485 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] do prepare work .
+2025-07-01 10:00:26.486 [job-0] INFO  JobContainer - DataX Writer.Job [mysqlwriter] do prepare work .
+2025-07-01 10:00:26.515 [job-0] INFO  CommonRdbmsWriter$Job - Begin to execute preSqls:[TRUNCATE TABLE users_snapshot;]. context info:jdbc:mysql://recommendation_db:3306/recommendation_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true&tinyInt1isBit=false.
+2025-07-01 10:00:26.584 [job-0] INFO  JobContainer - jobContainer starts to do split ...
+2025-07-01 10:00:26.586 [job-0] INFO  JobContainer - Job set Channel-Number to 3 channels.
+2025-07-01 10:00:26.619 [job-0] INFO  SingleTableSplitUtil - split pk [sql=SELECT MIN(id),MAX(id) FROM users] is running... 
+2025-07-01 10:00:26.643 [job-0] INFO  SingleTableSplitUtil - After split(), allQuerySql=[
+select id,username,email,password_hash,avatar_url from users  where  (1 <= id AND id <= 2) 
+select id,username,email,password_hash,avatar_url from users  where  id IS NULL
+].
+2025-07-01 10:00:26.644 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] splits to [2] tasks.
+2025-07-01 10:00:26.645 [job-0] INFO  JobContainer - DataX Writer.Job [mysqlwriter] splits to [2] tasks.
+2025-07-01 10:00:26.680 [job-0] INFO  JobContainer - jobContainer starts to do schedule ...
+2025-07-01 10:00:26.684 [job-0] INFO  JobContainer - Scheduler starts [1] taskGroups.
+2025-07-01 10:00:26.686 [job-0] INFO  JobContainer - Running by standalone Mode.
+2025-07-01 10:00:26.694 [taskGroup-0] INFO  TaskGroupContainer - taskGroupId=[0] start [2] channels for [2] tasks.
+2025-07-01 10:00:26.713 [taskGroup-0] INFO  Channel - Channel set byte_speed_limit to -1, No bps activated.
+2025-07-01 10:00:26.714 [taskGroup-0] INFO  Channel - Channel set record_speed_limit to -1, No tps activated.
+2025-07-01 10:00:26.740 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[0] attemptCount[1] is started
+2025-07-01 10:00:26.752 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[1] attemptCount[1] is started
+2025-07-01 10:00:26.754 [0-0-0-reader] INFO  CommonRdbmsReader$Task - Begin to read record by Sql: [select id,username,email,password_hash,avatar_url from users  where  (1 <= id AND id <= 2) 
+] jdbcUrl:[jdbc:mysql://auth_db:3306/auth_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2025-07-01 10:00:26.754 [0-0-1-reader] INFO  CommonRdbmsReader$Task - Begin to read record by Sql: [select id,username,email,password_hash,avatar_url from users  where  id IS NULL
+] jdbcUrl:[jdbc:mysql://auth_db:3306/auth_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2025-07-01 10:00:26.826 [0-0-0-reader] INFO  CommonRdbmsReader$Task - Finished read record by Sql: [select id,username,email,password_hash,avatar_url from users  where  (1 <= id AND id <= 2) 
+] jdbcUrl:[jdbc:mysql://auth_db:3306/auth_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2025-07-01 10:00:26.893 [0-0-1-reader] INFO  CommonRdbmsReader$Task - Finished read record by Sql: [select id,username,email,password_hash,avatar_url from users  where  id IS NULL
+] jdbcUrl:[jdbc:mysql://auth_db:3306/auth_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true].
+2025-07-01 10:00:27.057 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[0] is successed, used[319]ms
+2025-07-01 10:00:27.058 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] taskId[1] is successed, used[307]ms
+2025-07-01 10:00:27.059 [taskGroup-0] INFO  TaskGroupContainer - taskGroup[0] completed it's tasks.
+2025-07-01 10:00:36.721 [job-0] INFO  StandAloneJobContainerCommunicator - Total 2 records, 256 bytes | Speed 25B/s, 0 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.001s |  All Task WaitReaderTime 0.000s | Percentage 100.00%
+2025-07-01 10:00:36.722 [job-0] INFO  AbstractScheduler - Scheduler accomplished all tasks.
+2025-07-01 10:00:36.722 [job-0] INFO  JobContainer - DataX Writer.Job [mysqlwriter] do post work.
+2025-07-01 10:00:36.723 [job-0] INFO  JobContainer - DataX Reader.Job [mysqlreader] do post work.
+2025-07-01 10:00:36.724 [job-0] INFO  JobContainer - DataX jobId [0] completed successfully.
+2025-07-01 10:00:36.727 [job-0] INFO  HookInvoker - No hook invoked, because base dir not exists or is a file: /app/datax/hook
+2025-07-01 10:00:36.729 [job-0] INFO  JobContainer - 
+	 [total cpu info] => 
+		averageCpu                     | maxDeltaCpu                    | minDeltaCpu                    
+		-1.00%                         | -1.00%                         | -1.00%
+                        
+
+	 [total gc info] => 
+		 NAME                 | totalGCCount       | maxDeltaGCCount    | minDeltaGCCount    | totalGCTime        | maxDeltaGCTime     | minDeltaGCTime     
+		 G1 Young Generation  | 2                  | 2                  | 2                  | 0.046s             | 0.046s             | 0.046s             
+		 G1 Old Generation    | 0                  | 0                  | 0                  | 0.000s             | 0.000s             | 0.000s             
+
+2025-07-01 10:00:36.729 [job-0] INFO  JobContainer - PerfTrace not enable!
+2025-07-01 10:00:36.730 [job-0] INFO  StandAloneJobContainerCommunicator - Total 2 records, 256 bytes | Speed 25B/s, 0 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.001s |  All Task WaitReaderTime 0.000s | Percentage 100.00%
+2025-07-01 10:00:36.733 [job-0] INFO  JobContainer - 
+任务启动时刻                    : 2025-07-01 18:00:24
+任务结束时刻                    : 2025-07-01 18:00:36
+任务总计耗时                    :                 11s
+任务平均流量                    :               25B/s
+记录写入速度                    :              0rec/s
+读出记录总数                    :                   2
+读写失败总数                    :                   0
+
