@@ -1,3 +1,4 @@
+<!-- 用户界面 -->
 <template>
   <div class="user-dashboard">
     <h2>用户仪表盘</h2>
