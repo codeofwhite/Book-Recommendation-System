@@ -5,6 +5,7 @@ import AuthView from '../views/AuthView.vue';
 import BookList from '../views/BookList.vue'
 import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
+import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
 
 const routes = [
   {
@@ -33,7 +34,12 @@ const routes = [
     name: 'auth',
     component: AuthView
   },
-
+  {
+    path: '/userview',
+    name: 'UserView',
+    component: UserView,
+    meta: { requiresAuth: true } // 添加元信息，表示此路由需要认证
+  },
 ];
 
 const router = createRouter({

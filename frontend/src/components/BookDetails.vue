@@ -62,7 +62,7 @@
           <h3 class="section-heading">Notable Figures Within</h3>
           <div class="characters-of-note">
             <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
-            }}</span>
+              }}</span>
           </div>
         </div>
 
@@ -138,7 +138,8 @@
               </button>
               <button @click="toggleReviewCollect(review)"
                 :class="{ 'review-action-button': true, 'collected': review.isCollectedByCurrentUser }">
-                <span class="icon">{{ review.isCollectedByCurrentUser ? '✅' : '➕' }}</span> Collect
+                <span class="icon">{{ review.isCollectedByCurrentUser ? '✅' : '➕' }}</span> Collect ({{
+                  review.collectCount }})
               </button>
             </div>
           </div>
@@ -202,21 +203,36 @@ export default {
       doubanSearchResults: [],
       searched: false,
       showDoubanResults: true,
+      // 书籍的“喜欢”状态和数量
       isLiked: false,
       likeCount: 0,
+      // 书籍的“收藏”状态
       isCollected: false,
-      bookReviews: [],
+      bookReviews: [], // 存储书评列表
       newReviewContent: '',
       newReviewRating: 0,
-      // New: Data properties for "Show More" functionality
-      showFullDescription: false, // Controls whether to show full or truncated description
-      descriptionLimit: 300,      // Character limit for the description before truncating
-      showAllAwards: false,       // Controls whether to show all or limited awards
-      awardsLimit: 3,             // Number of awards to show initially
+      showFullDescription: false,
+      descriptionLimit: 300,
+      showAllAwards: false,
+      awardsLimit: 3,
+      currentUserNickname: '', // To display current user's nickname
+      currentUserAvatar: '' // To display current user's avatar
     };
   },
   computed: {
-    // New: Computed property for truncated/full description
+    // A computed property to get the userId from localStorage
+    // This makes it reactive if localStorage were to change (though usually not for userId)
+    // Or just use a method or direct localStorage access in methods
+    currentUserId() {
+      return localStorage.getItem('user_id');
+    },
+    // Also useful to get the nickname for displaying reviews
+    getCurrentUserNickname() {
+      return localStorage.getItem('user_nickname') || 'Guest'; // Fallback to 'Guest'
+    },
+    getCurrentUserAvatar() {
+      return localStorage.getItem('user_avatar_url') || 'https://via.placeholder.com/150'; // Fallback to default
+    },
     displayDescription() {
       if (!this.book || !this.book.description) return '';
       if (this.showFullDescription || this.book.description.length <= this.descriptionLimit) {
@@ -224,11 +240,9 @@ export default {
       }
       return this.book.description.substring(0, this.descriptionLimit) + '...';
     },
-    // New: Computed property to determine if the description toggle should be shown
     shouldShowDescriptionToggle() {
       return this.book && this.book.description && this.book.description.length > this.descriptionLimit;
     },
-    // New: Computed property for truncated/full awards list
     displayAwards() {
       if (!this.book || !this.book.awards) return [];
       if (this.showAllAwards || this.book.awards.length <= this.awardsLimit) {
@@ -236,17 +250,16 @@ export default {
       }
       return this.book.awards.slice(0, this.awardsLimit);
     },
-    // New: Computed property to determine if the awards toggle should be shown
     shouldShowAwardsToggle() {
       return this.book && this.book.awards && this.book.awards.length > this.awardsLimit;
     }
   },
   async created() {
     await this.fetchBookDetails();
-    if (this.book && this.book.title) {
-      await this.performDoubanSearch(this.book.title);
+    if (this.book && this.book.bookId) {
       await this.fetchBookReviews();
-      await this.fetchUserEngagementStatus();
+      await this.fetchUserEngagementStatus(); // 获取书籍的“喜欢”和“收藏”状态
+      await this.performDoubanSearch(this.book.title);
     }
   },
   methods: {
@@ -254,7 +267,6 @@ export default {
       this.loading = true;
       try {
         const bookId = this.$route.params.bookId;
-        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
         const response = await axios.get(`/service-b/api/books/${bookId}`);
         this.book = response.data;
       } catch (error) {
@@ -265,37 +277,37 @@ export default {
       }
     },
     async fetchUserEngagementStatus() {
-      if (!this.book || !this.book.id) return;
-
-      const userId = 'current_user_id'; // This should be dynamically obtained from your authentication system
+      const userId = this.currentUserId; // Get userId from computed property
+      if (!userId) return; // Don't proceed if no user is logged in
 
       try {
-        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-        const likeResponse = await axios.get(`/service-b/api/books/${this.book.id}/like_status`, {
+        // 获取书籍的“喜欢”状态和数量
+        const likeResponse = await axios.get(`/service-c/api/books/${this.book.bookId}/like_status`, {
           params: { userId }
         });
         this.isLiked = likeResponse.data.isLiked;
         this.likeCount = likeResponse.data.likeCount;
 
-        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-        const collectResponse = await axios.get(`/service-b/api/books/${this.book.id}/collect_status`, {
+        // 获取书籍的“收藏”状态和数量
+        const collectResponse = await axios.get(`/service-c/api/books/${this.book.bookId}/favorite_status`, {
           params: { userId }
         });
-        this.isCollected = collectResponse.data.isCollected;
+        this.isCollected = collectResponse.data.isFavorited; // 注意这里是 isFavorited
+        this.collectCount = collectResponse.data.favoriteCount; // 如果需要显示收藏数量
 
       } catch (error) {
         console.error('Error fetching user engagement status for book:', error);
         this.isLiked = false;
         this.isCollected = false;
-        this.likeCount = this.book.likeCount || 0;
+        this.likeCount = 0; // 失败时默认为0
       }
     },
     async toggleLike() {
-      if (!this.book || !this.book.id) return;
+      if (!this.book || !this.book.bookId) return;
 
-      const userId = 'current_user_id';
-      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-      const endpoint = `/service-b/api/books/${this.book.id}/like`;
+      const userId = this.currentUserId; // Get userId from computed property
+      if (!userId) return; // Don't proceed if no user is logged in
+      const endpoint = `/service-c/api/books/${this.book.bookId}/like`; // 调用新的点赞 API
 
       try {
         const response = await axios.post(endpoint, { userId });
@@ -308,15 +320,16 @@ export default {
       }
     },
     async toggleCollect() {
-      if (!this.book || !this.book.id) return;
+      if (!this.book || !this.book.bookId) return;
 
-      const userId = 'current_user_id';
-      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-      const endpoint = `/service-b/api/books/${this.book.id}/collect`;
+      const userId = this.currentUserId; // Get userId from computed property
+      if (!userId) return; // Don't proceed if no user is logged in
+      const endpoint = `/service-c/api/books/${this.book.bookId}/favorite`; // 调用收藏 API
 
       try {
         const response = await axios.post(endpoint, { userId });
-        this.isCollected = response.data.isCollected;
+        this.isCollected = response.data.isFavorited; // 注意这里是 isFavorited
+        // this.collectCount = response.data.favoriteCount; // 如果需要更新收藏数量
         console.log(`Book ${this.isCollected ? 'collected' : 'uncollected'}!`);
       } catch (error) {
         console.error('Error toggling book collect status:', error);
@@ -324,55 +337,196 @@ export default {
       }
     },
     async fetchBookReviews() {
-      if (!this.book || !this.book.id) return;
-      const userId = 'current_user_id';
+      // 确保 book.bookId 存在，因为 URL 中需要用到
+      if (!this.book || !this.book.bookId) return;
+      const bookId = this.book.bookId; // 从 this.book 获取 bookId
+
+      // userId 仅用于获取当前用户对书评的点赞/收藏状态，
+      // 获取书评列表本身不需要 userId 过滤
+      const userId = this.currentUserId;
 
       try {
-        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-        const response = await axios.get(`/service-b/api/books/${this.book.id}/reviews`, {
-          params: { userId }
-        });
-        this.bookReviews = response.data.map(review => ({
-          ...review,
-          isLikedByCurrentUser: review.likedBy.includes(userId),
-          isCollectedByCurrentUser: review.collectedBy.includes(userId)
+        // 获取书评列表 (现在由 service-c 处理)
+        const reviewsResponse = await axios.get(`/service-c/api/books/${bookId}/reviews`);
+
+        // 使用 Promise.all 并行请求每条书评的点赞/收藏状态
+        this.bookReviews = await Promise.all(reviewsResponse.data.map(async review => {
+          let isLikedByCurrentUser = false;
+          let likeCount = 0;
+          let isCollectedByCurrentUser = false;
+          let collectCount = 0;
+
+          // 只有当用户登录时才查询其个人状态
+          if (userId) {
+            try {
+              const reviewLikeStatus = await axios.get(`/service-c/api/reviews/${review.id}/like_status`, {
+                params: { userId }
+              });
+              isLikedByCurrentUser = reviewLikeStatus.data.isLiked;
+              likeCount = reviewLikeStatus.data.likeCount;
+            } catch (likeError) {
+              console.warn(`Could not fetch like status for review ${review.id}:`, likeError);
+            }
+
+            try {
+              const reviewFavoriteStatus = await axios.get(`/service-c/api/reviews/${review.id}/favorite_status`, {
+                params: { userId }
+              });
+              isCollectedByCurrentUser = reviewFavoriteStatus.data.isFavorited;
+              collectCount = reviewFavoriteStatus.data.favoriteCount;
+            } catch (favError) {
+              console.warn(`Could not fetch favorite status for review ${review.id}:`, favError);
+            }
+          }
+          // 如果后端返回的 review 对象里本身就包含了 likeCount，这里就直接用 review.likeCount
+          // 如果后端不返回，你需要确保上面的 likeCount = reviewLikeStatus.data.likeCount; 能够正确赋值
+          // 确保后端返回的 review 包含 user_id 和 post_time, content, rating 等
+          // 如果后端能额外返回 reviewerNickname 和 reviewerAvatarUrl，就更好了
+          return {
+            ...review,
+            // 假设后端返回的 review 对象已经有 likeCount，如果没有则用上面查询到的
+            likeCount: review.likeCount !== undefined ? review.likeCount : likeCount,
+            isLikedByCurrentUser,
+            // 假设后端返回的 review 对象不包含 collectCount，则用上面查询到的
+            collectCount: collectCount,
+            isCollectedByCurrentUser,
+          };
         }));
+        console.log('Fetched reviews:', this.bookReviews);
       } catch (error) {
         console.error('Error fetching book reviews:', error);
         this.bookReviews = [];
       }
     },
     async submitReview() {
-      if (!this.book || !this.book.id) return;
-      if (!this.newReviewContent.trim() || this.newReviewRating === 0) {
-        alert('Please enter your review and select a rating.');
+      // 确保 book.bookId 存在
+      if (!this.book || !this.book.bookId) return;
+      const bookId = this.book.bookId; // 从 this.book 获取 bookId
+
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能提交评论！');
         return;
       }
 
-      const userId = 'current_user_id';
-      const reviewerName = 'Current User';
+      if (!this.newReviewContent.trim() || this.newReviewRating === 0) {
+        alert('请输入评论内容并选择评分。');
+        return;
+      }
 
       try {
-        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-        const response = await axios.post(`/service-b/api/books/${this.book.id}/reviews`, {
+        const response = await axios.post(`/service-c/api/books/${bookId}/reviews`, {
           userId: userId,
-          reviewerName: reviewerName,
           content: this.newReviewContent,
           rating: this.newReviewRating,
+          // reviewerNickname 和 reviewerAvatarUrl 不直接传递给后端存储评论内容，
+          // 而是由后端根据 userId 去用户服务查询或前端自行处理展示。
+          // 如果你的后端需要这些信息来存储在 Review 表中，那么你的 Review 表需要有这些字段。
         });
         console.log('Review submitted:', response.data);
-        this.newReviewContent = '';
-        this.newReviewRating = 0;
-        await this.fetchBookReviews();
+        alert('评论提交成功！');
+        this.newReviewContent = ''; // 清空评论内容
+        this.newReviewRating = 0; // 重置评分
+        this.fetchBookReviews(); // 重新加载书评列表
       } catch (error) {
         console.error('Error submitting review:', error);
-        alert('Failed to submit review. Please try again.');
+        alert('提交评论失败，请重试。');
+      }
+    },
+    // 新增：删除评论方法
+    async deleteReview(reviewId) {
+      const userId = this.currentUserId; // 获取当前用户ID
+
+      if (!userId) {
+        alert('请先登录才能删除评论！');
+        return;
+      }
+
+      // ⚠️ 实际应用中，你还需要一个机制来验证当前用户是否是这条评论的作者
+      // 或者是一个拥有删除权限的管理员。这里为了演示简化，直接发送删除请求。
+      if (!confirm('确定要删除这条评论吗？')) {
+        return;
+      }
+
+      try {
+        // 删除评论 (由 service-c 处理)
+        const response = await axios.delete(`/service-c/api/reviews/${reviewId}`, {
+          params: { userId: userId } // 如果后端需要 userId 来验证删除权限
+        });
+        console.log('Review deleted:', response.data);
+        alert('评论删除成功！');
+        this.fetchBookReviews(); // 刷新书评列表
+      } catch (error) {
+        console.error('Error deleting review:', error);
+        alert('删除评论失败，请重试。');
+      }
+    },
+
+    async toggleReviewLike(review) {
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能点赞评论！');
+        return;
+      }
+      const endpoint = `/service-c/api/reviews/${review.id}/like`;
+
+      try {
+        const response = await axios.post(endpoint, { userId });
+        review.isLikedByCurrentUser = response.data.isLiked;
+        review.likeCount = response.data.likeCount;
+      } catch (error) {
+        console.error('Error toggling review like status:', error);
+        alert('更新评论点赞状态失败，请重试。');
+      }
+    },
+
+    async toggleReviewCollect(review) {
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能收藏评论！');
+        return;
+      }
+      const endpoint = `/service-c/api/reviews/${review.id}/favorite`;
+
+      try {
+        const response = await axios.post(endpoint, { userId });
+        review.isCollectedByCurrentUser = response.data.isFavorited;
+        review.collectCount = response.data.favoriteCount;
+      } catch (error) {
+        console.error('Error toggling review collect status:', error);
+        alert('更新评论收藏状态失败，请重试。');
+      }
+    },
+    // 你可能还需要一个方法来提交对评论的评论 (子评论)
+    async submitCommentToReview(reviewId) {
+      // 类似 submitReview，但目标是 /api/reviews/<review_id>/comments
+      // 这里只是一个占位符，需要根据你的 UI 和需求实现
+      alert(`对书评 ${reviewId} 提交评论的功能待实现。`);
+    },
+    // 你可能还需要一个方法来删除子评论
+    async deleteComment(commentId) {
+      // 类似 deleteReview，但目标是 /api/comments/<comment_id>
+      // 这里只是一个占位符，需要根据你的 UI 和需求实现
+      if (!confirm('确定要删除这条子评论吗？')) {
+        return;
+      }
+      try {
+        const response = await axios.delete(`/service-c/api/comments/${commentId}`, {
+          params: { userId: this.currentUserId } // 如果后端需要 userId
+        });
+        console.log('Comment deleted:', response.data);
+        alert('子评论删除成功！');
+        // 刷新评论或移除被删除的评论
+        this.fetchBookReviews(); // 简单粗暴地刷新所有书评来更新子评论
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+        alert('删除子评论失败，请重试。');
       }
     },
     async toggleReviewLike(review) {
-      const userId = 'current_user_id';
-      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-      const endpoint = `/service-b/api/reviews/${review.id}/like`;
+      const userId = this.currentUserId; // Get userId from computed property
+      if (!userId) return; // Don't proceed if no user is logged in
+      const endpoint = `/service-c/api/reviews/${review.id}/like`; // 调用书评点赞 API
 
       try {
         const response = await axios.post(endpoint, { userId });
@@ -384,13 +538,14 @@ export default {
       }
     },
     async toggleReviewCollect(review) {
-      const userId = 'current_user_id';
-      // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
-      const endpoint = `/service-b/api/reviews/${review.id}/collect`;
+      const userId = this.currentUserId; // Get userId from computed property
+      if (!userId) return; // Don't proceed if no user is logged in
+      const endpoint = `/service-c/api/reviews/${review.id}/favorite`; // 调用书评收藏 API
 
       try {
         const response = await axios.post(endpoint, { userId });
-        review.isCollectedByCurrentUser = response.data.isCollected;
+        review.isCollectedByCurrentUser = response.data.isFavorited; // 注意这里是 isFavorited
+        review.collectCount = response.data.favoriteCount; // 更新收藏数量
       } catch (error) {
         console.error('Error toggling review collect status:', error);
         alert('Failed to update review collection status. Please try again.');
@@ -407,7 +562,6 @@ export default {
       this.searched = true;
       this.doubanSearchResults = [];
       try {
-        // 关键修改点：所有指向 5001 的请求都加上 /service-b 前缀
         const response = await axios.get(
           `/service-b/api/search_douban?keyword=${encodeURIComponent(keyword)}`
         );
@@ -419,7 +573,6 @@ export default {
     toggleDoubanResults() {
       this.showDoubanResults = !this.showDoubanResults;
     },
-    // New methods for "Show More" functionality
     toggleDescription() {
       this.showFullDescription = !this.showFullDescription;
     },

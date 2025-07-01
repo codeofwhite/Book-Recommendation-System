@@ -1,0 +1,26 @@
+{
+  "name": "mysql-auth-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "tasks.max": "1",
+    "database.hostname": "auth_mysql_db",
+    "database.port": "3306",
+    "database.user": "debezium",
+    "database.password": "dbz",
+    "database.server.id": "1000",
+    "database.server.name": "auth_db_cdc",
+    "database.include.list": "auth_db",
+    "database.history.kafka.bootstrap.servers": "kafka:29092",  
+    "database.history.kafka.topic": "dbhistory.auth",          
+    "database.history.internal.kafka.replication.factor": "1",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka:29092", 
+    "schema.history.internal.kafka.topic": "dbhistory.auth.internal", 
+    "table.include.list": "auth_db.users",
+    "include.schema.changes": "true",
+    "topic.prefix": "auth_db_cdc",
+    "snapshot.mode": "initial",
+    "topic.creation.default.replication.factor": "1",
+    "topic.creation.default.partitions": "1",
+    "topic.creation.default.cleanup.policy": "delete"
+  }
+}

@@ -144,6 +144,9 @@
 <script>
 import axios from 'axios';
 
+// 导入我们创建的日志函数
+import { trackBookClick } from '../services/logger.js';
+
 export default {
   name: 'BookListWithRecommendation',
   props: {

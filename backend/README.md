@@ -14,3 +14,5 @@ docker compose up -d --build
 npm run dev
 ```
 5. 结束！可以看到完整的页面显示了
+
+看topic：docker exec kafka kafka-topics --bootstrap-server kafka:29092 --list

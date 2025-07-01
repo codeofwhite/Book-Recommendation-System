@@ -82,30 +82,34 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
+// 1. 导入 useUserStore
+import { useUserStore } from '../stores/userStore';
 
+// 2. 获取 router 和 userStore 的实例
 const router = useRouter();
+const userStore = useUserStore();
 
+// --- Local UI State ---
+// 这些状态只跟当前视图相关，所以保留在组件内部
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const isRegister = ref(true); // true for register, false for login
+const isRegister = ref(false);
 const message = ref('');
 const isError = ref(false);
 const loading = ref(false);
 
 const toggleMode = () => {
   isRegister.value = !isRegister.value;
-  message.value = ''; // Clear message when toggling mode
+  message.value = '';
   isError.value = false;
-  // Clear form fields when toggling mode, for a cleaner experience
   username.value = '';
   email.value = '';
   password.value = '';
 };
 
-// Handle input focus/blur for animation
+// 动画相关的处理函数保持不变
 const handleInputFocus = (event) => {
   event.target.parentElement.style.transform = 'translateX(5px)';
 };
@@ -114,9 +118,7 @@ const handleInputBlur = (event) => {
   event.target.parentElement.style.transform = 'translateX(0)';
 };
 
-// Handle button click for animation (optional, as :disabled handles state)
 const handleButtonClick = (event) => {
-  // Only apply animation if button is not disabled
   if (!loading.value) {
     const button = event.target;
     button.style.transform = 'translateY(1px)';
@@ -128,41 +130,44 @@ const handleButtonClick = (event) => {
   }
 };
 
+
+// 3. --- 重构 handleSubmit 函数 ---
+// 这个函数现在变得非常简洁
 const handleSubmit = async () => {
   message.value = '';
   isError.value = false;
   loading.value = true;
 
-  const endpoint = isRegister.value ? '/service-a/api/auth/register' : '/service-a/api/auth/login';
-  const payload = isRegister.value
-    ? { username: username.value, email: email.value, password: password.value }
-    : { username: username.value, password: password.value };
-
   try {
-    const response = await axios.post(endpoint, payload);
-    message.value = response.data.message;
-    isError.value = false;
-
-    if (!isRegister.value && response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-      router.push('/');
-    }
-
     if (isRegister.value) {
-      // After successful registration, clear fields and optionally switch to login mode
-      username.value = '';
-      email.value = '';
-      password.value = '';
-      // toggleMode(); // Uncomment to automatically switch to login after registration
-    }
+      // --- 调用注册 Action ---
+      const payload = { username: username.value, email: email.value, password: password.value };
+      const response = await userStore.register(payload);
+      message.value = response.message || '注册成功！请登录。';
+      isError.value = false;
+      // 注册成功后可以切换到登录模式
+      // toggleMode(); 
+    } else {
+      // --- 调用登录 Action ---
+      const credentials = { username: username.value, password: password.value };
+      const response = await userStore.login(credentials);
+      message.value = response.message || '登录成功！';
+      isError.value = false;
 
+      // 登录成功后，跳转到用户主页
+      // 使用 setTimeout 提供一个短暂的延迟，让用户看到成功消息
+      setTimeout(() => {
+        router.push('/userview');
+      }, 1000);
+    }
   } catch (err) {
     isError.value = true;
     if (err.response && err.response.data && err.response.data.message) {
       message.value = err.response.data.message;
     } else {
-      message.value = '请求失败，请稍后再试。'; // More user-friendly error
-      console.error('Auth request failed:', err);
+      // 使用 err.message 获取来自 store action 抛出的自定义错误
+      message.value = err.message || '操作失败，请稍后再试。';
+      console.error('Auth action failed:', err);
     }
   } finally {
     loading.value = false;
