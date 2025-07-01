@@ -1,63 +1,72 @@
 <template>
-  <div class="user-dashboard-container">
-    <h1 class="dashboard-title">欢迎回来, {{ user.nickname || '用户' }}!</h1>
+  <div class="user-dashboard">
+    <h2>用户仪表盘</h2>
 
-    <div class="user-profile-section">
-      <div class="avatar-wrapper">
+    <section class="user-info">
+      <h3>个人信息</h3>
+      <div class="avatar-section">
         <img :src="user.avatar_url || 'https://via.placeholder.com/150'" alt="用户头像" class="user-avatar" />
-        <input type="file" @change="handleAvatarChange" accept="image/*" class="avatar-upload-input" />
-        <button @click="uploadAvatar" :disabled="!selectedAvatarFile" class="btn-upload-avatar">上传头像</button>
+        <input type="file" @change="handleAvatarChange" accept="image/*" />
+        <button @click="uploadAvatar">上传头像</button>
       </div>
-      <div class="profile-info">
-        <div class="info-item">
-          <label for="nickname">昵称:</label>
-          <input type="text" id="nickname" v-model="editableNickname" :disabled="!isEditingNickname" />
-          <button @click="toggleEditNickname" class="btn-edit">
-            {{ isEditingNickname ? '保存' : '编辑' }}
-          </button>
-        </div>
-        <p class="user-email">邮箱: {{ user.email }}</p>
-      </div>
-    </div>
-
-    <hr class="section-divider" />
-
-    <section class="favorite-books-section">
-      <h2 class="section-heading">我的收藏图书 ({{ favoriteBooks.length }})</h2>
-      <div v-if="favoriteBooks.length > 0" class="books-grid">
-        <div v-for="book in favoriteBooks" :key="book.book_id" class="book-card">
-          <img :src="book.cover_img || 'https://via.placeholder.com/100x150'" :alt="book.title" class="book-cover" />
-          <div class="book-info">
-            <h3>{{ book.title }}</h3>
-            <p>作者: {{ book.author }}</p>
-            <p>收藏时间: {{ formatDate(book.add_time) }}</p>
-            <button @click="removeFavoriteBook(book.book_id)" class="btn-remove">移除</button>
-          </div>
-        </div>
-      </div>
-      <p v-else class="no-data-message">您还没有收藏任何图书。</p>
+      <p>
+        昵称:
+        <span v-if="!isEditingNickname">{{ user.nickname }}</span>
+        <input v-else type="text" v-model="editableNickname" />
+        <button @click="toggleEditNickname">{{ isEditingNickname ? '保存' : '编辑' }}</button>
+      </p>
+      <p>邮箱: {{ user.email }}</p>
     </section>
 
-    <hr class="section-divider" />
+    ---
 
-    <section class="favorite-reviews-section">
-      <h2 class="section-heading">我的收藏书评 ({{ favoriteReviews.length }})</h2>
-      <div v-if="favoriteReviews.length > 0" class="reviews-list">
-        <div v-for="review in favoriteReviews" :key="review.review_id" class="review-card">
-          <h3>书评标题: {{ review.book_title }}</h3> <p class="review-content">{{ truncateContent(review.content) }}</p>
-          <p class="review-meta">
-            评分: {{ review.rating }} | 点赞: {{ review.like_count }} | 收藏时间: {{ formatDate(review.add_time) }}
-          </p>
-          <button @click="removeFavoriteReview(review.review_id)" class="btn-remove">移除</button>
-        </div>
+    <section class="favorite-books">
+      <h3>我收藏的图书 ({{ favoriteBooks.length }})</h3>
+      <div v-if="favoriteBooks.length === 0">
+        <p>您还没有收藏任何图书。</p>
       </div>
-      <p v-else class="no-data-message">您还没有收藏任何书评。</p>
+      <ul v-else class="book-list">
+        <li v-for="book in favoriteBooks" :key="book.bookId" @click="goToBookDetails(book.bookId)" class="book-item">
+          <img :src="book.coverUrl || 'https://via.placeholder.com/100'" alt="图书封面" class="book-cover" />
+          <div class="book-details">
+            <h4>{{ book.title }}</h4>
+            <p>作者: {{ book.author }}</p>
+            <p>出版社: {{ book.publisher }}</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    ---
+
+    <section class="favorite-reviews">
+      <h3>我收藏的书评 ({{ favoriteReviews.length }})</h3>
+      <div v-if="favoriteReviews.length === 0">
+        <p>您还没有收藏任何书评。</p>
+      </div>
+      <ul v-else class="review-list">
+        <li v-for="review in favoriteReviews" :key="review.id" @click="goToBookDetails(review.bookId)"
+          class="review-item">
+          <div class="review-header">
+            <img :src="review.reviewerAvatarUrl || 'https://via.placeholder.com/50'" alt="评论者头像"
+              class="reviewer-avatar" />
+            <span class="reviewer-nickname">{{ review.reviewerNickname || '匿名用户' }}</span>
+            <span class="review-rating">评分: {{ review.rating }} / 5</span>
+            <span class="review-time">{{ formatDate(review.postTime) }}</span>
+          </div>
+          <p class="review-content">{{ truncateContent(review.content) }}</p>
+          <div class="review-actions">
+            <span>👍 {{ review.likeCount || 0 }}</span>
+            <span>⭐ {{ review.collectCount || 0 }}</span>
+          </div>
+        </li>
+      </ul>
     </section>
   </div>
 </template>
 
 <script>
-import axios from 'axios'; // 确保你已经安装了axios: npm install axios
+import axios from 'axios';
 
 export default {
   name: 'UserDashboard',
@@ -69,62 +78,128 @@ export default {
         email: '',
         avatar_url: '',
       },
-      favoriteBooks: [],
-      favoriteReviews: [],
+      favoriteBooks: [], // 存储用户收藏的图书详情
+      favoriteReviews: [], // 存储用户收藏的书评详情
       isEditingNickname: false,
       editableNickname: '',
       selectedAvatarFile: null,
     };
   },
   created() {
-    // 组件创建时加载用户数据
     this.fetchUserData();
     this.fetchFavoriteBooks();
     this.fetchFavoriteReviews();
   },
   methods: {
+    // 获取用户基本信息
     async fetchUserData() {
-      const userId = localStorage.getItem('user_id'); // 从本地存储获取用户ID
+      const userId = localStorage.getItem('user_id');
       if (!userId) {
         console.error('User ID not found in localStorage. Redirecting to login.');
-        this.$router.push('/login'); // 如果没有用户ID，重定向到登录页
+        this.$router.push('/login');
         return;
       }
       try {
-        // 假设你的后端有一个获取用户信息的API
+        // 假设 service-a 是用户管理服务
         const response = await axios.get(`/service-a/api/users/${userId}`);
         this.user = response.data;
         this.editableNickname = this.user.nickname;
+        localStorage.setItem('user_nickname', this.user.nickname); // 确保本地存储也更新
+        localStorage.setItem('user_avatar_url', this.user.avatar_url); // 确保本地存储也更新
       } catch (error) {
         console.error('Error fetching user data:', error);
-        // 处理错误，例如显示消息或重定向
+        // 如果用户信息获取失败，可能是用户未登录或会话过期，可以提示并重定向
+        alert('获取用户信息失败，请重新登录。');
+        this.$router.push('/login');
       }
     },
+
+    // 获取用户收藏的图书列表并获取详细信息
     async fetchFavoriteBooks() {
       const userId = localStorage.getItem('user_id');
       if (!userId) return;
       try {
-        // 假设你的后端有一个获取用户收藏图书的API
-        const response = await axios.get(`/service-a/api/users/${userId}/favorite_books`);
-        this.favoriteBooks = response.data;
+        // 首先从 service-c (user_engagement_service) 获取收藏的 book_id 列表
+        // 注意：这里 /api/books/favorite_books 是我上面建议你新增的后端路由
+        const bookIdsResponse = await axios.get(`/service-c/api/books/favorite_books`, {
+          params: { userId }
+        });
+        const bookIds = bookIdsResponse.data;
+        console.log(bookIds)
+        if (bookIds.length > 0) {
+          // 然后，根据这些 book_id 去 service-b (Book Management Service) 获取图书的详细信息
+          // 假设 service-b 有一个批量获取图书信息的API，或者你可以循环调用
+          // 这里我们假设 service-b 有一个 /api/books/batch?ids=id1,id2 的接口
+          // 如果没有，你需要逐个ID请求或者让后端 service-c 聚合数据
+          const booksDetailResponse = await axios.get(`/service-b/api/books/batch`, {
+            params: {
+              ids: bookIds.join(',') // 拼接成逗号分隔的字符串
+            }
+          });
+          this.favoriteBooks = booksDetailResponse.data; // 假设返回的是图书对象数组
+        } else {
+          this.favoriteBooks = [];
+        }
       } catch (error) {
         console.error('Error fetching favorite books:', error);
+        this.favoriteBooks = []; // 出现错误时清空列表
       }
     },
+
+    // 获取用户收藏的书评列表并获取详细信息
     async fetchFavoriteReviews() {
       const userId = localStorage.getItem('user_id');
+      console.log(userId)
       if (!userId) return;
       try {
-        // 假设你的后端有一个获取用户收藏书评的API
-        const response = await axios.get(`/service-a/api/users/${userId}/favorite_reviews`);
-        this.favoriteReviews = response.data;
+        // 首先从 service-c (user_engagement_service) 获取收藏的 review_id 列表
+        // 注意：这里 /api/reviews/favorite_reviews 是我上面建议你新增的后端路由
+        const reviewIdsResponse = await axios.get(`/service-c/api/reviews/favorite_reviews`, {
+          params: { userId }
+        });
+        const reviewIds = reviewIdsResponse.data;
+        console.log(reviewIds)
+        if (reviewIds.length > 0) {
+          // 然后，根据这些 review_id 去 service-c (User Engagement Service，因为它现在也处理书评内容)
+          // 或者如果你的书评内容是在 service-b，则需要调用 service-b 的接口
+          // 这里我们假设 service-c 有一个 /api/reviews/batch?ids=id1,id2 的接口
+          const reviewsDetailResponse = await axios.get(`/service-c/api/reviews/batch`, { // 假设 service-c 也有批量获取接口
+            params: {
+              ids: reviewIds.join(',')
+            }
+          });
+          // 你还需要进一步处理这些书评，获取评论者的昵称和头像
+          this.favoriteReviews = await Promise.all(reviewsDetailResponse.data.map(async review => {
+            // 假设你有一个获取用户信息的服务（service-a），可以根据 userId 获取昵称和头像
+            let reviewerNickname = '未知用户';
+            let reviewerAvatarUrl = 'https://via.placeholder.com/50';
+            try {
+              const userProfile = await axios.get(`/service-a/api/users/${review.userId}`);
+              reviewerNickname = userProfile.data.nickname || '匿名用户';
+              reviewerAvatarUrl = userProfile.data.avatar_url || 'https://via.placeholder.com/50';
+            } catch (userError) {
+              console.warn(`Could not fetch user info for review userId ${review.userId}:`, userError);
+            }
+            // 如果你的后端 Review 表里没有 likeCount 和 collectCount，这里需要从 engagement service 再次查询
+            // 如果你的 review_engagement.py 后端能返回这些，则不需要额外查询
+            return {
+              ...review,
+              reviewerNickname,
+              reviewerAvatarUrl,
+              // 这里假设后端返回的 review 对象包含了 likeCount 和 collectCount，否则需要额外获取
+            };
+          }));
+        } else {
+          this.favoriteReviews = [];
+        }
       } catch (error) {
         console.error('Error fetching favorite reviews:', error);
+        this.favoriteReviews = [];
       }
     },
+
     toggleEditNickname() {
       if (this.isEditingNickname) {
-        // 保存昵称
         this.updateNickname();
       }
       this.isEditingNickname = !this.isEditingNickname;
@@ -133,9 +208,10 @@ export default {
       try {
         const userId = localStorage.getItem('user_id');
         if (!userId) return;
-        // 假设你的后端有一个更新用户昵称的API
+        // 假设 service-a 是用户管理服务
         await axios.put(`/service-a/api/users/${userId}/nickname`, { nickname: this.editableNickname });
         this.user.nickname = this.editableNickname; // 更新本地数据
+        localStorage.setItem('user_nickname', this.editableNickname); // 同步更新 localStorage
         alert('昵称更新成功！');
       } catch (error) {
         console.error('Error updating nickname:', error);
@@ -155,13 +231,14 @@ export default {
         if (!userId) return;
         const formData = new FormData();
         formData.append('avatar', this.selectedAvatarFile);
-        // 假设你的后端有一个上传头像的API
+        // 假设 service-a 是用户管理服务
         const response = await axios.post(`/service-a/api/users/${userId}/avatar`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
         this.user.avatar_url = response.data.avatar_url; // 更新本地头像URL
+        localStorage.setItem('user_avatar_url', this.user.avatar_url); // 同步更新 localStorage
         this.selectedAvatarFile = null; // 清除已选择的文件
         alert('头像上传成功！');
       } catch (error) {
@@ -169,10 +246,27 @@ export default {
         alert('头像上传失败。');
       }
     },
+
+    // 跳转到图书详情页
+    goToBookDetails(bookId) {
+      // 确保 bookId 有效
+      if (!bookId) {
+        console.error('Tried to navigate to BookDetails with an undefined or null bookId.');
+        alert('无法打开图书详情，图书ID缺失。');
+        return;
+      }
+      this.$router.push({ name: 'BookDetails', params: { bookId: bookId } }); // <-- 将 'id' 改为 'bookId'
+    },
+
     formatDate(dateString) {
       if (!dateString) return '';
+      // 尝试解析 ISO 8601 格式，例如 "2025-07-01T12:09:08.000Z"
       const date = new Date(dateString);
-      return date.toLocaleDateString(); // 或者根据需要格式化
+      if (isNaN(date.getTime())) { // 检查是否是有效日期
+        // 如果解析失败，尝试作为普通字符串返回
+        return dateString;
+      }
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
     },
     truncateContent(content, maxLength = 100) {
       if (!content) return '';
@@ -186,65 +280,72 @@ export default {
 </script>
 
 <style scoped>
-.user-dashboard-container {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 30px;
+.user-dashboard {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
   background-color: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
-  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.dashboard-title {
+h2 {
   text-align: center;
-  color: #2c3e50;
-  margin-bottom: 40px;
-  font-size: 2.5em;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.user-profile-section {
-  display: flex;
-  align-items: center;
-  gap: 30px;
-  padding: 30px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  color: #333;
   margin-bottom: 30px;
 }
 
-.avatar-wrapper {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid #42b983;
-  flex-shrink: 0;
+section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+h3 {
+  color: #555;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+/* 用户信息 */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .user-avatar {
-  width: 100%;
-  height: 100%;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
   object-fit: cover;
+  margin-bottom: 10px;
+  border: 2px solid #ddd;
 }
 
-.avatar-upload-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
+.user-info p {
+  margin: 10px 0;
+  font-size: 1.1em;
 }
 
-.btn-upload-avatar {
-  margin-top: 10px;
+.user-info input[type="text"] {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.user-info button {
   padding: 8px 15px;
   background-color: #007bff;
   color: white;
@@ -254,193 +355,102 @@ export default {
   transition: background-color 0.3s ease;
 }
 
-.btn-upload-avatar:hover {
+.user-info button:hover {
   background-color: #0056b3;
 }
 
-.btn-upload-avatar:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+/* 收藏列表 */
+.book-list,
+.review-list {
+  list-style: none;
+  padding: 0;
 }
 
-.profile-info {
-  flex-grow: 1;
-}
-
-.info-item {
+.book-item,
+.review-item {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-}
-
-.info-item label {
-  font-weight: bold;
-  margin-right: 10px;
-  color: #555;
-  min-width: 60px;
-}
-
-.info-item input[type="text"] {
-  flex-grow: 1;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 1.1em;
-  color: #333;
-  transition: border-color 0.3s ease;
-}
-
-.info-item input[type="text"]:focus {
-  border-color: #42b983;
-  outline: none;
-}
-
-.info-item input[type="text"]:disabled {
-  background-color: #f0f0f0;
-  cursor: default;
-}
-
-.btn-edit {
-  margin-left: 15px;
-  padding: 10px 20px;
-  background-color: #42b983;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s ease;
-}
-
-.btn-edit:hover {
-  background-color: #369c72;
-}
-
-.user-email {
-  color: #777;
-  font-size: 0.95em;
-  margin-left: 70px; /* Aligns with nickname input */
-}
-
-.section-divider {
-  border: 0;
-  height: 1px;
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
-  margin: 40px 0;
-}
-
-.section-heading {
-  color: #2c3e50;
-  margin-bottom: 25px;
-  font-size: 2em;
-  border-bottom: 2px solid #42b983;
-  padding-bottom: 10px;
-}
-
-.books-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 25px;
-}
-
-.book-card {
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
   padding: 15px;
-  transition: transform 0.2s ease-in-out;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.book-card:hover {
-  transform: translateY(-5px);
+.book-item:hover,
+.review-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .book-cover {
-  width: 90px;
-  height: 130px;
+  width: 80px;
+  height: 120px;
   object-fit: cover;
-  border-radius: 5px;
-  margin-right: 15px;
+  margin-right: 20px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
-.book-info {
-  flex-grow: 1;
-}
-
-.book-info h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
+.book-details h4 {
+  margin: 0 0 5px 0;
   color: #333;
   font-size: 1.2em;
 }
 
-.book-info p {
-  margin: 4px 0;
+.book-details p {
+  margin: 0 0 3px 0;
   color: #666;
-  font-size: 0.9em;
+  font-size: 0.95em;
 }
 
-.reviews-list {
-  display: grid;
-  gap: 20px;
+/* 书评特定样式 */
+.reviewer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
 }
 
-.review-card {
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  transition: transform 0.2s ease-in-out;
-}
-
-.review-card:hover {
-  transform: translateY(-5px);
-}
-
-.review-card h3 {
-  margin-top: 0;
+.review-header {
+  display: flex;
+  align-items: center;
   margin-bottom: 10px;
+}
+
+.reviewer-nickname {
+  font-weight: bold;
+  margin-right: 15px;
   color: #333;
-  font-size: 1.3em;
+}
+
+.review-rating {
+  background-color: #f0ad4e;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  margin-right: 15px;
+}
+
+.review-time {
+  color: #999;
+  font-size: 0.85em;
 }
 
 .review-content {
-  font-size: 1em;
+  margin-bottom: 10px;
   line-height: 1.6;
-  color: #555;
-  margin-bottom: 15px;
+  color: #444;
 }
 
-.review-meta {
-  font-size: 0.85em;
-  color: #888;
-  margin-bottom: 15px;
-}
-
-.btn-remove {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.btn-remove:hover {
-  background-color: #c82333;
-}
-
-.no-data-message {
-  text-align: center;
+.review-actions span {
+  margin-right: 15px;
   color: #777;
-  font-style: italic;
-  padding: 20px;
-  background-color: #eef;
-  border-radius: 8px;
-  margin-top: 20px;
+  font-size: 0.9em;
 }
 </style>

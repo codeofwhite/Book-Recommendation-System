@@ -240,6 +240,30 @@ def get_book(bookId):
         print(f"Error fetching single book from MongoDB: {e}")
         return jsonify({"error": "Failed to retrieve book"}), 500
 
+# --- 新增 API 路由：批量获取本地书籍 (从 MongoDB) ---
+@app.route('/api/books/batch', methods=['GET'])
+def get_books_batch():
+    # 获取查询参数中的 'ids' 字符串，例如: ids=bookId1,bookId2,bookId3
+    ids_param = request.args.get('ids')
+    if not ids_param:
+        return jsonify({"error": "Missing 'ids' parameter"}), 400
+
+    # 将逗号分隔的字符串转换为列表
+    book_ids = ids_param.split(',')
+    
+    collection = get_mongo_collection()
+    if collection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        # 使用 $in 操作符查询所有匹配的 bookId
+        # {'_id': 0} 用于排除 MongoDB 自动生成的 _id 字段
+        books = list(collection.find({"bookId": {"$in": book_ids}}, {'_id': 0}))
+        return jsonify(books)
+    except Exception as e:
+        print(f"Error fetching books in batch from MongoDB: {e}")
+        return jsonify({"error": "Failed to retrieve books in batch"}), 500
+
 # --- API 路由：搜索豆瓣图书 (无需修改) ---
 @app.route('/api/search_douban', methods=['GET'])
 def search_douban():

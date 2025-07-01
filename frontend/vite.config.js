@@ -22,6 +22,12 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (path) => path.replace(/^\/service-b/, ""),
         },
+        "/service-c": {
+          target: currentProxy.targetC,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/service-c/, ""),
+        },
       },
     },
     base: "/",
