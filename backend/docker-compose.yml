@@ -244,6 +244,8 @@ services:
         echo "Kafka is ready. Installing Debezium connectors..."
         confluent-hub install --no-prompt debezium/debezium-connector-mysql:3.1.2
         confluent-hub install --no-prompt debezium/debezium-connector-mongodb:3.1.2
+        # --- Install ClickHouse Kafka Sink Connector ---
+        confluent-hub install --no-prompt debezium/debezium-connector-clickhouse:latest # 或指定版本，如 1.0.0
         /etc/confluent/docker/run # 运行 Kafka Connect
     depends_on:
       kafka:
@@ -254,6 +256,8 @@ services:
         condition: service_healthy
       mongo_setup: # <--- ADD THIS: Ensure MongoDB replica set is initialized
         condition: service_completed_successfully
+      clickhouse: # Kafka Connect 需要 ClickHouse 来作为 Sink
+        condition: service_healthy
     networks:
       - default
 
@@ -304,6 +308,10 @@ services:
       REC_DB_USER: rec_user
       REC_DB_PASSWORD: rec_password
       REC_DB_NAME: recommendation_db
+      CLICKHOUSE_HOST: clickhouse # 添加 ClickHouse 连接信息
+      CLICKHOUSE_PORT: 8123       # HTTP 端口
+      CLICKHOUSE_USER: default    # 默认用户
+      CLICKHOUSE_PASSWORD:        # 默认无密码
     depends_on:
       kafka:
         condition: service_healthy
@@ -312,6 +320,8 @@ services:
       auth_db:
         condition: service_healthy
       book_db_mongo:
+        condition: service_healthy
+      clickhouse: # Spark ETL 可能会写入 ClickHouse
         condition: service_healthy
     command: /opt/bitnami/spark/bin/spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/etl_script.py --kafka-brokers ${KAFKA_BROKER_URL} --rec-db-host ${REC_DB_HOST} --rec-db-user ${REC_DB_USER} --rec-db-password ${REC_DB_PASSWORD} --rec-db-name ${REC_DB_NAME}
 
@@ -336,6 +346,8 @@ services:
         condition: service_healthy
       recommendation_db: # 假设你的离线数据会同步到 recommendation_db
         condition: service_healthy
+      clickhouse: # DataX 可能需要同步数据到 ClickHouse
+        condition: service_healthy
     networks:
       - default # 确保与所有数据库服务在同一网络
     deploy: # 资源限制，根据你的数据量调整
@@ -344,8 +356,33 @@ services:
           cpus: '2.0'
           memory: 4G # DataX 可能会消耗较多内存，特别是处理大文件时
     command: ["tail", "-f", "/dev/null"] # 保持容器运行，以便手动或通过 cron 触发任务
-# Healthcheck for DataX itself is usually not necessary as it's an on-demand tool.
-# Its health is determined by its ability to complete a job.
+    # Healthcheck for DataX itself is usually not necessary as it's an on-demand tool.
+    # Its health is determined by its ability to complete a job.
+
+  # --- ClickHouse Service ---
+  clickhouse:
+    image: yandex/clickhouse-server:latest # 推荐使用最新的稳定版
+    container_name: clickhouse_db
+    ports:
+      - "8123:8123"   # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
+      - "9000:9000"   # 原生 TCP 接口 (用于 clickhouse-client)
+      - "9009:9009"   # MySQL 兼容接口 (如果需要，默认不开启)
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse # 数据持久化
+      - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
+      # 可以挂载自定义配置，如果需要
+      # - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
+      # - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
+    ulimits: # ClickHouse 对文件描述符有限制，建议调高
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider 'http://localhost:8123/ping' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # 给予启动时间
 
 volumes:
   auth_mysql_data:
@@ -357,3 +394,5 @@ volumes:
   # 为 DataX 的任务和日志添加新的卷，这样即使容器重建，这些数据也能保留
   datax_jobs:
   datax_logs:
+  clickhouse_data: # 为 ClickHouse 添加数据卷
+  clickhouse_logs: # 为 ClickHouse 添加日志卷
