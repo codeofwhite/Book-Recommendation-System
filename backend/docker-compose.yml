@@ -356,8 +356,8 @@ services:
           cpus: '2.0'
           memory: 4G # DataX 可能会消耗较多内存，特别是处理大文件时
     command: ["tail", "-f", "/dev/null"] # 保持容器运行，以便手动或通过 cron 触发任务
-    # Healthcheck for DataX itself is usually not necessary as it's an on-demand tool.
-    # Its health is determined by its ability to complete a job.
+  # Healthcheck for DataX itself is usually not necessary as it's an on-demand tool.
+  # Its health is determined by its ability to complete a job.
 
   # --- ClickHouse Service ---
   clickhouse:
@@ -370,9 +370,9 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse # 数据持久化
       - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
-      # 可以挂载自定义配置，如果需要
-      # - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
-      # - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
+    # 可以挂载自定义配置，如果需要
+    # - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
+    # - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
     ulimits: # ClickHouse 对文件描述符有限制，建议调高
       nofile:
         soft: 262144
