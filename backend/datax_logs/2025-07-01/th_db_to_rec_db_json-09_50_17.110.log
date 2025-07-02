@@ -1,0 +1,224 @@
+2025-07-01 09:50:17.765 [main] INFO  MessageSource - JVM TimeZone: GMT+08:00, Locale: zh_CN
+2025-07-01 09:50:17.770 [main] INFO  MessageSource - use Locale: zh_CN timeZone: sun.util.calendar.ZoneInfo[id="GMT+08:00",offset=28800000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+2025-07-01 09:50:17.901 [main] INFO  VMInfo - VMInfo# operatingSystem class => com.sun.management.internal.OperatingSystemImpl
+2025-07-01 09:50:17.913 [main] INFO  Engine - the machine info  => 
+
+	osInfo:	Linux amd64 5.15.167.4-microsoft-standard-WSL2
+	jvmInfo:	Oracle Corporation 11 11.0.16+8
+	cpu num:	2
+
+	totalPhysicalMemory:	-0.00G
+	freePhysicalMemory:	-0.00G
+	maxFileDescriptorCount:	-1
+	currentOpenFileDescriptorCount:	-1
+
+	GC Names	[G1 Young Generation, G1 Old Generation]
+
+	MEMORY_NAME                    | allocation_size                | init_size                      
+	CodeHeap 'profiled nmethods'   | 117.22MB                       | 2.44MB                         
+	G1 Old Gen                     | 1,024.00MB                     | 970.00MB                       
+	G1 Survivor Space              | -0.00MB                        | 0.00MB                         
+	CodeHeap 'non-profiled nmethods' | 117.22MB                       | 2.44MB                         
+	Compressed Class Space         | 1,024.00MB                     | 0.00MB                         
+	Metaspace                      | -0.00MB                        | 0.00MB                         
+	G1 Eden Space                  | -0.00MB                        | 54.00MB                        
+	CodeHeap 'non-nmethods'        | 5.56MB                         | 2.44MB                         
+
+
+2025-07-01 09:50:17.938 [main] INFO  Engine - 
+{
+	"setting":{
+		"speed":{
+			"channel":3
+		},
+		"errorLimit":{
+			"record":0,
+			"percentage":0.02
+		}
+	},
+	"content":[
+		{
+			"reader":{
+				"name":"mysqlreader",
+				"parameter":{
+					"username":"auth_user",
+					"password":"*************",
+					"column":[
+						"id",
+						"username",
+						"email",
+						"created_at"
+					],
+					"splitPk":"id",
+					"connection":[
+						{
+							"jdbcUrl":[
+								"jdbc:mysql://auth_db:3306/auth_db"
+							],
+							"table":[
+								"users"
+							]
+						}
+					]
+				}
+			},
+			"writer":{
+				"name":"mysqlwriter",
+				"parameter":{
+					"username":"rec_user",
+					"password":"************",
+					"column":[
+						"id",
+						"username",
+						"email",
+						"created_at"
+					],
+					"preSql":[
+						"TRUNCATE TABLE users_snapshot;"
+					],
+					"session":[
+						
+					],
+					"connection":[
+						{
+							"jdbcUrl":"jdbc:mysql://recommendation_db:3306/recommendation_db",
+							"table":[
+								"users_snapshot"
+							]
+						}
+					]
+				}
+			}
+		}
+	]
+}
+
+2025-07-01 09:50:17.994 [main] INFO  PerfTrace - PerfTrace traceId=job_-1, isEnable=false
+2025-07-01 09:50:17.994 [main] INFO  JobContainer - DataX jobContainer starts job.
+2025-07-01 09:50:17.995 [main] INFO  JobContainer - Set jobId = 0
+2025-07-01 09:50:19.360 [job-0] INFO  OriginalConfPretreatmentUtil - Available jdbcUrl:jdbc:mysql://auth_db:3306/auth_db?yearIsDateType=false&zeroDateTimeBehavior=convertToNull&tinyInt1isBit=false&rewriteBatchedStatements=true.
+2025-07-01 09:50:19.532 [job-0] INFO  OriginalConfPretreatmentUtil - table:[users] has columns:[id,username,email,password_hash,avatar_url].
+2025-07-01 09:50:20.048 [job-0] ERROR JobContainer - Exception when job run
+com.alibaba.datax.common.exception.DataXException: Code:[MYSQLErrCode-04], Description:[表不存在，请检查表名或者联系DBA确认该表是否存在].  - 表名为：users_snapshot 执行的SQL为:select * from users_snapshot where 1=2 具体错误信息为：com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Table 'recommendation_db.users_snapshot' doesn't exist - com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Table 'recommendation_db.users_snapshot' doesn't exist
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:425)
+	at com.mysql.jdbc.Util.getInstance(Util.java:408)
+	at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:944)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3978)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3914)
+	at com.mysql.jdbc.MysqlIO.sendCommand(MysqlIO.java:2530)
+	at com.mysql.jdbc.MysqlIO.sqlQueryDirect(MysqlIO.java:2683)
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2491)
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2449)
+	at com.mysql.jdbc.StatementImpl.executeQuery(StatementImpl.java:1381)
+	at com.alibaba.datax.plugin.rdbms.util.DBUtil.getTableColumnsByConn(DBUtil.java:520)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:106)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:147)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.doPretreatment(OriginalConfPretreatmentUtil.java:36)
+	at com.alibaba.datax.plugin.rdbms.writer.CommonRdbmsWriter$Job.init(CommonRdbmsWriter.java:41)
+	at com.alibaba.datax.plugin.writer.mysqlwriter.MysqlWriter$Job.init(MysqlWriter.java:31)
+	at com.alibaba.datax.core.job.JobContainer.initJobWriter(JobContainer.java:704)
+	at com.alibaba.datax.core.job.JobContainer.init(JobContainer.java:304)
+	at com.alibaba.datax.core.job.JobContainer.start(JobContainer.java:113)
+	at com.alibaba.datax.core.Engine.start(Engine.java:86)
+	at com.alibaba.datax.core.Engine.entry(Engine.java:168)
+	at com.alibaba.datax.core.Engine.main(Engine.java:201)
+
+	at com.alibaba.datax.common.exception.DataXException.asDataXException(DataXException.java:41) ~[datax-common-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.rdbms.util.RdbmsException.asQueryException(RdbmsException.java:75) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.rdbms.util.DBUtil.getTableColumnsByConn(DBUtil.java:527) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:106) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:147) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.doPretreatment(OriginalConfPretreatmentUtil.java:36) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.rdbms.writer.CommonRdbmsWriter$Job.init(CommonRdbmsWriter.java:41) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.plugin.writer.mysqlwriter.MysqlWriter$Job.init(MysqlWriter.java:31) ~[mysqlwriter-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.core.job.JobContainer.initJobWriter(JobContainer.java:704) ~[datax-core-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.core.job.JobContainer.init(JobContainer.java:304) ~[datax-core-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.core.job.JobContainer.start(JobContainer.java:113) ~[datax-core-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.core.Engine.start(Engine.java:86) ~[datax-core-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.core.Engine.entry(Engine.java:168) ~[datax-core-0.0.1-SNAPSHOT.jar:na]
+	at com.alibaba.datax.core.Engine.main(Engine.java:201) ~[datax-core-0.0.1-SNAPSHOT.jar:na]
+Caused by: com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Table 'recommendation_db.users_snapshot' doesn't exist
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method) ~[na:na]
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source) ~[na:na]
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source) ~[na:na]
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source) ~[na:na]
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:425) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.Util.getInstance(Util.java:408) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:944) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3978) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3914) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.MysqlIO.sendCommand(MysqlIO.java:2530) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.MysqlIO.sqlQueryDirect(MysqlIO.java:2683) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2491) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2449) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.mysql.jdbc.StatementImpl.executeQuery(StatementImpl.java:1381) ~[mysql-connector-java-5.1.47.jar:5.1.47]
+	at com.alibaba.datax.plugin.rdbms.util.DBUtil.getTableColumnsByConn(DBUtil.java:520) ~[plugin-rdbms-util-0.0.1-SNAPSHOT.jar:na]
+	... 11 common frames omitted
+2025-07-01 09:50:20.056 [job-0] INFO  StandAloneJobContainerCommunicator - Total 0 records, 0 bytes | Speed 0B/s, 0 records/s | Error 0 records, 0 bytes |  All Task WaitWriterTime 0.000s |  All Task WaitReaderTime 0.000s | Percentage 0.00%
+2025-07-01 09:50:20.058 [job-0] ERROR Engine - 
+
+经DataX智能分析,该任务最可能的错误原因是:
+com.alibaba.datax.common.exception.DataXException: Code:[MYSQLErrCode-04], Description:[表不存在，请检查表名或者联系DBA确认该表是否存在].  - 表名为：users_snapshot 执行的SQL为:select * from users_snapshot where 1=2 具体错误信息为：com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Table 'recommendation_db.users_snapshot' doesn't exist - com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Table 'recommendation_db.users_snapshot' doesn't exist
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:425)
+	at com.mysql.jdbc.Util.getInstance(Util.java:408)
+	at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:944)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3978)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3914)
+	at com.mysql.jdbc.MysqlIO.sendCommand(MysqlIO.java:2530)
+	at com.mysql.jdbc.MysqlIO.sqlQueryDirect(MysqlIO.java:2683)
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2491)
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2449)
+	at com.mysql.jdbc.StatementImpl.executeQuery(StatementImpl.java:1381)
+	at com.alibaba.datax.plugin.rdbms.util.DBUtil.getTableColumnsByConn(DBUtil.java:520)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:106)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:147)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.doPretreatment(OriginalConfPretreatmentUtil.java:36)
+	at com.alibaba.datax.plugin.rdbms.writer.CommonRdbmsWriter$Job.init(CommonRdbmsWriter.java:41)
+	at com.alibaba.datax.plugin.writer.mysqlwriter.MysqlWriter$Job.init(MysqlWriter.java:31)
+	at com.alibaba.datax.core.job.JobContainer.initJobWriter(JobContainer.java:704)
+	at com.alibaba.datax.core.job.JobContainer.init(JobContainer.java:304)
+	at com.alibaba.datax.core.job.JobContainer.start(JobContainer.java:113)
+	at com.alibaba.datax.core.Engine.start(Engine.java:86)
+	at com.alibaba.datax.core.Engine.entry(Engine.java:168)
+	at com.alibaba.datax.core.Engine.main(Engine.java:201)
+
+	at com.alibaba.datax.common.exception.DataXException.asDataXException(DataXException.java:41)
+	at com.alibaba.datax.plugin.rdbms.util.RdbmsException.asQueryException(RdbmsException.java:75)
+	at com.alibaba.datax.plugin.rdbms.util.DBUtil.getTableColumnsByConn(DBUtil.java:527)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:106)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.dealColumnConf(OriginalConfPretreatmentUtil.java:147)
+	at com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil.doPretreatment(OriginalConfPretreatmentUtil.java:36)
+	at com.alibaba.datax.plugin.rdbms.writer.CommonRdbmsWriter$Job.init(CommonRdbmsWriter.java:41)
+	at com.alibaba.datax.plugin.writer.mysqlwriter.MysqlWriter$Job.init(MysqlWriter.java:31)
+	at com.alibaba.datax.core.job.JobContainer.initJobWriter(JobContainer.java:704)
+	at com.alibaba.datax.core.job.JobContainer.init(JobContainer.java:304)
+	at com.alibaba.datax.core.job.JobContainer.start(JobContainer.java:113)
+	at com.alibaba.datax.core.Engine.start(Engine.java:86)
+	at com.alibaba.datax.core.Engine.entry(Engine.java:168)
+	at com.alibaba.datax.core.Engine.main(Engine.java:201)
+Caused by: com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Table 'recommendation_db.users_snapshot' doesn't exist
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.base/java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:425)
+	at com.mysql.jdbc.Util.getInstance(Util.java:408)
+	at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:944)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3978)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3914)
+	at com.mysql.jdbc.MysqlIO.sendCommand(MysqlIO.java:2530)
+	at com.mysql.jdbc.MysqlIO.sqlQueryDirect(MysqlIO.java:2683)
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2491)
+	at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2449)
+	at com.mysql.jdbc.StatementImpl.executeQuery(StatementImpl.java:1381)
+	at com.alibaba.datax.plugin.rdbms.util.DBUtil.getTableColumnsByConn(DBUtil.java:520)
+	... 11 more
+

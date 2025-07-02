@@ -1,0 +1,66 @@
+{
+    "job": {
+        "setting": {
+            "speed": {
+                "channel": 3
+            },
+            "errorLimit": {
+                "record": 0,
+                "percentage": 0.02
+            }
+        },
+        "content": [
+            {
+                "reader": {
+                    "name": "mysqlreader",
+                    "parameter": {
+                        "username": "auth_user",
+                        "password": "auth_password",
+                        "column": [
+                            "id",
+                            "username",
+                            "email",
+                            "password_hash",
+                            "avatar_url"
+                        ],
+                        "splitPk": "id",
+                        "connection": [
+                            {
+                                "jdbcUrl": [
+                                    "jdbc:mysql://auth_db:3306/auth_db"
+                                ],
+                                "table": [
+                                    "users" 
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "writer": {
+                    "name": "mysqlwriter",
+                    "parameter": {
+                        "username": "rec_user",
+                        "password": "rec_password",
+                        "column": [
+                            "id",
+                            "username",
+                            "email",
+                            "password_hash",
+                            "avatar_url"
+                        ],
+                        "preSql": ["TRUNCATE TABLE users_snapshot;"], 
+                        "session": [],
+                        "connection": [
+                            {
+                                "jdbcUrl": "jdbc:mysql://recommendation_db:3306/recommendation_db",
+                                "table": [
+                                    "users_snapshot" 
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+}
