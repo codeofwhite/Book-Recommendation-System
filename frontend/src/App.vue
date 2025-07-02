@@ -5,7 +5,7 @@
       <router-link to="/books" class="nav-item">The Catalogue</router-link>
       <router-link to="/about" class="nav-item">About Our Establishment</router-link>
 
-      <template v-if="isLoggedIn">
+      <template v-if="userStore.isLoggedIn">
         <router-link to="/userview" class="nav-item user-dashboard-button">My Scriptorium</router-link>
         <a href="#" @click.prevent="logout" class="nav-item logout-button">Depart the Archives</a>
       </template>
@@ -25,54 +25,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+// 1. 导入 useUserStore
+import { useUserStore } from './stores/userStore';
 
+// 2. 获取 store 和 router 实例
+const userStore = useUserStore();
 const router = useRouter();
-const isLoggedIn = ref(false);
 
-// Function to check login status
-const checkLoginStatus = () => {
-  // Check if a user token exists in localStorage
-  isLoggedIn.value = !!localStorage.getItem('auth_token');
-};
+// 3. (删除) 不再需要本地 isLoggedIn ref 和任何事件监听器 (onMounted, onUnmounted)。
+//    Pinia 的 state 本身就是响应式的，store.isLoggedIn 会自动更新 UI。
 
-// Function to handle logout
+// 4. 重构 logout 函数
 const logout = () => {
-  // Clear all user-related data from localStorage
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('user_id');
-  localStorage.removeItem('user_nickname');
-  localStorage.removeItem('user_email');
-  localStorage.removeItem('user_avatar_url');
+  // 调用 store 中的 logout action，它会处理所有状态和 localStorage 的清理工作
+  userStore.logout();
 
-  // Update login status
-  isLoggedIn.value = false;
-
-  // Redirect to home page or login page
-  router.push('/'); // Or '/auth' if you prefer to redirect directly to login
-  alert('您已成功登出。'); // Provide a logout message
+  // 登出后跳转到首页
+  router.push('/');
+  alert('您已成功登出。');
 };
-
-// Listen for custom events to update login status
-const handleLoginEvent = () => {
-  checkLoginStatus();
-};
-
-onMounted(() => {
-  // Initial check when the component mounts
-  checkLoginStatus();
-  // Listen for a custom event from the Login component to update status
-  window.addEventListener('user-logged-in', handleLoginEvent);
-  // Listen for storage changes to react to logout in other tabs/windows
-  window.addEventListener('storage', checkLoginStatus);
-});
-
-onUnmounted(() => {
-  // Clean up event listeners when the component is unmounted
-  window.removeEventListener('user-logged-in', handleLoginEvent);
-  window.removeEventListener('storage', checkLoginStatus);
-});
 </script>
 
 <style>

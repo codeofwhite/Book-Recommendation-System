@@ -73,7 +73,8 @@
               <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
             </div>
             <div class="tome-inscriptions">
-              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link">
+              <!-- 新增：@click 事件来触发日志记录 -->
+              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"  @click="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
               <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>
@@ -144,7 +145,7 @@
 <script>
 import axios from 'axios';
 
-// 导入我们创建的日志函数
+//新增 导入我们创建的日志函数
 import { trackBookClick } from '../services/logger.js';
 
 export default {
@@ -298,6 +299,11 @@ export default {
     },
   },
   methods: {
+     // 新增：处理书籍点击事件的方法
+    handleBookClick(book) {
+      // 在导航前记录点击事件
+      trackBookClick(book.bookId);
+    },
     handleSearch() {
       this.applyFilters();
     },
