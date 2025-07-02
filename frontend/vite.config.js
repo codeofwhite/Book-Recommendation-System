@@ -1,10 +1,15 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { devProxy, prodProxy } from "./config"; // 导入配置
+import { devProxy, prodProxy, ZHJProxy } from "./config"; // 导入所有配置
 
 export default defineConfig(({ mode }) => {
-  // 根据模式选择代理配置
-  const currentProxy = mode === "development" ? devProxy : prodProxy;
+  let currentProxy = devProxy; // 默认使用 devProxy
+
+  if (mode === "production") {
+    currentProxy = prodProxy;
+  } else if (mode === "zhj") { // 根据模式选择 ZHJProxy
+    currentProxy = ZHJProxy;
+  }
 
   return {
     plugins: [vue()],
