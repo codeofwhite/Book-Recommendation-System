@@ -193,6 +193,8 @@
 
 <script>
 import axios from 'axios';
+// 新增：导入日志函数
+import { trackBookView } from '../services/logger.js';
 
 export default {
   name: 'BookDetails',
@@ -257,6 +259,10 @@ export default {
   async created() {
     await this.fetchBookDetails();
     if (this.book && this.book.bookId) {
+      // 新增：在获取到书籍详情后，记录浏览事件
+      console.log("在获取到书籍详情后，记录浏览事件")
+      trackBookView(this.book.bookId);
+
       await this.fetchBookReviews();
       await this.fetchUserEngagementStatus(); // 获取书籍的“喜欢”和“收藏”状态
       await this.performDoubanSearch(this.book.title);

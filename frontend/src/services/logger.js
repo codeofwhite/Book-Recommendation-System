@@ -1,22 +1,15 @@
-import axios from 'axios';
-// 假设你使用 Pinia 或 Vuex 来管理用户状态
-import { useUserStore } from '../stores/userStore'; 
-useUserStore
-// 从环境变量中获取后端日志网关的 URL
-const LOG_API_ENDPOINT = import.meta.env.VITE_LOG_API_URL;
+import { useUserStore } from '../stores/userStore';
+
+// 注意：我们暂时让 LOG_API_ENDPOINT 为空，来激活“仅前端输出”模式
+const LOG_API_ENDPOINT = null; // import.meta.env.VITE_LOG_API_URL;
 
 /**
- * 格式化并发送用户行为日志到后端网关
+ * 格式化并处理用户行为日志。
+ * 如果 LOG_API_ENDPOINT 未配置，日志将直接打印到浏览器控制台，而不会发送到后端。
  * @param {string} eventType - 事件类型 (例如: 'click_book', 'view_detail', 'search')
- * @param {object} payload - 与事件相关的具体数据 (例如: { bookId: '123', dwellTime: 3500 })
+ * @param {object} payload - 与事件相关的具体数据 (例如: { bookId: '123' })
  */
 export async function trackEvent(eventType, payload = {}) {
-  // 如果 API 地址未配置，则在开发环境下警告，并直接返回
-  if (!LOG_API_ENDPOINT) {
-    console.warn('VITE_LOG_API_URL is not configured. Logging is disabled.');
-    return;
-  }
-  
   // 1. 获取用户状态 (例如从 Pinia Store)
   const userStore = useUserStore();
   const userId = userStore.isLoggedIn ? userStore.user.id : null; // 获取用户ID，如果未登录则为 null
@@ -32,10 +25,18 @@ export async function trackEvent(eventType, payload = {}) {
     payload: payload                   // 具体的事件数据
   };
 
-  // 3. 异步发送日志到后端
+  // 3. 核心修改：判断是发送到后端还是仅在前端打印
+  if (!LOG_API_ENDPOINT) {
+    // 如果 API 地址未配置，则进入“前端调试模式”
+    console.groupCollapsed(`[EVENT LOG] => ${eventType}`); // 使用可折叠的组，让控制台更整洁
+    console.log('Timestamp:', new Date().toLocaleTimeString());
+    console.log('Log Data:', logData); // 打印完整的日志对象
+    console.groupEnd();
+    return; // 直接返回，不执行后续的 axios 调用
+  }
+
+  // --- 以下是原始的后端发送逻辑，在调试模式下不会被执行 ---
   try {
-    // 使用 axios.post 发送数据。我们不需要关心它的返回结果，
-    // 而且错误处理也应避免影响用户主流程。
     await axios.post(LOG_API_ENDPOINT, logData, {
       headers: {
         'Content-Type': 'application/json'
@@ -43,15 +44,14 @@ export async function trackEvent(eventType, payload = {}) {
     });
     // 在开发模式下可以打印日志，方便调试
     if (import.meta.env.DEV) {
-      console.log('Log sent:', logData);
+      console.log('Log sent to backend:', logData);
     }
   } catch (error) {
-    // 日志发送失败不应阻塞应用或向用户报错，仅在控制台记录
     console.error('Failed to send log:', error);
   }
 }
 
-// 你还可以导出更具体的埋点函数，来简化组件中的调用
+// 导出的具体埋点函数保持不变，组件中的调用也无需任何改动
 export const trackBookClick = (bookId) => {
   trackEvent('click_book', { bookId: bookId });
 };
