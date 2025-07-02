@@ -82,34 +82,30 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-// 1. 导入 useUserStore
-import { useUserStore } from '../stores/userStore';
+import axios from 'axios';
+import { useRouter } from 'vue-router'; // Import useRouter
 
-// 2. 获取 router 和 userStore 的实例
-const router = useRouter();
-const userStore = useUserStore();
+const router = useRouter(); // Initialize router
 
-// --- Local UI State ---
-// 这些状态只跟当前视图相关，所以保留在组件内部
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const isRegister = ref(false);
+const isRegister = ref(false); // Default to login mode as requested by "这个就是登录界面"
 const message = ref('');
 const isError = ref(false);
 const loading = ref(false);
 
 const toggleMode = () => {
   isRegister.value = !isRegister.value;
-  message.value = '';
+  message.value = ''; // Clear message when toggling mode
   isError.value = false;
+  // Clear form fields when toggling mode, for a cleaner experience
   username.value = '';
   email.value = '';
   password.value = '';
 };
 
-// 动画相关的处理函数保持不变
+// Handle input focus/blur for animation
 const handleInputFocus = (event) => {
   event.target.parentElement.style.transform = 'translateX(5px)';
 };
@@ -118,7 +114,9 @@ const handleInputBlur = (event) => {
   event.target.parentElement.style.transform = 'translateX(0)';
 };
 
+// Handle button click for animation (optional, as :disabled handles state)
 const handleButtonClick = (event) => {
+  // Only apply animation if button is not disabled
   if (!loading.value) {
     const button = event.target;
     button.style.transform = 'translateY(1px)';
@@ -130,44 +128,64 @@ const handleButtonClick = (event) => {
   }
 };
 
-
-// 3. --- 重构 handleSubmit 函数 ---
-// 这个函数现在变得非常简洁
 const handleSubmit = async () => {
   message.value = '';
   isError.value = false;
   loading.value = true;
 
-  try {
-    if (isRegister.value) {
-      // --- 调用注册 Action ---
-      const payload = { username: username.value, email: email.value, password: password.value };
-      const response = await userStore.register(payload);
-      message.value = response.message || '注册成功！请登录。';
-      isError.value = false;
-      // 注册成功后可以切换到登录模式
-      // toggleMode(); 
-    } else {
-      // --- 调用登录 Action ---
-      const credentials = { username: username.value, password: password.value };
-      const response = await userStore.login(credentials);
-      message.value = response.message || '登录成功！';
-      isError.value = false;
+  const endpoint = isRegister.value ? '/service-a/api/auth/register' : '/service-a/api/auth/login';
+  const payload = isRegister.value
+    ? { username: username.value, email: email.value, password: password.value }
+    : { username: username.value, password: password.value };
 
-      // 登录成功后，跳转到用户主页
-      // 使用 setTimeout 提供一个短暂的延迟，让用户看到成功消息
-      setTimeout(() => {
-        router.push('/userview');
-      }, 1000);
+  try {
+    const response = await axios.post(endpoint, payload);
+    message.value = response.data.message;
+    isError.value = false;
+
+    if (!isRegister.value) {
+      // **--- 核心修改：登录成功逻辑 ---**
+      // 假设后端登录成功后返回 user_id, token, nickname, email, avatar_url
+      // 检查这些关键信息是否存在
+      const { user_id, token, nickname, email, avatar_url } = response.data;
+
+      if (user_id && token) {
+        // 将关键用户数据存储到 localStorage
+        localStorage.setItem('user_id', user_id);
+        localStorage.setItem('auth_token', token); // 你的token命名保持不变
+        localStorage.setItem('user_nickname', nickname || username.value); // 存储昵称，如果没有返回则用用户名
+        localStorage.setItem('user_email', email || ''); // 存储邮箱
+        localStorage.setItem('user_avatar_url', avatar_url || 'https://via.placeholder.com/150'); // 存储头像URL，提供默认值
+
+        // *** ADD THIS LINE: Dispatch a custom event after successful login ***
+        window.dispatchEvent(new Event('user-logged-in'));
+
+        // 使用 router.push() 进行跳转到用户主页
+        router.push('/userview'); // 假设你的用户主页路由是 /dashboard
+      } else {
+        // 如果登录成功但缺少关键信息，也视为错误
+        isError.value = true;
+        message.value = '登录成功，但用户信息不完整，请联系管理员。';
+        console.error('Login successful but missing user_id or token in response:', response.data);
+      }
+    } else {
+      // 注册成功后的处理
+      // After successful registration, clear fields and optionally switch to login mode
+      username.value = '';
+      email.value = '';
+      password.value = '';
+      // toggleMode(); // Uncomment to automatically switch to login after registration
+      // 可以给用户提示注册成功，并建议他们登录
+      message.value = '注册成功！请登录。';
     }
+
   } catch (err) {
     isError.value = true;
     if (err.response && err.response.data && err.response.data.message) {
       message.value = err.response.data.message;
     } else {
-      // 使用 err.message 获取来自 store action 抛出的自定义错误
-      message.value = err.message || '操作失败，请稍后再试。';
-      console.error('Auth action failed:', err);
+      message.value = '请求失败，请稍后再试。'; // More user-friendly error
+      console.error('Auth request failed:', err);
     }
   } finally {
     loading.value = false;
