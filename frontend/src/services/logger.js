@@ -1,65 +1,55 @@
+
 import { useUserStore } from '../stores/userStore';
 
-// 注意：我们暂时让 LOG_API_ENDPOINT 为空，来激活“仅前端输出”模式
-const LOG_API_ENDPOINT = null; // import.meta.env.VITE_LOG_API_URL;
+const LOG_API_ENDPOINT = null; // Still in frontend-only debug mode
 
 /**
- * 格式化并处理用户行为日志。
- * 如果 LOG_API_ENDPOINT 未配置，日志将直接打印到浏览器控制台，而不会发送到后端。
- * @param {string} eventType - 事件类型 (例如: 'click_book', 'view_detail', 'search')
- * @param {object} payload - 与事件相关的具体数据 (例如: { bookId: '123' })
+ * Formats and processes user behavior logs.
+ * In debug mode (LOG_API_ENDPOINT is null), it prints to the console.
+ * @param {string} eventType - The type of event.
+ * @param {object} payload - Event-specific data.
  */
 export async function trackEvent(eventType, payload = {}) {
-  // 1. 获取用户状态 (例如从 Pinia Store)
   const userStore = useUserStore();
-  const userId = userStore.isLoggedIn ? userStore.user.id : null; // 获取用户ID，如果未登录则为 null
-  const sessionId = userStore.sessionId; // 也可以跟踪会话ID
+  const userId = userStore.isLoggedIn ? userStore.user.id : null;
+  const sessionId = userStore.sessionId;
 
-  // 2. 构建标准化的日志数据结构
   const logData = {
     userId: userId,
     sessionId: sessionId,
     eventType: eventType,
-    timestamp: new Date().toISOString(), // 使用 ISO 8601 标准时间格式
-    pageUrl: window.location.href,     // 当前页面 URL
-    payload: payload                   // 具体的事件数据
+    timestamp: new Date().toISOString(),
+    pageUrl: window.location.href,
+    payload: payload
   };
 
-  // 3. 核心修改：判断是发送到后端还是仅在前端打印
   if (!LOG_API_ENDPOINT) {
-    // 如果 API 地址未配置，则进入“前端调试模式”
-    console.groupCollapsed(`[EVENT LOG] => ${eventType}`); // 使用可折叠的组，让控制台更整洁
+    console.groupCollapsed(`[EVENT LOG] => ${eventType}`);
     console.log('Timestamp:', new Date().toLocaleTimeString());
-    console.log('Log Data:', logData); // 打印完整的日志对象
+    console.log('Log Data:', logData);
     console.groupEnd();
-    return; // 直接返回，不执行后续的 axios 调用
+    return;
   }
-
-  // --- 以下是原始的后端发送逻辑，在调试模式下不会被执行 ---
-  try {
-    await axios.post(LOG_API_ENDPOINT, logData, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    // 在开发模式下可以打印日志，方便调试
-    if (import.meta.env.DEV) {
-      console.log('Log sent to backend:', logData);
-    }
-  } catch (error) {
-    console.error('Failed to send log:', error);
-  }
+  
+  // Backend sending logic remains here for when we re-enable it
 }
 
-// 导出的具体埋点函数保持不变，组件中的调用也无需任何改动
+/**
+ * Tracks a user clicking on a book.
+ * @param {string} bookId - The ID of the book that was clicked.
+ */
 export const trackBookClick = (bookId) => {
-  trackEvent('click_book', { bookId: bookId });
+  trackEvent('click_book', { bookId });
 };
 
-export const trackBookView = (bookId, dwellTime) => {
-  trackEvent('view_book_detail', { bookId: bookId, dwellTime: dwellTime });
-};
-
-export const trackSearch = (query) => {
-  trackEvent('search', { query: query });
+/**
+ * NEW: Tracks how long a user viewed a book's details page.
+ * @param {string} bookId - The ID of the book being viewed.
+ * @param {number} dwellTimeInSeconds - The total time in seconds the user spent on the page.
+ */
+export const trackBookView = (bookId, dwellTimeInSeconds) => {
+  trackEvent('view_book_detail', { 
+    bookId: bookId, 
+    dwellTime: dwellTimeInSeconds 
+  });
 };

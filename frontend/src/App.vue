@@ -2,6 +2,7 @@
   <div id="app">
     <nav class="main-nav">
       <router-link to="/" class="nav-item">The Grand Hall</router-link>
+      <router-link to="/book_of_the_day" class="nav-item">Daily Recommendation</router-link>
       <router-link to="/books" class="nav-item">The Catalogue</router-link>
       <router-link to="/about" class="nav-item">About Our Establishment</router-link>
 
@@ -79,6 +80,8 @@ const logout = () => {
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   /* A delicate bottom border */
+
+  z-index: 100;
 }
 
 .nav-item {
@@ -157,5 +160,10 @@ const logout = () => {
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   /* A subtle top shadow */
   letter-spacing: 0.5px;
+  z-index: 100;
+}
+
+body {
+  margin: 0;
 }
 </style>

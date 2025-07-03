@@ -6,6 +6,7 @@ import BookList from '../views/BookList.vue'
 import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
 import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
+import BookOfTheDay from "../views/BookOfTheDay.vue";
 
 const routes = [
   {
@@ -22,6 +23,11 @@ const routes = [
     path: "/about",
     name: "about",
     component: AboutView,
+  },
+  {
+    path: "/book_of_the_day",
+    name: "book_of_the_day",
+    component: BookOfTheDay,
   },
   {
     path: '/books/:bookId',
