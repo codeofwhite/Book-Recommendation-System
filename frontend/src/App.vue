@@ -33,43 +33,67 @@ const isLoggedIn = ref(false);
 
 // Function to check login status
 const checkLoginStatus = () => {
-  // Check if a user token exists in localStorage
-  isLoggedIn.value = !!localStorage.getItem('auth_token');
+  console.log("App.vue: checkLoginStatus called.");
+  const storedUserData = localStorage.getItem('user_data');
+  console.log("App.vue: Raw storedUserData from localStorage:", storedUserData);
+
+  if (storedUserData) {
+    try {
+      const userData = JSON.parse(storedUserData);
+      isLoggedIn.value = !!userData.auth_token; // 检查 auth_token 是否存在
+      console.log("App.vue: Parsed userData.auth_token:", userData.auth_token ? 'Exists' : 'Does NOT exist');
+      console.log("App.vue: isLoggedIn.value set to:", isLoggedIn.value);
+    } catch (e) {
+      console.error("App.vue: Error parsing user_data from localStorage:", e);
+      isLoggedIn.value = false;
+      localStorage.removeItem('user_data'); // 清除可能损坏的数据
+      console.log("App.vue: Cleared corrupted user_data from localStorage.");
+    }
+  } else {
+    isLoggedIn.value = false;
+    console.log("App.vue: No user_data found in localStorage. isLoggedIn.value set to false.");
+  }
 };
 
 // Function to handle logout
 const logout = () => {
-  // Clear all user-related data from localStorage
+  console.log("App.vue: logout called.");
+  // 清除 'user_data' 和 'user_last_login_time'
+  localStorage.removeItem('user_data');
+  localStorage.removeItem('user_last_login_time'); 
+  
+  // 确保清除所有旧的单独存储的键，以防万一（只在过渡期需要）
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_id');
   localStorage.removeItem('user_nickname');
   localStorage.removeItem('user_email');
   localStorage.removeItem('user_avatar_url');
+  localStorage.removeItem('user_registration_date');
 
-  // Update login status
+
   isLoggedIn.value = false;
+  console.log("App.vue: All user data removed from localStorage. isLoggedIn.value set to false.");
 
-  // Redirect to home page or login page
-  router.push('/'); // Or '/auth' if you prefer to redirect directly to login
-  alert('您已成功登出。'); // Provide a logout message
+  router.push('/'); 
+  alert('您已成功登出。');
 };
 
 // Listen for custom events to update login status
 const handleLoginEvent = () => {
+  console.log("App.vue: 'user-logged-in' event received. Calling checkLoginStatus().");
   checkLoginStatus();
 };
 
 onMounted(() => {
-  // Initial check when the component mounts
+  console.log("App.vue: Component mounted. Performing initial login status check.");
   checkLoginStatus();
-  // Listen for a custom event from the Login component to update status
   window.addEventListener('user-logged-in', handleLoginEvent);
-  // Listen for storage changes to react to logout in other tabs/windows
+  // storage 事件在不同标签页/窗口之间共享存储时触发
   window.addEventListener('storage', checkLoginStatus);
 });
 
 onUnmounted(() => {
-  // Clean up event listeners when the component is unmounted
+  console.log("App.vue: Component unmounted. Removing event listeners.");
   window.removeEventListener('user-logged-in', handleLoginEvent);
   window.removeEventListener('storage', checkLoginStatus);
 });

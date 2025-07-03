@@ -161,7 +161,7 @@ const fetchData = async () => {
   await new Promise(resolve => setTimeout(resolve, 1500)); // 模拟网络延迟
   popularBooks.value = [mockBooks[0], mockBooks[4], mockBooks[2], mockBooks[6]]; // 示例热门
   personalizedBooks.value = [mockBooks[1], mockBooks[3], mockBooks[5], mockBooks[7]]; // 示例个性化
-  
+
   // Logic to fetch and set the daily recommended book
   if (mockBooks.length > 0) {
     const randomIndex = Math.floor(Math.random() * mockBooks.length);
@@ -205,7 +205,7 @@ const toggleSidebar = () => {
   color: #3e2723;
   background-color: #fcf8f0;
   /* Ensure the body has no horizontal overflow due to sidebar */
-  overflow-x: hidden; 
+  overflow-x: hidden;
 }
 
 /* Hero Section Styles */
@@ -315,7 +315,8 @@ const toggleSidebar = () => {
 
 .content-wrapper {
   /* This div now wraps all your main sections */
-  padding-bottom: 50px; /* Add some space at the bottom */
+  padding-bottom: 50px;
+  /* Add some space at the bottom */
 }
 
 .section-container {
@@ -826,32 +827,47 @@ const toggleSidebar = () => {
 
 /* Sidebar itself */
 .daily-book-sidebar {
-  position: fixed; /* Fixed to the viewport */
+  position: fixed;
+  /* Fixed to the viewport */
   top: 0;
-  right: 0; /* Starts off-screen to the right */
-  width: 300px; /* Fixed width of the sidebar */
-  height: 100%; /* Full height of the viewport */
-  background-color: #fffaf0; /* Match your parchment theme */
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1); /* Shadow indicating it slides in */
-  transform: translateX(100%); /* Start completely off-screen */
-  transition: transform 0.4s ease-in-out; /* Smooth slide animation */
-  z-index: 1000; /* Ensure it's above other content */
+  right: 0;
+  /* Starts off-screen to the right */
+  width: 300px;
+  /* Fixed width of the sidebar */
+  height: 100%;
+  /* Full height of the viewport */
+  background-color: #fffaf0;
+  /* Match your parchment theme */
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  /* Shadow indicating it slides in */
+  transform: translateX(100%);
+  /* Start completely off-screen */
+  transition: transform 0.4s ease-in-out;
+  /* Smooth slide animation */
+  z-index: 1000;
+  /* Ensure it's above other content */
   padding: 20px;
-  overflow-y: auto; /* Allow scrolling if content is too long */
+  overflow-y: auto;
+  /* Allow scrolling if content is too long */
 }
 
 .daily-book-sidebar.is-open {
-  transform: translateX(0); /* Slide into view */
+  transform: translateX(0);
+  /* Slide into view */
 }
 
 /* Toggle button for the sidebar */
 .sidebar-toggle-button {
   position: fixed;
-  right: 20px; /* Adjust as needed */
+  right: 20px;
+  /* Adjust as needed */
   top: 50%;
-  transform: translateY(-50%) rotate(-90deg); /* Rotate to be vertical */
-  z-index: 1001; /* Above sidebar overlay */
-  background-color: #8d6e63; /* Match your theme buttons */
+  transform: translateY(-50%) rotate(-90deg);
+  /* Rotate to be vertical */
+  z-index: 1001;
+  /* Above sidebar overlay */
+  background-color: #8d6e63;
+  /* Match your theme buttons */
   color: white;
   border: none;
   padding: 10px 15px;
@@ -860,8 +876,10 @@ const toggleSidebar = () => {
   font-size: 1em;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: background-color 0.3s ease, transform 0.3s ease;
-  white-space: nowrap; /* Prevent text wrapping */
-  transform-origin: center; /* Ensure rotation is centered */
+  white-space: nowrap;
+  /* Prevent text wrapping */
+  transform-origin: center;
+  /* Ensure rotation is centered */
 }
 
 .sidebar-toggle-button:hover {
@@ -869,9 +887,12 @@ const toggleSidebar = () => {
 }
 
 .sidebar-toggle-button.is-open {
-  transform: translateY(-50%) rotate(0deg); /* Rotate back when open, reposition */
-  right: 320px; /* Adjust to sit left of the open sidebar (sidebar width + right padding) */
-  background-color: #5d4037; /* Change color when open */
+  transform: translateY(-50%) rotate(0deg);
+  /* Rotate back when open, reposition */
+  right: 320px;
+  /* Adjust to sit left of the open sidebar (sidebar width + right padding) */
+  background-color: #5d4037;
+  /* Change color when open */
 }
 
 /* Overlay that appears when sidebar is open */
@@ -881,30 +902,41 @@ const toggleSidebar = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  z-index: 999; /* Below sidebar, above content */
-  opacity: 0; /* Start invisible */
-  visibility: hidden; /* Hide from screen readers when not visible */
-  transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s; /* Fade and hide after transition */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent black */
+  z-index: 999;
+  /* Below sidebar, above content */
+  opacity: 0;
+  /* Start invisible */
+  visibility: hidden;
+  /* Hide from screen readers when not visible */
+  transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s;
+  /* Fade and hide after transition */
 }
 
 .sidebar-overlay.is-visible {
-  opacity: 1; /* Fade in */
-  visibility: visible; /* Make visible */
-  transition-delay: 0s; /* No delay when appearing */
+  opacity: 1;
+  /* Fade in */
+  visibility: visible;
+  /* Make visible */
+  transition-delay: 0s;
+  /* No delay when appearing */
 }
 
 /* Adjust main content when sidebar is open (optional, but good UX) */
 .home-view.sidebar-open .main-content {
   /* You might want to push the main content slightly, or dim it */
-  filter: blur(2px); /* Example: blur the background */
-  pointer-events: none; /* Disable interaction with main content */
+  filter: blur(2px);
+  /* Example: blur the background */
+  pointer-events: none;
+  /* Disable interaction with main content */
 }
 
 /* Style for the daily book card inside the sidebar */
 .daily-book-card {
   text-align: center;
-  padding: 20px; /* Add some padding inside the card */
+  padding: 20px;
+  /* Add some padding inside the card */
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background-color: #ffffff;
@@ -912,7 +944,8 @@ const toggleSidebar = () => {
 }
 
 .sidebar-title {
-  font-size: 1.8em; /* Slightly larger for prominence */
+  font-size: 1.8em;
+  /* Slightly larger for prominence */
   color: #4e342e;
   margin-bottom: 1.5rem;
   border-bottom: 2px dashed #c0b2a3;
@@ -927,14 +960,16 @@ const toggleSidebar = () => {
 }
 
 .daily-book-cover {
-  max-width: 180px; /* A bit larger cover */
+  max-width: 180px;
+  /* A bit larger cover */
   height: auto;
   border-radius: 4px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
 
 .daily-book-title {
-  font-size: 1.5em; /* More prominent title */
+  font-size: 1.5em;
+  /* More prominent title */
   color: #4e342e;
   margin-top: 1rem;
   font-weight: 600;
@@ -961,22 +996,28 @@ body.no-scroll {
 /* Responsive adjustments for the sidebar toggle button */
 @media (max-width: 768px) {
   .sidebar-toggle-button {
-    top: 20px; /* Move to top right corner on small screens */
+    top: 20px;
+    /* Move to top right corner on small screens */
     right: 20px;
-    transform: rotate(0deg); /* Don't rotate on small screens */
+    transform: rotate(0deg);
+    /* Don't rotate on small screens */
     padding: 8px 12px;
     font-size: 0.9em;
     border-radius: 4px;
   }
 
   .sidebar-toggle-button.is-open {
-    right: 20px; /* Stay in place when open */
-    transform: rotate(0deg); /* Remain unrotated */
+    right: 20px;
+    /* Stay in place when open */
+    transform: rotate(0deg);
+    /* Remain unrotated */
   }
 
   .daily-book-sidebar {
-    width: 80%; /* Wider sidebar on small screens */
-    max-width: 350px; /* Cap max width */
+    width: 80%;
+    /* Wider sidebar on small screens */
+    max-width: 350px;
+    /* Cap max width */
     padding: 15px;
   }
 }

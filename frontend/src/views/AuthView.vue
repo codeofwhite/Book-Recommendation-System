@@ -83,29 +83,27 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router'; // Import useRouter
+import { useRouter } from 'vue-router';
 
-const router = useRouter(); // Initialize router
+const router = useRouter();
 
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const isRegister = ref(false); // Default to login mode as requested by "这个就是登录界面"
+const isRegister = ref(false);
 const message = ref('');
 const isError = ref(false);
 const loading = ref(false);
 
 const toggleMode = () => {
   isRegister.value = !isRegister.value;
-  message.value = ''; // Clear message when toggling mode
+  message.value = '';
   isError.value = false;
-  // Clear form fields when toggling mode, for a cleaner experience
   username.value = '';
   email.value = '';
   password.value = '';
 };
 
-// Handle input focus/blur for animation
 const handleInputFocus = (event) => {
   event.target.parentElement.style.transform = 'translateX(5px)';
 };
@@ -114,9 +112,7 @@ const handleInputBlur = (event) => {
   event.target.parentElement.style.transform = 'translateX(0)';
 };
 
-// Handle button click for animation (optional, as :disabled handles state)
 const handleButtonClick = (event) => {
-  // Only apply animation if button is not disabled
   if (!loading.value) {
     const button = event.target;
     button.style.transform = 'translateY(1px)';
@@ -143,39 +139,68 @@ const handleSubmit = async () => {
     message.value = response.data.message;
     isError.value = false;
 
-    if (!isRegister.value) {
-      // **--- 核心修改：登录成功逻辑 ---**
-      // 假设后端登录成功后返回 user_id, token, nickname, email, avatar_url
-      // 检查这些关键信息是否存在
-      const { user_id, token, nickname, email, avatar_url } = response.data;
+    if (!isRegister.value) { // 登录逻辑
+      // **核心：从后端响应中解构出所有相关数据，包括 'token'**
+      const {
+        user_id, token, nickname, email, avatar_url, registration_date,
+        is_profile_complete, age, gender, location, occupation,
+        interest_tags, preferred_book_types, preferred_authors,
+        preferred_genres, preferred_reading_duration, last_login_date
+      } = response.data;
 
+      // **重要检查：确保 user_id 和 token 都存在**
       if (user_id && token) {
-        // 将关键用户数据存储到 localStorage
-        localStorage.setItem('user_id', user_id);
-        localStorage.setItem('auth_token', token); // 你的token命名保持不变
-        localStorage.setItem('user_nickname', nickname || username.value); // 存储昵称，如果没有返回则用用户名
-        localStorage.setItem('user_email', email || ''); // 存储邮箱
-        localStorage.setItem('user_avatar_url', avatar_url || 'https://via.placeholder.com/150'); // 存储头像URL，提供默认值
+        // **将所有用户数据（包括 auth_token）打包成一个对象**
+        const userDataToStore = {
+          user_id: user_id,
+          auth_token: token, // <-- 确保这一行存在且 token 被正确赋值
+          nickname: nickname || username.value,
+          email: email || '',
+          avatar_url: avatar_url || 'https://via.placeholder.com/150',
+          registration_date: registration_date || null,
+          last_login_date: last_login_date || null,
+          age: age || null,
+          gender: gender || '',
+          location: location || '',
+          occupation: occupation || '',
+          interest_tags: interest_tags || '',
+          preferred_book_types: preferred_book_types || '',
+          preferred_authors: preferred_authors || '',
+          preferred_genres: preferred_genres || '',
+          preferred_reading_duration: preferred_reading_duration || '',
+          is_profile_complete: is_profile_complete === undefined ? false : is_profile_complete
+        };
 
-        // *** ADD THIS LINE: Dispatch a custom event after successful login ***
+        // **只存储一个键 'user_data' 到 localStorage**
+        localStorage.setItem('user_data', JSON.stringify(userDataToStore));
+
+        // 记录最后登录时间（如果需要单独存储，也可以放在 userDataToStore 里）
+        localStorage.setItem('user_last_login_time', new Date().toISOString());
+
+        console.log('AuthView.vue: 登录成功！存储的用户数据:', userDataToStore);
+
+        // 发送自定义事件，通知 App.vue 更新登录状态
         window.dispatchEvent(new Event('user-logged-in'));
 
-        // 使用 router.push() 进行跳转到用户主页
-        router.push('/userview'); // 假设你的用户主页路由是 /dashboard
+        // 根据 is_profile_complete 状态进行路由跳转
+        if (!userDataToStore.is_profile_complete) {
+          console.log("AuthView.vue: 用户资料不完整，跳转到 /user-onboarding");
+          router.push('/user-onboarding');
+        } else {
+          console.log("AuthView.vue: 用户资料完整，跳转到 /userview");
+          router.push('/userview');
+        }
+        alert('登录成功！');
+
       } else {
-        // 如果登录成功但缺少关键信息，也视为错误
         isError.value = true;
-        message.value = '登录成功，但用户信息不完整，请联系管理员。';
-        console.error('Login successful but missing user_id or token in response:', response.data);
+        message.value = '登录成功，但用户信息不完整（缺少用户ID或认证令牌），请联系管理员。';
+        console.error('AuthView.vue: Login successful but missing user_id or token in response:', response.data);
       }
-    } else {
-      // 注册成功后的处理
-      // After successful registration, clear fields and optionally switch to login mode
+    } else { // 注册逻辑
       username.value = '';
       email.value = '';
       password.value = '';
-      // toggleMode(); // Uncomment to automatically switch to login after registration
-      // 可以给用户提示注册成功，并建议他们登录
       message.value = '注册成功！请登录。';
     }
 
@@ -184,14 +209,15 @@ const handleSubmit = async () => {
     if (err.response && err.response.data && err.response.data.message) {
       message.value = err.response.data.message;
     } else {
-      message.value = '请求失败，请稍后再试。'; // More user-friendly error
-      console.error('Auth request failed:', err);
+      message.value = '请求失败，请稍后再试。';
+      console.error('AuthView.vue: Auth request failed:', err);
     }
   } finally {
     loading.value = false;
   }
 };
 </script>
+
 
 <style scoped>
 /* Base styles */

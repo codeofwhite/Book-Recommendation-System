@@ -91,7 +91,7 @@
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                }}</span>
+                  }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>

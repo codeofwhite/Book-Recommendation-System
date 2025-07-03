@@ -1,4 +1,3 @@
-<!-- 用户界面 -->
 <template>
   <div class="user-dashboard">
     <h2>用户仪表盘</h2>
@@ -17,9 +16,12 @@
         <button @click="toggleEditNickname">{{ isEditingNickname ? '保存' : '编辑' }}</button>
       </p>
       <p>邮箱: {{ user.email }}</p>
+      <p v-if="!user.is_profile_complete" class="profile-incomplete-warning">
+        您的资料未完善，请前往 <router-link to="/user-onboarding">完善资料</router-link>
+      </p>
     </section>
 
-    ---
+    <hr>
 
     <section class="favorite-books">
       <h3>我收藏的图书 ({{ favoriteBooks.length }})</h3>
@@ -38,7 +40,7 @@
       </ul>
     </section>
 
-    ---
+    <hr>
 
     <section class="favorite-reviews">
       <h3>我收藏的书评 ({{ favoriteReviews.length }})</h3>
@@ -68,6 +70,21 @@
 
 <script>
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+
+// Helper function to get user data from localStorage
+const getParsedUserData = () => {
+  const storedUserData = localStorage.getItem('user_data');
+  if (storedUserData) {
+    try {
+      return JSON.parse(storedUserData);
+    } catch (e) {
+      console.error("Error parsing user_data from localStorage:", e);
+      return null;
+    }
+  }
+  return null;
+};
 
 export default {
   name: 'UserDashboard',
@@ -78,13 +95,18 @@ export default {
         nickname: '',
         email: '',
         avatar_url: '',
+        is_profile_complete: false,
       },
-      favoriteBooks: [], // 存储用户收藏的图书详情
-      favoriteReviews: [], // 存储用户收藏的书评详情
+      favoriteBooks: [],
+      favoriteReviews: [],
       isEditingNickname: false,
       editableNickname: '',
       selectedAvatarFile: null,
     };
+  },
+  setup() {
+    const router = useRouter();
+    return { router };
   },
   created() {
     this.fetchUserData();
@@ -92,190 +114,163 @@ export default {
     this.fetchFavoriteReviews();
   },
   methods: {
-    // 获取用户基本信息
     async fetchUserData() {
-      const userId = localStorage.getItem('user_id');
-      if (!userId) {
-        console.error('User ID not found in localStorage. Redirecting to login.');
-        this.$router.push('/login');
+      const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
+
+      if (!currentStoredUserData || !currentStoredUserData.user_id) {
+        console.error('UserView: User data not found in localStorage. Redirecting to login.');
+        this.router.push({ name: 'auth' });
         return;
       }
+
+      this.user.user_id = currentStoredUserData.user_id;
+      // 优先从 localStorage 获取，减少 API 调用
+      this.user.nickname = currentStoredUserData.nickname || '';
+      this.user.email = currentStoredUserData.email || '';
+      this.user.avatar_url = currentStoredUserData.avatar_url || '';
+      this.user.is_profile_complete = currentStoredUserData.is_profile_complete || false;
+      this.editableNickname = this.user.nickname;
+
       try {
-        // 假设 service-a 是用户管理服务
-        const response = await axios.get(`/service-a/api/users/${userId}`);
-        this.user = response.data;
+        const response = await axios.get(`/service-a/api/users/${this.user.user_id}`);
+        const userDataFromBackend = response.data; // 从后端获取的最新资料
+
+        // **核心修改：更新 localStorage 中的 user_data，但保留 auth_token**
+        // 合并后端返回的资料，并保留 auth_token
+        const updatedUserData = {
+          ...currentStoredUserData, // 保留所有现有字段，包括 auth_token
+          ...userDataFromBackend,   // 合并后端返回的最新资料
+          // 确保 is_profile_complete 字段也被正确更新
+          is_profile_complete: userDataFromBackend.is_profile_complete !== undefined ? userDataFromBackend.is_profile_complete : currentStoredUserData.is_profile_complete
+        };
+        localStorage.setItem('user_data', JSON.stringify(updatedUserData));
+        console.log('UserView: fetchUserData updated localStorage with:', updatedUserData);
+
+        // 更新组件的 user data
+        this.user = updatedUserData; // 直接使用合并后的数据更新组件状态
         this.editableNickname = this.user.nickname;
-        localStorage.setItem('user_nickname', this.user.nickname); // 确保本地存储也更新
-        localStorage.setItem('user_avatar_url', this.user.avatar_url); // 确保本地存储也更新
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        // 如果用户信息获取失败，可能是用户未登录或会话过期，可以提示并重定向
-        alert('获取用户信息失败，请重新登录。');
-        this.$router.push('/login');
-      }
-    },
 
-    // 获取用户收藏的图书列表并获取详细信息
-    async fetchFavoriteBooks() {
-      const userId = localStorage.getItem('user_id');
-      if (!userId) return;
-      try {
-        // 首先从 service-c (user_engagement_service) 获取收藏的 book_id 列表
-        // 注意：这里 /api/books/favorite_books 是我上面建议你新增的后端路由
-        const bookIdsResponse = await axios.get(`/service-c/api/books/favorite_books`, {
-          params: { userId }
-        });
-        const bookIds = bookIdsResponse.data;
-        console.log(bookIds)
-        if (bookIds.length > 0) {
-          // 然后，根据这些 book_id 去 service-b (Book Management Service) 获取图书的详细信息
-          // 假设 service-b 有一个批量获取图书信息的API，或者你可以循环调用
-          // 这里我们假设 service-b 有一个 /api/books/batch?ids=id1,id2 的接口
-          // 如果没有，你需要逐个ID请求或者让后端 service-c 聚合数据
-          const booksDetailResponse = await axios.get(`/service-b/api/books/batch`, {
-            params: {
-              ids: bookIds.join(',') // 拼接成逗号分隔的字符串
-            }
-          });
-          this.favoriteBooks = booksDetailResponse.data; // 假设返回的是图书对象数组
-        } else {
-          this.favoriteBooks = [];
+      } catch (error) {
+        console.error('UserView: Error fetching user data from API:', error);
+        if (error.response && error.response.status === 401) {
+          alert('会话已过期，请重新登录。');
+          this.router.push({ name: 'auth' });
+        } else if (!currentStoredUserData) {
+          this.router.push({ name: 'auth' });
         }
-      } catch (error) {
-        console.error('Error fetching favorite books:', error);
-        this.favoriteBooks = []; // 出现错误时清空列表
       }
     },
 
-    // 获取用户收藏的书评列表并获取详细信息
-    async fetchFavoriteReviews() {
-      const userId = localStorage.getItem('user_id');
-      console.log(userId)
-      if (!userId) return;
+    async fetchFavoriteBooks() {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
+      if (!userId) { console.warn('UserView: User ID not available for fetching favorite books.'); return; }
       try {
-        // 首先从 service-c (user_engagement_service) 获取收藏的 review_id 列表
-        // 注意：这里 /api/reviews/favorite_reviews 是我上面建议你新增的后端路由
-        const reviewIdsResponse = await axios.get(`/service-c/api/reviews/favorite_reviews`, {
-          params: { userId }
-        });
+        const bookIdsResponse = await axios.get(`/service-c/api/books/favorite_books`, { params: { userId } });
+        const bookIds = bookIdsResponse.data;
+        console.log("UserView: 收藏图书 IDs:", bookIds);
+        if (bookIds.length > 0) {
+          const booksDetailResponse = await axios.get(`/service-b/api/books/batch`, { params: { ids: bookIds.join(',') } });
+          this.favoriteBooks = booksDetailResponse.data;
+        } else { this.favoriteBooks = []; }
+      } catch (error) { console.error('UserView: Error fetching favorite books:', error); this.favoriteBooks = []; }
+    },
+
+    async fetchFavoriteReviews() {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
+      if (!userId) { console.warn('UserView: User ID not available for fetching favorite reviews.'); return; }
+      try {
+        const reviewIdsResponse = await axios.get(`/service-c/api/reviews/favorite_reviews`, { params: { userId } });
         const reviewIds = reviewIdsResponse.data;
-        console.log(reviewIds)
+        console.log("UserView: 收藏书评 IDs:", reviewIds);
         if (reviewIds.length > 0) {
-          // 然后，根据这些 review_id 去 service-c (User Engagement Service，因为它现在也处理书评内容)
-          // 或者如果你的书评内容是在 service-b，则需要调用 service-b 的接口
-          // 这里我们假设 service-c 有一个 /api/reviews/batch?ids=id1,id2 的接口
-          const reviewsDetailResponse = await axios.get(`/service-c/api/reviews/batch`, { // service-c 有批量获取接口
-            params: {
-              ids: reviewIds.join(',')
-            }
-          });
-          // 你还需要进一步处理这些书评，获取评论者的昵称和头像
+          const reviewsDetailResponse = await axios.get(`/service-c/api/reviews/batch`, { params: { ids: reviewIds.join(',') } });
           this.favoriteReviews = await Promise.all(reviewsDetailResponse.data.map(async review => {
-            // 假设你有一个获取用户信息的服务（service-a），可以根据 userId 获取昵称和头像
-            let reviewerNickname = '未知用户';
-            let reviewerAvatarUrl = 'https://via.placeholder.com/50';
+            let reviewerNickname = '未知用户'; let reviewerAvatarUrl = 'https://via.placeholder.com/50';
             try {
               const userProfile = await axios.get(`/service-a/api/users/${review.userId}`);
               reviewerNickname = userProfile.data.nickname || '匿名用户';
               reviewerAvatarUrl = userProfile.data.avatar_url || 'https://via.placeholder.com/50';
-            } catch (userError) {
-              console.warn(`Could not fetch user info for review userId ${review.userId}:`, userError);
-            }
-            // 如果你的后端 Review 表里没有 likeCount 和 collectCount，这里需要从 engagement service 再次查询
-            // 如果你的 review_engagement.py 后端能返回这些，则不需要额外查询
-
-
-            return {
-              ...review,
-              reviewerNickname,
-              reviewerAvatarUrl,
-              // 这里假设后端返回的 review 对象包含了 likeCount 和 collectCount，否则需要额外获取
-            };
+            } catch (userError) { console.warn(`UserView: Could not fetch user info for review userId ${review.userId}:`, userError); }
+            return { ...review, reviewerNickname, reviewerAvatarUrl, };
           }));
-        } else {
-          this.favoriteReviews = [];
-        }
-      } catch (error) {
-        console.error('Error fetching favorite reviews:', error);
-        this.favoriteReviews = [];
-      }
+        } else { this.favoriteReviews = []; }
+      } catch (error) { console.error('UserView: Error fetching favorite reviews:', error); this.favoriteReviews = []; }
     },
 
     toggleEditNickname() {
-      if (this.isEditingNickname) {
-        this.updateNickname();
-      }
+      if (this.isEditingNickname) { this.updateNickname(); }
       this.isEditingNickname = !this.isEditingNickname;
     },
     async updateNickname() {
-      try {
-        const userId = localStorage.getItem('user_id');
-        if (!userId) return;
-        // 假设 service-a 是用户管理服务
-        await axios.put(`/service-a/api/users/${userId}/nickname`, { nickname: this.editableNickname });
-        this.user.nickname = this.editableNickname; // 更新本地数据
-        localStorage.setItem('user_nickname', this.editableNickname); // 同步更新 localStorage
-        alert('昵称更新成功！');
-      } catch (error) {
-        console.error('Error updating nickname:', error);
-        alert('昵称更新失败。');
-      }
-    },
-    handleAvatarChange(event) {
-      this.selectedAvatarFile = event.target.files[0];
-    },
-    async uploadAvatar() {
-      if (!this.selectedAvatarFile) {
-        alert('请选择一个头像文件。');
+      const currentStoredUserData = getParsedUserData();
+      const userId = currentStoredUserData ? currentStoredUserData.user_id : null;
+      if (!userId) {
+        console.error('UserView: User ID not found for updating nickname.');
+        alert('用户ID缺失，无法更新昵称。');
+        this.router.push({ name: 'auth' });
         return;
       }
       try {
-        const userId = localStorage.getItem('user_id');
-        if (!userId) return;
+        await axios.put(`/service-a/api/users/${userId}/nickname`, { nickname: this.editableNickname });
+        this.user.nickname = this.editableNickname;
+
+        // **核心修改：同步更新 localStorage 中的 'user_data'，保留 auth_token**
+        if (currentStoredUserData) {
+          const updatedUserData = {
+            ...currentStoredUserData,
+            nickname: this.editableNickname // 更新昵称
+          };
+          localStorage.setItem('user_data', JSON.stringify(updatedUserData));
+          console.log('UserView: updateNickname updated localStorage with:', updatedUserData);
+        }
+        alert('昵称更新成功！');
+      } catch (error) { console.error('UserView: Error updating nickname:', error); alert('昵称更新失败。'); }
+    },
+    handleAvatarChange(event) { this.selectedAvatarFile = event.target.files[0]; },
+    async uploadAvatar() {
+      if (!this.selectedAvatarFile) { alert('请选择一个头像文件。'); return; }
+      const currentStoredUserData = getParsedUserData();
+      const userId = currentStoredUserData ? currentStoredUserData.user_id : null;
+      if (!userId) {
+        console.error('UserView: User ID not found for uploading avatar.');
+        alert('用户ID缺失，无法上传头像。');
+        this.router.push({ name: 'auth' });
+        return;
+      }
+      try {
         const formData = new FormData();
         formData.append('avatar', this.selectedAvatarFile);
-        // 假设 service-a 是用户管理服务
-        const response = await axios.post(`/service-a/api/users/${userId}/avatar`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        this.user.avatar_url = response.data.avatar_url; // 更新本地头像URL
-        localStorage.setItem('user_avatar_url', this.user.avatar_url); // 同步更新 localStorage
-        this.selectedAvatarFile = null; // 清除已选择的文件
+        const response = await axios.post(`/service-a/api/users/${userId}/avatar`, formData, { headers: { 'Content-Type': 'multipart/form-data', }, });
+        this.user.avatar_url = response.data.avatar_url;
+
+        // **核心修改：同步更新 localStorage 中的 'user_data'，保留 auth_token**
+        if (currentStoredUserData) {
+          const updatedUserData = {
+            ...currentStoredUserData,
+            avatar_url: this.user.avatar_url // 更新头像URL
+          };
+          localStorage.setItem('user_data', JSON.stringify(updatedUserData));
+          console.log('UserView: uploadAvatar updated localStorage with:', updatedUserData);
+        }
+        this.selectedAvatarFile = null;
         alert('头像上传成功！');
-      } catch (error) {
-        console.error('Error uploading avatar:', error);
-        alert('头像上传失败。');
-      }
+      } catch (error) { console.error('UserView: Error uploading avatar:', error); alert('头像上传失败。'); }
     },
-
-    // 跳转到图书详情页
     goToBookDetails(bookId) {
-      // 确保 bookId 有效
-      if (!bookId) {
-        console.error('Tried to navigate to BookDetails with an undefined or null bookId.');
-        alert('无法打开图书详情，图书ID缺失。');
-        return;
-      }
-      this.$router.push({ name: 'BookDetails', params: { bookId: bookId } }); // <-- 将 'id' 改为 'bookId'
+      if (!bookId) { console.error('UserView: Tried to navigate to BookDetails with an undefined or null bookId.'); alert('无法打开图书详情，图书ID缺失。'); return; }
+      this.router.push({ name: 'BookDetails', params: { bookId: bookId } });
     },
-
     formatDate(dateString) {
       if (!dateString) return '';
-      // 尝试解析 ISO 8601 格式，例如 "2025-07-01T12:09:08.000Z"
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) { // 检查是否是有效日期
-        // 如果解析失败，尝试作为普通字符串返回
-        return dateString;
-      }
+      if (isNaN(date.getTime())) { return dateString; }
       return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
     },
     truncateContent(content, maxLength = 100) {
       if (!content) return '';
-      if (content.length > maxLength) {
-        return content.substring(0, maxLength) + '...';
-      }
+      if (content.length > maxLength) { return content.substring(0, maxLength) + '...'; }
       return content;
     },
   },
@@ -283,69 +278,54 @@ export default {
 </script>
 
 <style scoped>
+/* 你的样式保持不变 */
 .user-dashboard {
   max-width: 900px;
-  margin: 20px auto;
-  padding: 20px;
+  margin: 40px auto;
+  padding: 30px;
   background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-h2 {
+.user-dashboard h2 {
   text-align: center;
   color: #333;
   margin-bottom: 30px;
+  font-size: 2.2em;
 }
 
 section {
   background-color: #fff;
-  padding: 20px;
+  padding: 25px;
   border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-h3 {
-  color: #555;
-  border-bottom: 1px solid #eee;
+section h3 {
+  color: #007bff;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
   padding-bottom: 10px;
-  margin-bottom: 20px;
+  font-size: 1.6em;
 }
 
-/* 用户信息 */
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.user-avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
-  border: 2px solid #ddd;
-}
-
+/* User Info Section */
 .user-info p {
-  margin: 10px 0;
+  margin-bottom: 10px;
   font-size: 1.1em;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .user-info input[type="text"] {
-  padding: 5px 10px;
-  border: 1px solid #ccc;
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  margin-right: 10px;
 }
 
 .user-info button {
@@ -355,14 +335,38 @@ h3 {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s;
 }
 
 .user-info button:hover {
   background-color: #0056b3;
 }
 
-/* 收藏列表 */
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.user-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #eee;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-section input[type="file"] {
+  flex-grow: 1;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 5px;
+  background-color: #f0f0f0;
+}
+
+/* Book and Review Lists */
 .book-list,
 .review-list {
   list-style: none;
@@ -373,29 +377,29 @@ h3 {
 .review-item {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
   padding: 15px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background-color: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #eee;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s;
+}
+
+.book-item:last-child,
+.review-item:last-child {
+  border-bottom: none;
 }
 
 .book-item:hover,
 .review-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #f6f6f6;
 }
 
 .book-cover {
   width: 80px;
   height: 120px;
   object-fit: cover;
-  margin-right: 20px;
   border-radius: 4px;
-  flex-shrink: 0;
+  margin-right: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .book-details h4 {
@@ -405,12 +409,11 @@ h3 {
 }
 
 .book-details p {
-  margin: 0 0 3px 0;
-  color: #666;
+  margin: 0;
+  color: #777;
   font-size: 0.95em;
 }
 
-/* 书评特定样式 */
 .reviewer-avatar {
   width: 40px;
   height: 40px;
@@ -423,37 +426,47 @@ h3 {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .reviewer-nickname {
   font-weight: bold;
-  margin-right: 15px;
   color: #333;
+  margin-right: 10px;
 }
 
 .review-rating {
-  background-color: #f0ad4e;
-  color: white;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  margin-right: 15px;
+  font-size: 0.9em;
+  color: #f39c12;
+  margin-right: 10px;
 }
 
 .review-time {
-  color: #999;
   font-size: 0.85em;
+  color: #999;
 }
 
 .review-content {
-  margin-bottom: 10px;
-  line-height: 1.6;
+  font-size: 1em;
   color: #444;
+  line-height: 1.5;
+  margin-top: 5px;
 }
 
 .review-actions span {
   margin-right: 15px;
-  color: #777;
   font-size: 0.9em;
+  color: #666;
+}
+
+.profile-incomplete-warning {
+  color: orange;
+  font-weight: bold;
+  margin-top: 15px;
+}
+
+.profile-incomplete-warning a {
+  color: #007bff;
+  text-decoration: underline;
 }
 </style>
