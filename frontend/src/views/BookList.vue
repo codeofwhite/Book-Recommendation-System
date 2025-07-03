@@ -122,17 +122,19 @@
         <div class="oracle-list">
           <transition-group name="recommendation-slide" tag="div">
             <div v-for="(rec, index) in recommendations" :key="index" class="oracle-insight">
-              <div class="oracle-effigy">
-                <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
-              </div>
-              <div class="oracle-details">
-                <h4 class="oracle-insight-title">{{ rec.title }}</h4>
-                <p class="oracle-insight-author">{{ rec.author }}</p>
-                <div class="oracle-celestial-guidance">
-                  <span class="stars-illuminated-small">{{ '★'.repeat(Math.round(rec.rating)) }}</span>
-                  <span class="whispers-of-critics-small">({{ rec.rating }})</span>
+              <router-link :to="{ name: 'BookDetails', params: { bookId: rec.bookId } }" class="oracle-insight-link">
+                <div class="oracle-effigy">
+                  <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
                 </div>
-              </div>
+                <div class="oracle-details">
+                  <h4 class="oracle-insight-title">{{ rec.title }}</h4>
+                  <p class="oracle-insight-author">{{ rec.author }}</p>
+                  <div class="oracle-celestial-guidance">
+                    <span class="stars-illuminated-small">{{ '★'.repeat(Math.round(rec.rating)) }}</span>
+                    <span class="whispers-of-critics-small">({{ rec.rating }})</span>
+                  </div>
+                </div>
+              </router-link>
             </div>
           </transition-group>
         </div>
@@ -144,8 +146,19 @@
 <script>
 import axios from 'axios';
 
-// 导入我们创建的日志函数
-import { trackBookClick } from '../services/logger.js';
+// Helper function to get user data from localStorage
+const getParsedUserData = () => {
+  const storedUserData = localStorage.getItem('user_data');
+  if (storedUserData) {
+    try {
+      return JSON.parse(storedUserData);
+    } catch (e) {
+      console.error("Error parsing user_data from localStorage:", e);
+      return null;
+    }
+  }
+  return null;
+};
 
 export default {
   name: 'BookListWithRecommendation',
@@ -157,6 +170,14 @@ export default {
   },
   data() {
     return {
+      user: {
+        user_id: '',
+        nickname: '',
+        email: '',
+        avatar_url: '',
+        is_profile_complete: false,
+      },
+
       inputSearchKeyword: '',
       initialSearchKeyword: '',
       allBooks: [], // This will hold ALL fetched books
@@ -285,8 +306,9 @@ export default {
   created() {
     this.initialSearchKeyword = this.searchKeyword;
     this.inputSearchKeyword = this.initialSearchKeyword;
-    this.fetchRecommendations();
     this.fetchBooks(); // Fetch all books initially
+    this.fetchUserData();
+    this.fetchRecommendations();
   },
   watch: {
     // Watch filteredBooks to reset currentPage when filters change
@@ -298,6 +320,52 @@ export default {
     },
   },
   methods: {
+    async fetchUserData() {
+      const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
+
+      if (!currentStoredUserData || !currentStoredUserData.user_id) {
+        console.error('UserView: User data not found in localStorage. Redirecting to login.');
+        this.router.push({ name: 'auth' });
+        return;
+      }
+
+      this.user.user_id = currentStoredUserData.user_id;
+      // 优先从 localStorage 获取，减少 API 调用
+      this.user.nickname = currentStoredUserData.nickname || '';
+      this.user.email = currentStoredUserData.email || '';
+      this.user.avatar_url = currentStoredUserData.avatar_url || '';
+      this.user.is_profile_complete = currentStoredUserData.is_profile_complete || false;
+      this.editableNickname = this.user.nickname;
+
+      try {
+        const response = await axios.get(`/service-a/api/users/${this.user.user_id}`);
+        const userDataFromBackend = response.data; // 从后端获取的最新资料
+
+        // **核心修改：更新 localStorage 中的 user_data，但保留 auth_token**
+        // 合并后端返回的资料，并保留 auth_token
+        const updatedUserData = {
+          ...currentStoredUserData, // 保留所有现有字段，包括 auth_token
+          ...userDataFromBackend,   // 合并后端返回的最新资料
+          // 确保 is_profile_complete 字段也被正确更新
+          is_profile_complete: userDataFromBackend.is_profile_complete !== undefined ? userDataFromBackend.is_profile_complete : currentStoredUserData.is_profile_complete
+        };
+        localStorage.setItem('user_data', JSON.stringify(updatedUserData));
+        console.log('UserView: fetchUserData updated localStorage with:', updatedUserData);
+
+        // 更新组件的 user data
+        this.user = updatedUserData; // 直接使用合并后的数据更新组件状态
+        this.editableNickname = this.user.nickname;
+
+      } catch (error) {
+        console.error('UserView: Error fetching user data from API:', error);
+        if (error.response && error.response.status === 401) {
+          alert('会话已过期，请重新登录。');
+          this.router.push({ name: 'auth' });
+        } else if (!currentStoredUserData) {
+          this.router.push({ name: 'auth' });
+        }
+      }
+    },
     handleSearch() {
       this.applyFilters();
     },
@@ -317,9 +385,35 @@ export default {
       }
     },
     async fetchRecommendations() {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
       try {
-        const response = await axios.get('/service-b/api/recommendations');
-        this.recommendations = response.data;
+        const recommendationApiUrl = `/service-d/recommendations/offline/${userId}`; // 根据实际API网关或Nginx配置调整
+        const response = await axios.get(recommendationApiUrl);
+
+        // 后端返回的 recommendations 列表，只包含 book_id, title, category
+        const recommendedBookIds = response.data.recommendations;
+
+        // 根据后端推荐的 book_id，从 allBooks 中查找完整的书籍信息
+        // 这里的查找逻辑可以优化，例如使用 Map 结构来提高查找效率
+        const fullRecommendations = recommendedBookIds.map(recBook => {
+          // 在 allBooks 中找到匹配的完整书籍信息
+          const fullBookInfo = this.allBooks.find(book => book.bookId === recBook.book_id);
+          // 合并后端返回的简化信息和 allBooks 中的完整信息
+          // 确保显示在侧边栏的推荐书籍有 coverImg, author, rating 等字段
+          return {
+            bookId: recBook.book_id,
+            title: recBook.title,
+            category: recBook.category,
+            reason: recBook.reason, // 模拟推荐理由
+            coverImg: fullBookInfo ? fullBookInfo.coverImg : 'path/to/default/cover.jpg', // 默认图片
+            author: fullBookInfo ? fullBookInfo.author : 'Unknown Author',
+            rating: fullBookInfo ? fullBookInfo.rating : 0 // 默认评分
+          };
+        });
+
+        this.recommendations = fullRecommendations;
+
       } catch (error) {
         console.error('Error fetching recommendations:', error);
         this.recommendations = [];

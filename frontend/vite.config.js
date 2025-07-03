@@ -33,6 +33,13 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (path) => path.replace(/^\/service-c/, ""),
         },
+        // 新增 5002 端口的推荐服务代理
+        "/service-d": { // 使用 /service-d 作为推荐服务的前缀，你也可以改为 /api/recommendations
+          target: currentProxy.targetD,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/service-d/, ""),
+        },
       },
     },
     base: "/",

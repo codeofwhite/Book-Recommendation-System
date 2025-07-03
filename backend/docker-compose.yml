@@ -384,6 +384,92 @@ services:
       retries: 5
       start_period: 10s # 给予启动时间
 
+  # --- HDFS Services ---
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
+    container_name: namenode
+    ports:
+      - "9870:9870" # HDFS Web UI
+      - "9900:9000" # HDFS Default Port
+    volumes:
+      - namenode_data:/hadoop/dfs/name # 持久化 NameNode 数据
+      - ./namenode-entrypoint.sh:/usr/local/bin/namenode-entrypoint.sh # 挂载你的启动脚本
+    environment:
+      # These typically come from Hadoop's core-site.xml, but can be set via env vars for Docker
+      HDFS_CONF_dfs_namenode_name_dir: file:///hadoop/dfs/name
+      HDFS_CONF_dfs_replication: 1 # For a single-node setup
+    env_file:
+      - ./hadoop.env # For HDFS specific configurations (explained below)
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-report"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Give NameNode ample time to start and format
+    command: ["bash", "/usr/local/bin/namenode-entrypoint.sh"]
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
+    container_name: datanode
+    volumes:
+      - datanode_data:/hadoop/dfs/data # 持久化 DataNode 数据
+    environment:
+      HDFS_CONF_dfs_datanode_data_dir: file:///hadoop/dfs/data
+    env_file:
+      - ./hadoop.env # For HDFS specific configurations
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-getServiceState", "hdfs://namenode:9000/"] # Check if connected to NameNode
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Flink JobManager - NEW ADDITION
+  flink-jobmanager:
+    image: apache/flink:1.18.1-scala_2.12-java11 # 选择适合你的Flink版本
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081" # Flink Web UI
+    command: jobmanager # 启动 JobManager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 1 # 每个 TaskManager 的槽位数量，根据需要调整
+        metrics.reporter.promgateway.class: org.apache.flink.metrics.prometheus.PrometheusPushGatewayReporter
+        metrics.reporter.promgateway.host: localhost
+        metrics.reporter.promgateway.port: 9091
+    volumes:
+      - ./flink_jobs:/opt/flink/usrlib # 挂载你的 Flink Job JARs
+    depends_on:
+      kafka:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy # 如果你的 Flink Job 需要写入 ClickHouse
+      namenode:
+        condition: service_healthy # 如果你的 Flink Job 需要读取 HDFS
+    healthcheck: # <-- 新增这部分
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/overview || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # 给JobManager更多时间启动
+
+  # Flink TaskManager - NEW ADDITION
+  flink-taskmanager:
+    image: apache/flink:1.18.1-scala_2.12-java11
+    container_name: flink-taskmanager
+    command: taskmanager # 启动 TaskManager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 1
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+
 volumes:
   auth_mysql_data:
   book_mongo_data:
@@ -396,3 +482,5 @@ volumes:
   datax_logs:
   clickhouse_data: # 为 ClickHouse 添加数据卷
   clickhouse_logs: # 为 ClickHouse 添加日志卷
+  namenode_data: # NameNode 数据卷
+  datanode_data: # DataNode 数据卷
