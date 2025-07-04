@@ -80,7 +80,7 @@ const logout = () => {
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   /* A delicate bottom border */
-
+  
   z-index: 100;
 }
 

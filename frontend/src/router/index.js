@@ -58,6 +58,12 @@ const router = createRouter({
   // 使用 Vite 的环境变量访问方式
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (to.path.startsWith('/read/')) {
+      return { top: 110 }; // 匹配 /read/xxx 的所有路径
+    }
+    return savedPosition || { top: 0 }; // 其他情况保持默认
+  },
 });
 
 // 添加路由导航守卫
