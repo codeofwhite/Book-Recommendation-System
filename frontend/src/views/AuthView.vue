@@ -156,7 +156,7 @@ const handleSubmit = async () => {
           auth_token: token, // <-- 确保这一行存在且 token 被正确赋值
           nickname: nickname || username.value,
           email: email || '',
-          avatar_url: avatar_url || 'https://via.placeholder.com/150',
+          avatar_url: avatar_url || 'https://th.bing.com/th/id/OIP.cTPVthB0oT1RXrEcSHaaTwHaHa?w=191&h=191&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
           registration_date: registration_date || null,
           last_login_date: last_login_date || null,
           age: age || null,

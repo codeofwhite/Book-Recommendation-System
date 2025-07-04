@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
 import requests
 from bs4 import BeautifulSoup
+import random # 新增导入 random 模块
 
 # 从config中导入配置
 from config import Config
@@ -247,3 +248,128 @@ class BookModel:
         else:
             print(f"{datetime.now()} MongoDB connection failed at startup. Data import skipped.")
             return False
+
+    # --- 新增用于首页推荐和榜单的方法 ---
+
+    @classmethod
+    def get_popular_books(cls, limit=4):
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 热门书籍：基于 'rating' 和 'numRatings' 综合排序，且有封面图
+            # 聚合管道实现更复杂的排序，例如 (rating * numRatings) 作为一个指标
+            # 或者简单地按 numRatings 降序，rating 降序
+            books = list(collection.find(
+                {"coverImg": {"$ne": None}, "rating": {"$ne": None}, "numRatings": {"$ne": None}},
+                {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'rating': 1, 'numRatings': 1}
+            ).sort([
+                ('numRatings', -1), # 首先按评分人数降序
+                ('rating', -1)      # 然后按平均评分降序
+            ]).limit(limit))
+            return books, None
+        except Exception as e:
+            print(f"Error fetching popular books from MongoDB: {e}")
+            return None, "Failed to retrieve popular books"
+
+    @classmethod
+    def get_new_books(cls, limit=5):
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 新书榜：基于 'publishDate' 降序，且有封面图
+            # 需要处理 publishDate 字段的格式，如果存储为字符串，需要排序时注意
+            # 最佳实践是将其存储为 ISODate 类型
+            books = list(collection.find(
+                {"coverImg": {"$ne": None}, "publishDate": {"$ne": None}},
+                {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'publishDate': 1}
+            ).sort([
+                ('publishDate', -1) # 按出版日期降序
+            ]).limit(limit))
+            return books, None
+        except Exception as e:
+            print(f"Error fetching new books from MongoDB: {e}")
+            return None, "Failed to retrieve new books"
+
+    @classmethod
+    def get_top_rated_books(cls, limit=5):
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 高分榜：基于 'rating' 降序，且有封面图和足够的评分人数
+            # 可以设置一个最低评分人数门槛，避免只有少数人高评导致不准确
+            books = list(collection.find(
+                {"coverImg": {"$ne": None}, "rating": {"$ne": None}, "numRatings": {"$gte": 500}}, # 假设至少有500人评分
+                {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'rating': 1, 'numRatings': 1}
+            ).sort([
+                ('rating', -1) # 按平均评分降序
+            ]).limit(limit))
+            return books, None
+        except Exception as e:
+            print(f"Error fetching top rated books from MongoDB: {e}")
+            return None, "Failed to retrieve top rated books"
+
+    @classmethod
+    def get_personalized_books(cls, user_id=None, limit=4):
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 这是一个简单的个性化推荐占位符
+            # 在没有用户行为数据的情况下，可以随机选择一些非热门书籍
+            # 或者根据用户喜爱的 genres 进行简单的筛选
+            
+            # 首先获取一些热门书籍的ID，以便排除它们，让个性化推荐看起来“不同”
+            popular_books, _ = cls.get_popular_books(limit=limit * 2) # 获取多一点，确保随机选择时有足够选择
+            popular_book_ids = [book.get('id') for book in popular_books if book.get('id')]
+
+            # 随机从所有有封面且ID不在热门列表中的书籍中选择
+            # 实际应用中，这里应该加入用户偏好、历史阅读等复杂逻辑
+            query = {"coverImg": {"$ne": None}}
+            if popular_book_ids:
+                query["id"] = {"$nin": popular_book_ids} # 排除热门书籍
+
+            # 使用 aggregate 管道进行随机采样，更适合大数据量
+            pipeline = [
+                {"$match": query},
+                {"$sample": {"size": limit}}, # 随机采样指定数量
+                {"$project": {
+                    '_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1,
+                    'genres': 1, 'coverImg': 1, 'rating': 1
+                }}
+            ]
+            
+            books = list(collection.aggregate(pipeline))
+            
+            if not books and popular_books: # 如果排除热门后没找到，就从热门里随机选
+                books = random.sample(popular_books, min(limit, len(popular_books)))
+                
+            return books, None
+        except Exception as e:
+            print(f"Error fetching personalized books from MongoDB: {e}")
+            return None, "Failed to retrieve personalized books"
+
+    @classmethod
+    def get_daily_book(cls):
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 每日一书：可以每天随机选择一本，或者实现更复杂的逻辑
+            # 使用日期作为随机种子，确保一天内多次请求返回同一本书
+            today = datetime.now().day
+            
+            # 确保书籍有封面图
+            books_with_cover = list(collection.find({"coverImg": {"$ne": None}}, {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'description': 1, 'rating':1}))
+            
+            if books_with_cover:
+                random.seed(today) # 使用当天的日期作为随机种子
+                selected_book = random.choice(books_with_cover)
+                return selected_book, None
+            else:
+                return None, "No books with cover images found for daily recommendation"
+        except Exception as e:
+            print(f"Error fetching daily book from MongoDB: {e}")
+            return None, "Failed to retrieve daily book"

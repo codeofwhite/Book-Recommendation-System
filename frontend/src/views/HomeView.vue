@@ -23,11 +23,11 @@
             </div>
             <div class="book-grid">
               <div v-for="book in popularBooks" :key="book.id" class="book-card">
-                <img :src="book.coverImage" :alt="book.title" class="book-cover" />
+                <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
                   <p class="book-author">Authored by: {{ book.author }}</p>
-                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">Genre: {{ book.genres[0] }}</p>
                   <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
                 </div>
               </div>
@@ -43,11 +43,11 @@
             </div>
             <div class="book-grid">
               <div v-for="book in personalizedBooks" :key="book.id" class="book-card">
-                <img :src="book.coverImage" :alt="book.title" class="book-cover" />
+                <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
                   <p class="book-author">Authored by: {{ book.author }}</p>
-                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">Genre: {{ book.genres[0] }}</p>
                   <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
                 </div>
               </div>
@@ -107,10 +107,11 @@
       <div class="daily-book-card">
         <h2 class="sidebar-title">The Day's Chosen Volume</h2>
         <div v-if="dailyBook" class="book-of-the-day">
-          <img :src="dailyBook.coverImage" :alt="dailyBook.title" class="daily-book-cover" />
+          <img :src="dailyBook.coverImg" :alt="dailyBook.title" class="daily-book-cover" />
           <h3 class="daily-book-title">{{ dailyBook.title }}</h3>
           <p class="daily-book-author">Authored by: {{ dailyBook.author }}</p>
-          <p class="daily-book-genre">Genre: {{ dailyBook.genre }}</p>
+          <p class="daily-book-genre" v-if="dailyBook.genres && dailyBook.genres.length > 0">Genre: {{
+            dailyBook.genres[0] }}</p>
           <button @click="viewBookDetails(dailyBook.id)" class="details-button">Unfold the Narrative</button>
         </div>
         <p v-else class="no-daily-book">
@@ -124,53 +125,92 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios'; // 引入axios
 
 const router = useRouter();
-const loading = ref(true); // 控制加载状态
-const isSidebarOpen = ref(false); // 控制侧边栏展开/收起状态
-
-// 模拟数据
-const mockBooks = [
-  { id: '1', title: 'Vue.js 3 实践指南', author: '前端老张', genre: '编程技术', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '2', title: '微服务架构设计', author: '架构师李工', genre: '系统设计', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '3', title: 'Python Flask 实战', author: 'Python 小白', genre: '后端开发', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '4', title: '算法导论', author: 'Thomas H. Cormen', genre: '计算机科学', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '5', title: '三体', author: '刘慈欣', genre: '科幻小说', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '6', title: '设计模式', author: 'Erich Gamma', genre: '编程技术', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '7', title: '人类简史', author: '尤瓦尔·赫拉利', genre: '历史', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '8', title: '非暴力沟通', author: '马歇尔·卢森堡', genre: '心理学', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-];
+const loading = ref(true);
+const isSidebarOpen = ref(false);
 
 const popularBooks = ref([]);
 const personalizedBooks = ref([]);
-const bookRankings = ref([
-  { title: '畅销榜', books: [mockBooks[4], mockBooks[0], mockBooks[6], mockBooks[7], mockBooks[2], mockBooks[1], mockBooks[3]] }, // Added more for testing slice
-  { title: '新书榜', books: [mockBooks[7], mockBooks[5], mockBooks[1], mockBooks[0], mockBooks[4], mockBooks[6], mockBooks[3]] }, // Added more for testing slice
-]);
+const bookRankings = ref([]); // 修改为响应式对象，等待从后端获取榜单数据
 const activities = ref([
+  // 活动数据暂时保持模拟，因为后端没有提供活动接口
   { id: 'a1', title: '夏日读书挑战赛：奇幻文学专题', date: '2025.07.01 - 2025.08.31', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
   { id: 'a2', title: '线上读书分享会：哲学思辨之夜', date: '2025.07.15 19:00', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
   { id: 'a3', title: '线下作家见面会：历史长河探秘', date: '2025.07.20 14:00', image: 'https://th.bing.com/th/id/OIP.CyDI-M6iaUlGY7yOyQeM8wHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
   { id: 'a4', title: '编程技术沙龙：Vue3新特性', date: '2025.07.25 10:00', image: 'https://th.bing.com/th/id/OIP.21XL-cVbf89_FE_pAvvX4gHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
 ]);
 
-const dailyBook = ref(null); // This will hold your daily recommended book
+const dailyBook = ref(null);
 
-// 模拟数据获取函数
+// 提取API基路径
+const API_BASE_URL = '/service-b/api'; // 根据您的后端服务地址调整，如果前端和后端不是在同一个域和端口，需要完整的URL，例如 'http://localhost:5000/api'
+
 const fetchData = async () => {
-  await new Promise(resolve => setTimeout(resolve, 1500)); // 模拟网络延迟
-  popularBooks.value = [mockBooks[0], mockBooks[4], mockBooks[2], mockBooks[6]]; // 示例热门
-  personalizedBooks.value = [mockBooks[1], mockBooks[3], mockBooks[5], mockBooks[7]]; // 示例个性化
+  loading.value = true;
+  try {
+    // 获取热门书籍
+    const popularRes = await axios.get(`${API_BASE_URL}/books/popular?limit=4`);
+    popularBooks.value = popularRes.data.map(book => ({
+      id: book.id || book.bookId, // 确保ID可用
+      title: book.title,
+      author: book.author,
+      genres: book.genres, // genres 已经是数组
+      coverImg: book.coverImg // 确保字段名正确
+    }));
 
-  // Logic to fetch and set the daily recommended book
-  if (mockBooks.length > 0) {
-    const randomIndex = Math.floor(Math.random() * mockBooks.length);
-    dailyBook.value = mockBooks[randomIndex];
-  } else {
-    dailyBook.value = null;
+    // 获取个性化推荐书籍
+    const personalizedRes = await axios.get(`${API_BASE_URL}/books/personalized?limit=4`);
+    personalizedBooks.value = personalizedRes.data.map(book => ({
+      id: book.id || book.bookId,
+      title: book.title,
+      author: book.author,
+      genres: book.genres,
+      coverImg: book.coverImg
+    }));
+
+    // 获取榜单数据
+    const bestsellingRes = await axios.get(`${API_BASE_URL}/books/rankings/bestselling?limit=7`);
+    const newReleasesRes = await axios.get(`${API_BASE_URL}/books/rankings/new_releases?limit=7`);
+
+    bookRankings.value = [
+      {
+        title: '高分榜',
+        books: bestsellingRes.data.map(book => ({
+          id: book.id || book.bookId,
+          title: book.title,
+          author: book.author,
+        }))
+      },
+      {
+        title: '新书榜',
+        books: newReleasesRes.data.map(book => ({
+          id: book.id || book.bookId,
+          title: book.title,
+          author: book.author,
+        }))
+      }
+    ];
+
+    // 获取每日一书
+    const dailyBookRes = await axios.get(`${API_BASE_URL}/books/daily`);
+    if (dailyBookRes.data) {
+      dailyBook.value = {
+        id: dailyBookRes.data.id || dailyBookRes.data.bookId,
+        title: dailyBookRes.data.title,
+        author: dailyBookRes.data.author,
+        genres: dailyBookRes.data.genres,
+        coverImg: dailyBookRes.data.coverImg
+      };
+    }
+
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    // 可以在这里设置一个错误状态或显示错误消息给用户
+  } finally {
+    loading.value = false;
   }
-
-  loading.value = false;
 };
 
 onMounted(() => {
@@ -178,8 +218,10 @@ onMounted(() => {
 });
 
 const viewBookDetails = (bookId) => {
+  // 注意这里的 bookId 需要确保与后端 get_book_by_id 匹配的格式一致
+  // 如果后端处理的是 '2767052-the-hunger-games' 这种，前端就传这种
+  // 如果后端处理的是数字部分，前端就传数字部分
   router.push(`/books/${bookId}`);
-  // Close sidebar if open when navigating
   isSidebarOpen.value = false;
 };
 
@@ -521,6 +563,9 @@ const toggleSidebar = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
   padding: 30px;
   border: 1px dashed #d7ccc8;
+  /* 确保容器有明确的最大宽度，或内容不会撑破 */
+  overflow: hidden;
+  /* 防止内容溢出到容器外部 */
 }
 
 .ranking-grid-compact {
@@ -547,6 +592,10 @@ const toggleSidebar = () => {
   padding-bottom: 10px;
   border-bottom: 1px solid #e7e0da;
   letter-spacing: 0.5px;
+  /* 添加文本溢出处理 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ranking-card-compact ul {
@@ -555,21 +604,28 @@ const toggleSidebar = () => {
 }
 
 .ranking-card-compact li {
-  display: flex;
-  align-items: baseline;
-  margin-bottom: 10px;
-  font-size: 1em;
-  color: #5d4037;
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 10px;
+    font-size: 1em;
+    color: #5d4037;
+    min-width: 0;
+    /* 移除这里的 gap，改为手动控制间距 */
 }
 
 .ranking-book-link {
   color: #4e342e;
   text-decoration: none;
-  flex-grow: 1;
   transition: color 0.2s ease;
+  /* 关键：确保文本溢出时截断并显示省略号 */
   white-space: nowrap;
+  /* 文本不换行 */
   overflow: hidden;
+  /* 溢出部分隐藏 */
   text-overflow: ellipsis;
+  /* 显示省略号 */
+  min-width: 0;
+  /* 允许flex项缩小 */
 }
 
 .ranking-book-link:hover {
@@ -578,13 +634,13 @@ const toggleSidebar = () => {
 }
 
 .rank-number {
-  font-weight: bold;
-  color: #bcaaa4;
-  margin-right: 8px;
-  font-size: 1.1em;
-  width: 25px;
-  text-align: right;
-  flex-shrink: 0;
+    font-weight: bold;
+    color: #bcaaa4;
+    /* 调整这里：使用 min-width 和 max-content 来确保足够的空间，并用 padding 调整间距 */
+    min-width: 30px; /* 确保足以容纳 "10." 并留出一些空隙 */
+    text-align: right;
+    padding-right: 8px; /* 在数字和书名之间添加右侧内边距 */
+    flex-shrink: 0;
 }
 
 .rank-author-small {
@@ -592,10 +648,17 @@ const toggleSidebar = () => {
   color: #a1887f;
   margin-left: 10px;
   font-style: italic;
+  /* 关键：确保文本溢出时截断并显示省略号 */
   white-space: nowrap;
+  /* 文本不换行 */
   overflow: hidden;
+  /* 溢出部分隐藏 */
   text-overflow: ellipsis;
+  /* 显示省略号 */
   flex-shrink: 1;
+  /* 允许缩小，但会优先 book-link */
+  min-width: 0;
+  /* 允许flex项缩小 */
 }
 
 
@@ -642,6 +705,8 @@ const toggleSidebar = () => {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  /* 确保 flex item 内部内容不会溢出 */
 }
 
 .activity-info-compact h4 {
@@ -650,6 +715,12 @@ const toggleSidebar = () => {
   margin-top: 0;
   margin-bottom: 5px;
   line-height: 1.3;
+  white-space: nowrap;
+  /* 不换行 */
+  overflow: hidden;
+  /* 隐藏溢出 */
+  text-overflow: ellipsis;
+  /* 显示省略号 */
 }
 
 .activity-info-compact p {
@@ -657,6 +728,12 @@ const toggleSidebar = () => {
   color: #795548;
   margin-bottom: 10px;
   font-style: italic;
+  white-space: nowrap;
+  /* 不换行 */
+  overflow: hidden;
+  /* 隐藏溢出 */
+  text-overflow: ellipsis;
+  /* 显示省略号 */
 }
 
 .join-button-small {
@@ -716,10 +793,6 @@ const toggleSidebar = () => {
 
   .book-cover {
     height: 180px;
-  }
-
-  .book-title {
-    font-size: 1.3em;
   }
 
   .section-title-small {
@@ -803,12 +876,17 @@ const toggleSidebar = () => {
 
   .ranking-card-compact h3 {
     font-size: 1.2em;
+    white-space: normal;
+    /* 在小屏幕下允许换行 */
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .ranking-card-compact li {
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
+    /* 在小屏幕下，如果需要，可以取消 min-width: 0; */
   }
 
   .rank-number {
@@ -819,7 +897,12 @@ const toggleSidebar = () => {
   .ranking-book-link,
   .rank-author-small {
     white-space: normal;
+    /* 允许换行 */
     text-overflow: unset;
+    /* 取消省略号 */
+    overflow: visible;
+    /* 允许内容可见 */
+    /* 在小屏幕下，如果需要，可以取消 min-width: 0; */
   }
 }
 
