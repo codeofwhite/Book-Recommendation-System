@@ -3,7 +3,7 @@ import { createApp } from "vue";
 import { createPinia } from 'pinia' // 导入 Pinia
 import App from "./App.vue";
 import router from "./router";
-
+import Gtag from 'vue-gtag-next'
 
 const app = createApp(App);
 app.use(router);
@@ -36,5 +36,12 @@ router.afterEach((to, from) => {
     console.log('GA4 page_view sent for:', to.fullPath);
   });
 });
+
+//GA埋点
+app.use(Gtag,{
+  property:{
+   id:'G-5X170N9H17'
+  },
+})
 
 app.mount("#app");

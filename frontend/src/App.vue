@@ -60,8 +60,8 @@ const logout = () => {
   console.log("App.vue: logout called.");
   // 清除 'user_data' 和 'user_last_login_time'
   localStorage.removeItem('user_data');
-  localStorage.removeItem('user_last_login_time'); 
-  
+  localStorage.removeItem('user_last_login_time');
+
   // 确保清除所有旧的单独存储的键，以防万一（只在过渡期需要）
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_id');
@@ -74,7 +74,7 @@ const logout = () => {
   isLoggedIn.value = false;
   console.log("App.vue: All user data removed from localStorage. isLoggedIn.value set to false.");
 
-  router.push('/'); 
+  router.push('/');
   alert('您已成功登出。');
 };
 

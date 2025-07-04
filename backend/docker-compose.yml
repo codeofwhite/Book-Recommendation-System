@@ -428,47 +428,100 @@ services:
       start_period: 30s
 
   # Flink JobManager - NEW ADDITION
+  # Flink JobManager (using your custom PyFlink image)
   flink-jobmanager:
-    image: apache/flink:1.18.1-scala_2.12-java11 # 选择适合你的Flink版本
+    build: ./flink_py_image # Path to your custom Flink Python image Dockerfile
     container_name: flink-jobmanager
     ports:
       - "8081:8081" # Flink Web UI
-    command: jobmanager # 启动 JobManager
+      - "6123:6123" # RPC 端口
+    command: jobmanager # Start JobManager
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 1 # 每个 TaskManager 的槽位数量，根据需要调整
-        metrics.reporter.promgateway.class: org.apache.flink.metrics.prometheus.PrometheusPushGatewayReporter
-        metrics.reporter.promgateway.host: localhost
-        metrics.reporter.promgateway.port: 9091
+        jobmanager.rpc.port: 6123
+        rest.address: flink-jobmanager
+        rest.port: 8081
+        taskmanager.numberOfTaskSlots: 1
+        python.executable: /usr/bin/python3
     volumes:
-      - ./flink_jobs:/opt/flink/usrlib # 挂载你的 Flink Job JARs
+      - ./flink_jobs:/opt/flink/usrlib # Mount your Flink Job Python script
     depends_on:
       kafka:
         condition: service_healthy
-      clickhouse:
-        condition: service_healthy # 如果你的 Flink Job 需要写入 ClickHouse
-      namenode:
-        condition: service_healthy # 如果你的 Flink Job 需要读取 HDFS
-    healthcheck: # <-- 新增这部分
+      redis: # Flink job writes to Redis, so depend on it
+        condition: service_healthy
+    healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/overview || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s # 给JobManager更多时间启动
+      start_period: 30s
 
-  # Flink TaskManager - NEW ADDITION
+  # Flink TaskManager (using your custom PyFlink image)
   flink-taskmanager:
-    image: apache/flink:1.18.1-scala_2.12-java11
+    build: ./flink_py_image # Path to your custom Flink Python image Dockerfile
     container_name: flink-taskmanager
-    command: taskmanager # 启动 TaskManager
+    command: taskmanager # Start TaskManager
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
         taskmanager.numberOfTaskSlots: 1
+        python.executable: /usr/bin/python3
     depends_on:
       flink-jobmanager:
         condition: service_healthy
+
+  # Flink Job Submitter (one-off service to submit the PyFlink Job)
+  flink-job-submitter:
+    build: ./flink_py_image
+    container_name: flink-job-submitter
+    command: >
+      bash -c "
+        echo 'Waiting for Flink JobManager...' &&
+        until curl -f http://flink-jobmanager:8081/overview; do
+          sleep 5;
+        done &&
+        echo 'JobManager is ready. Submitting PyFlink Job...' &&
+        /opt/flink/bin/flink run --jarfile /opt/flink/usrlib/jars/flink-sql-connector-kafka-3.0.0-1.17.jar -py /opt/flink/usrlib/scripts/realtime_recommendation_job.py
+      " # <-- 注意这一整行
+    volumes:
+      - ./flink_jars:/opt/flink/usrlib/jars      # 将JAR包挂载到 /opt/flink/usrlib/jars
+      - ./flink_jobs:/opt/flink/usrlib/scripts   # 将Python脚本挂载到 /opt/flink/usrlib/scripts
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    restart: "no"
+
+  # Redis Service
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # New: Real-time Recommendation Service (Flask app reading from Redis)
+  realtime_recommendation_service:
+    build: ./realtime_recommendation_service # Path to your Dockerfile for this service
+    container_name: realtime_recommendation_service
+    ports:
+      - "5004:5004" # Expose on port 5004
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy # Ensure Redis is up before starting
+      flink-job-submitter: # Ensure Flink job potentially started before this service
+        condition: service_completed_successfully # Or service_healthy if job is long-running
 
 volumes:
   auth_mysql_data:
@@ -484,3 +537,4 @@ volumes:
   clickhouse_logs: # 为 ClickHouse 添加日志卷
   namenode_data: # NameNode 数据卷
   datanode_data: # DataNode 数据卷
+  redis_data:
