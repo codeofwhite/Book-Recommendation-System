@@ -7,6 +7,7 @@ import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
 import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
 import BookOfTheDay from "../views/BookOfTheDay.vue";
+import EpubReader from "../components/EpubReader.vue";
 
 const routes = [
   {
@@ -45,6 +46,11 @@ const routes = [
     name: 'UserView',
     component: UserView,
     meta: { requiresAuth: true } // 添加元信息，表示此路由需要认证
+  },
+  {
+    path: '/read/:bookId',
+    name: 'EpubReader',
+    component: EpubReader
   },
 ];
 

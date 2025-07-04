@@ -25,6 +25,9 @@
             <button @click="toggleCollect" :class="{ 'action-button': true, 'collected': isCollected }">
               <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
             </button>
+              <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
+                <span class="icon">📖</span> 线上阅读
+              </button>
           </div>
           <div class="tome-provenance-details-grid">
             <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
@@ -275,6 +278,18 @@ export default {
         const bookId = this.$route.params.bookId;
         const response = await axios.get(`/service-b/api/books/${bookId}`);
         this.book = response.data;
+
+        // ======================== 前端测试代码块 (开始) ========================
+        // 为了在没有后端支持的情况下测试，为特定 ID 的书籍手动添加 epubUrl
+        if (bookId === "2.Harry_Potter_and_the_Order_of_the_Phoenix") {
+          console.warn("--- 前端测试 ---: 正在为书籍 " + bookId + " 注入模拟的 EPUB 链接。");
+          // this.$set 是一个 Vue 方法，确保向响应式对象添加新属性时，视图也能更新
+          this.book.epubUrl = '/TestEpub/Harry Potter and the Order of the Phoenix.epub'; 
+          // ======================== 前端测试代码块 (开始) ========================
+
+        }
+
+
       } catch (error) {
         console.error('Error fetching book details:', error);
         this.book = null;
@@ -557,6 +572,17 @@ export default {
         alert('Failed to update review collection status. Please try again.');
       }
     },
+
+        /**
+     * 新增：处理点击“线上阅读”按钮的事件
+     */
+    readOnline() {
+      if (!this.book || !this.book.bookId) return;
+      // 使用 Vue Router 导航到 EpubReader 页面
+      // 我们通过路由参数传递 bookId，阅读器页面将根据此 ID 获取 EPUB 文件
+      this.$router.push({ name: 'EpubReader', params: { bookId: this.book.bookId } });
+    },
+
     goBack() {
       this.$router.go(-1);
     },
