@@ -7,6 +7,7 @@ import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
 import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
 import UserOnboarding from '../components/UserOnboarding.vue'; // 问卷页面组件
+import BookOfTheDay from "../views/BookOfTheDay.vue";
 
 const routes = [
   {
@@ -46,6 +47,12 @@ const routes = [
     name: 'user-onboarding', // 问卷页的命名路由 (小写)
     component: UserOnboarding,
     meta: { requiresAuth: true }
+  },
+  {
+    path: "/book_of_the_day",
+    name: "book_of_the_day",
+    component: BookOfTheDay,
+    props: true
   },
 ];
 

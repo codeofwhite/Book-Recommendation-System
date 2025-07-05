@@ -97,39 +97,44 @@
       </div>
     </main>
 
-    <button :class="['sidebar-toggle-button', { 'is-open': isSidebarOpen }]" @click="toggleSidebar">
-      <span v-if="!isSidebarOpen">每日一书</span>
-      <span v-else>&#x2715;</span> </button>
-
-    <div class="sidebar-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="toggleSidebar"></div>
-
-    <aside :class="['daily-book-sidebar', { 'is-open': isSidebarOpen }]">
-      <div class="daily-book-card">
-        <h2 class="sidebar-title">The Day's Chosen Volume</h2>
-        <div v-if="dailyBook" class="book-of-the-day">
-          <img :src="dailyBook.coverImg" :alt="dailyBook.title" class="daily-book-cover" />
-          <h3 class="daily-book-title">{{ dailyBook.title }}</h3>
-          <p class="daily-book-author">Authored by: {{ dailyBook.author }}</p>
-          <p class="daily-book-genre" v-if="dailyBook.genres && dailyBook.genres.length > 0">Genre: {{
-            dailyBook.genres[0] }}</p>
-          <button @click="viewBookDetails(dailyBook.id)" class="details-button">Unfold the Narrative</button>
+    <div>
+      <transition name="pop-in">
+        <div v-if="showTooltip" class="daily-book-tooltip" @click="hideTooltip">
+          <p>✨ 发现今日好书！点击这里</p>
+          <span class="tooltip-arrow"></span>
         </div>
-        <p v-else class="no-daily-book">
-          No book recommendation for today. Check back later!
-        </p>
-      </div>
-    </aside>
+      </transition>
+
+      <button :class="['sidebar-toggle-button', { 'is-open': isSidebarOpen }]" @click="toggleSidebar">
+        <span v-if="!isSidebarOpen">每日一书</span>
+        <span v-else>&#x2715;</span>
+      </button>
+
+      <div class="sidebar-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="toggleSidebar"></div>
+
+      <aside :class="['daily-book-sidebar', { 'is-open': isSidebarOpen }]">
+        <div class="daily-book-card">
+          <h2 class="sidebar-title">The Day's Chosen Volume</h2>
+          <BookOfTheDay v-if="isSidebarOpen" :initial-book="dailyBook" />
+          <p v-else-if="!isSidebarOpen" class="no-daily-book">
+            No book recommendation for today. Check back later!
+          </p>
+        </div>
+      </aside>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios'; // 引入axios
+import BookOfTheDay from '../views/BookOfTheDay.vue'; // 导入 BookOfTheDay 组件
 
 const router = useRouter();
 const loading = ref(true);
 const isSidebarOpen = ref(false);
+const showTooltip = ref(false); // 新增：控制气泡显示状态
 
 const popularBooks = ref([]);
 const personalizedBooks = ref([]);
@@ -213,16 +218,30 @@ const fetchData = async () => {
   }
 };
 
+let tooltipTimer = null; // 新增：用于清除气泡定时器
+
 onMounted(() => {
   fetchData();
+  // 在组件挂载后 3 秒显示气泡
+  tooltipTimer = setTimeout(() => {
+    // 只有当侧边栏未打开时才显示气泡
+    if (!isSidebarOpen.value) {
+      showTooltip.value = true;
+    }
+  }, 3000); // 3 秒后显示
+});
+
+onUnmounted(() => {
+  // 在组件卸载时清除定时器，避免内存泄漏
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer);
+  }
 });
 
 const viewBookDetails = (bookId) => {
-  // 注意这里的 bookId 需要确保与后端 get_book_by_id 匹配的格式一致
-  // 如果后端处理的是 '2767052-the-hunger-games' 这种，前端就传这种
-  // 如果后端处理的是数字部分，前端就传数字部分
   router.push(`/books/${bookId}`);
   isSidebarOpen.value = false;
+  hideTooltip(); // 点击后隐藏气泡
 };
 
 const scrollToSection = (id) => {
@@ -234,6 +253,14 @@ const scrollToSection = (id) => {
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
+  hideTooltip(); // 点击按钮后隐藏气泡
+};
+
+// 新增：隐藏气泡的函数
+const hideTooltip = () => {
+  showTooltip.value = false;
+  // 一旦隐藏，可选地设置一个标记，确保不再自动显示（例如，存入 localStorage）
+  // localStorage.setItem('hasSeenDailyBookTooltip', 'true');
 };
 </script>
 
@@ -604,13 +631,13 @@ const toggleSidebar = () => {
 }
 
 .ranking-card-compact li {
-    display: flex;
-    align-items: baseline;
-    margin-bottom: 10px;
-    font-size: 1em;
-    color: #5d4037;
-    min-width: 0;
-    /* 移除这里的 gap，改为手动控制间距 */
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-size: 1em;
+  color: #5d4037;
+  min-width: 0;
+  /* 移除这里的 gap，改为手动控制间距 */
 }
 
 .ranking-book-link {
@@ -634,13 +661,15 @@ const toggleSidebar = () => {
 }
 
 .rank-number {
-    font-weight: bold;
-    color: #bcaaa4;
-    /* 调整这里：使用 min-width 和 max-content 来确保足够的空间，并用 padding 调整间距 */
-    min-width: 30px; /* 确保足以容纳 "10." 并留出一些空隙 */
-    text-align: right;
-    padding-right: 8px; /* 在数字和书名之间添加右侧内边距 */
-    flex-shrink: 0;
+  font-weight: bold;
+  color: #bcaaa4;
+  /* 调整这里：使用 min-width 和 max-content 来确保足够的空间，并用 padding 调整间距 */
+  min-width: 30px;
+  /* 确保足以容纳 "10." 并留出一些空隙 */
+  text-align: right;
+  padding-right: 8px;
+  /* 在数字和书名之间添加右侧内边距 */
+  flex-shrink: 0;
 }
 
 .rank-author-small {
@@ -913,18 +942,22 @@ const toggleSidebar = () => {
   position: fixed;
   /* Fixed to the viewport */
   top: 0;
-  right: 0;
-  /* Starts off-screen to the right */
-  width: 300px;
-  /* Fixed width of the sidebar */
+  /* right: 0; */
+  /* 移除或改为 left: 0 */
+  left: 0;
+  /* 新增：从左侧开始 */
+  width: 100%;
+  /* 将宽度改为 100% */
   height: 100%;
   /* Full height of the viewport */
   background-color: #fffaf0;
   /* Match your parchment theme */
   box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
   /* Shadow indicating it slides in */
-  transform: translateX(100%);
-  /* Start completely off-screen */
+  /* transform: translateX(100%); */
+  /* 移除或改为 translateX(-100%) */
+  transform: translateX(-100%);
+  /* 新增：从左侧完全移出屏幕 */
   transition: transform 0.4s ease-in-out;
   /* Smooth slide animation */
   z-index: 1000;
@@ -939,43 +972,133 @@ const toggleSidebar = () => {
   /* Slide into view */
 }
 
-/* Toggle button for the sidebar */
+/* --- 引导性气泡样式 --- */
+.daily-book-tooltip {
+  position: fixed;
+  right: 50px;
+  /* 调整位置，让它在按钮旁边 */
+  top: calc(50% - 60px);
+  /* 向上一些，避免遮挡按钮文字 */
+  transform: translateY(-50%) rotate(0deg);
+  /* 气泡不旋转 */
+  z-index: 1002;
+  /* 确保在按钮之上 */
+  background-color: #fff8e1;
+  /* 浅羊皮纸色 */
+  color: #4e342e;
+  /* 深棕色文字 */
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: 0.95em;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  /* 提示用户可以点击关闭 */
+  border: 1px solid #dcd3c5;
+  /* 细边框 */
+  animation: bounce-scale 1s infinite alternate ease-in-out;
+  /* 添加跳动和缩放动画 */
+}
+
+/* 气泡小箭头 */
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #fff8e1;
+  /* 箭头颜色与气泡背景一致 */
+  bottom: -10px;
+  /* 定位在气泡下方 */
+  right: 20px;
+  /* 与按钮对齐 */
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.1));
+  /* 给箭头添加柔和阴影 */
+}
+
+/* 气泡的 Vue Transition 动画 */
+.pop-in-enter-active,
+.pop-in-leave-active {
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  /* 弹跳效果 */
+}
+
+.pop-in-enter-from,
+.pop-in-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) rotate(0deg) scale(0.5);
+}
+
+/* Sidebar Toggle Button - Revised Style (添加动画) */
 .sidebar-toggle-button {
   position: fixed;
-  right: 20px;
-  /* Adjust as needed */
+  right: 1%;
+  /* 紧贴右侧边缘，或留一点间隙 */
   top: 50%;
   transform: translateY(-50%) rotate(-90deg);
-  /* Rotate to be vertical */
+  /* 保持旋转，使其垂直 */
+  transform-origin: 100% 50%;
+  /* 旋转中心改为右边缘 */
   z-index: 1001;
-  /* Above sidebar overlay */
-  background-color: #8d6e63;
-  /* Match your theme buttons */
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
+
+  background-color: #dcd3c5;
+  /* 柔和的米灰色，接近羊皮纸 */
+  color: #5d4037;
+  /* 深棕色文字 */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  /* 细微的边框线 */
+  border-right: none;
+  /* 右侧无边框，与侧边栏融合 */
+  padding: 12px 20px 12px 25px;
+  /* 调整内边距，左侧多一点给弧度 */
+  border-radius: 8px 0 0 8px;
+  /* 左侧圆角，右侧直角，像书签 */
   cursor: pointer;
-  font-size: 1em;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  font-size: 1.05em;
+  /* 稍微大一点的字体 */
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  /* 增加字母间距，提升精致感 */
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
+  /* 柔和的阴影 */
+  transition: all 0.3s ease-in-out;
+  /* 更平滑的过渡效果 */
   white-space: nowrap;
-  /* Prevent text wrapping */
-  transform-origin: center;
-  /* Ensure rotation is centered */
+
+  /* === 新增：应用动画 === */
+  animation: pulse 2s infinite ease-in-out;
+  /* 动画名称、持续时间、无限循环、缓动函数 */
 }
 
 .sidebar-toggle-button:hover {
-  background-color: #5d4037;
+  background-color: #c0b2a3;
+  /* 悬停时颜色略深 */
+  box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.15);
+  /* 阴影更明显 */
+  transform: translateY(-50%) rotate(-90deg) translateX(-5px);
+  /* 悬停时向左轻微偏移 */
+  animation: none;
+  /* 悬停时停止动画 */
 }
 
+/* 按钮打开时的样式 */
 .sidebar-toggle-button.is-open {
   transform: translateY(-50%) rotate(0deg);
-  /* Rotate back when open, reposition */
-  right: 320px;
-  /* Adjust to sit left of the open sidebar (sidebar width + right padding) */
-  background-color: #5d4037;
-  /* Change color when open */
+  /* 恢复正常角度 */
+  right: 20px;
+  /* 调整到侧边栏内部，或保持在原位但隐藏 */
+  background-color: #8d6e63;
+  /* 打开时深色，对比更明显 */
+  color: #fff;
+  border-radius: 5px;
+  /* 打开时恢复正常按钮形状 */
+  border: none;
+  /* 移除边框 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: none;
+  /* 打开时也停止动画 */
 }
 
 /* Overlay that appears when sidebar is open */
@@ -1076,24 +1199,40 @@ body.no-scroll {
   overflow: hidden;
 }
 
+/* 针对全屏侧边栏的按钮定位微调 */
+@media (min-width: 769px) {
+
+  /* 在大屏幕上，侧边栏全屏时 */
+  .sidebar-toggle-button.is-open {
+    top: 20px;
+    /* 移动到右上角 */
+    right: 20px;
+    transform: none;
+    /* 取消所有 transform */
+    padding: 10px 15px;
+    /* 调整内边距 */
+  }
+}
+
 /* Responsive adjustments for the sidebar toggle button */
 @media (max-width: 768px) {
   .sidebar-toggle-button {
     top: 20px;
-    /* Move to top right corner on small screens */
+    /* 保持在顶部 */
     right: 20px;
     transform: rotate(0deg);
-    /* Don't rotate on small screens */
-    padding: 8px 12px;
-    font-size: 0.9em;
-    border-radius: 4px;
+    /* 小屏幕不旋转 */
+    transform-origin: center;
+    /* 旋转中心重置 */
+    border-radius: 5px;
+    /* 小屏幕也正常圆角 */
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    /* 小屏幕边框正常 */
   }
 
   .sidebar-toggle-button.is-open {
     right: 20px;
-    /* Stay in place when open */
     transform: rotate(0deg);
-    /* Remain unrotated */
   }
 
   .daily-book-sidebar {
@@ -1102,6 +1241,26 @@ body.no-scroll {
     max-width: 350px;
     /* Cap max width */
     padding: 15px;
+  }
+}
+
+/* 定义呼吸动画 */
+@keyframes pulse {
+  0% {
+    transform: translateY(-50%) rotate(-90deg) scale(1);
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  50% {
+    transform: translateY(-50%) rotate(-90deg) scale(1.03);
+    /* 轻微放大 */
+    box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.2);
+    /* 阴影更明显 */
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(-90deg) scale(1);
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
 </style>
