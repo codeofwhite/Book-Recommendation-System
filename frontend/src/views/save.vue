@@ -4,9 +4,9 @@
     <aside class="sanctum-navigation">
       <div class="navigation-header">
         <div class="scholar-emblem">
-          <img :src="userProfile.avatar || '/placeholder.svg?height=120&width=120'" :alt="userProfile.username" class="emblem-portrait" />
+          <img :src="user.avatar_url || '/placeholder.svg?height=120&width=120'" :alt="user.nickname" class="emblem-portrait" />
           <div class="user-info">
-            <h4 class="user-name">{{ userProfile.username }}</h4>
+            <h4 class="user-name">{{ user.nickname }}</h4>
             <p class="user-status">Online</p>
           </div>
         </div>
@@ -120,13 +120,11 @@
                 </div>
                 <div class="card-inscription">
                   <h4>Monthly Reading Velocity</h4>
-                  <p class="reading-goal">Goal: {{ userProfile.monthlyGoal }} volumes</p>
-                  <p class="reading-current">Achieved: {{ userProfile.monthlyRead }} volumes</p>
                   <div class="progress-scroll">
                     <div class="progress-bar">
-                      <div class="progress-fill" :style="{ width: (userProfile.monthlyRead / userProfile.monthlyGoal * 100) + '%' }"></div>
+                      <div class="progress-fill" :style="{ width: (2 / 5 * 100) + '%' }"></div>
                     </div>
-                    <span class="progress-text">{{ Math.round(userProfile.monthlyRead / userProfile.monthlyGoal * 100) }}% of Monthly Quest</span>
+                    <span class="progress-text">10% of Monthly Quest</span>
                   </div>
                 </div>
               </div>
@@ -138,7 +136,8 @@
                 <div class="card-inscription">
                   <h4>Preferred Literary Domains</h4>
                   <div class="genre-seals">
-                    <span v-for="genre in userProfile.favoriteGenres" :key="genre" class="genre-seal">{{ genre }}</span>
+                    <!-- 模拟数据 -->
+                    <span v-for="genre in ['philosophy']" :key="genre" class="genre-seal">{{ genre }}</span>
                   </div>
                 </div>
               </div>
@@ -175,7 +174,7 @@
             <div class="recent-collections">
               <div v-for="book in recentCollections" :key="book.id" class="collection-book">
                 <div class="book-cover-container">
-                  <img :src="book.coverImg" :alt="book.title" class="collection-cover" />
+                  <img :src="book.cover_img" :alt="book.title" class="collection-cover" />
                   <div class="book-overlay">
                     <button class="view-book-btn" @click="viewBook(book.id)">
                       <i class="fas fa-eye"></i>
@@ -189,7 +188,7 @@
                     <span class="stars">{{ '★'.repeat(Math.round(book.rating || book.myRating || 0)) }}{{ '☆'.repeat(5 - Math.round(book.rating || book.myRating || 0)) }}</span>
                     <span class="rating-text">{{ (book.rating || book.myRating || 0).toFixed(1) }}</span>
                   </div>
-                  <span class="added-date">Added {{ formatDate(book.addedDate) }}</span>
+                  <span class="added-date">Added {{ formatDate(book.add_time) }}</span>
                 </div>
               </div>
               <div v-if="recentCollections.length === 0" class="empty-state">
@@ -294,7 +293,7 @@
               <div v-for="book in filteredAndSortedBooks" :key="book.id" class="library-book-card">
                 <div class="book-cover-area">
                   <div class="book-cover-wrapper">
-                    <img :src="book.coverImg" :alt="book.title" class="book-cover-fixed" />
+                    <img :src="book.cover_img" :alt="book.title" class="book-cover-fixed" />
                     <div class="book-overlay-enhanced">
                       <button class="quick-action-btn" @click="viewBook(book.id)" title="View Details">
                         <i class="fas fa-eye"></i>
@@ -378,7 +377,7 @@
               <h3 class="section-title">My Literary Critiques</h3>
               <div class="reviews-stats">
                 <div class="review-stat">
-                  <span class="stat-number">{{ myReviews.length }}</span>
+                  <span class="stat-number">{{ favoriteReviews.length }}</span>
                   <span class="stat-label">Total Reviews</span>
                 </div>
                 <div class="review-stat">
@@ -386,19 +385,19 @@
                   <span class="stat-label">Avg Rating</span>
                 </div>
                 <div class="review-stat">
-                  <span class="stat-number">{{ myReviews.filter(r => r.helpful > 10).length }}</span>
+                  <span class="stat-number">{{ favoriteReviews.filter(r => r.helpful > 10).length }}</span>
                   <span class="stat-label">Helpful Reviews</span>
                 </div>
               </div>
             </div>
 
             <div class="reviews-list">
-              <div v-for="review in myReviews" :key="review.id" class="review-item">
+              <div v-for="review in favoriteReviews" :key="review.id" class="review-item">
                 <div class="review-book-info">
-                  <img :src="review.book.coverImg" :alt="review.book.title" class="review-book-cover" />
+                  <img :src="review.book.cover_img" :alt="review.book_title" class="review-book-cover" />
                   <div class="review-book-details">
-                    <h4 class="review-book-title">{{ review.book.title }}</h4>
-                    <p class="review-book-author">by {{ review.book.author }}</p>
+                    <h4 class="review-book-title">{{ review.book_title }}</h4>
+                    <p class="review-book-author">by {{ review.book_author }}</p>
                     <div class="review-rating">
                       <span class="stars-review">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
                       <span class="rating-value">{{ review.rating }}/5</span>
@@ -408,18 +407,18 @@
                 <div class="review-content">
                   <div class="review-header">
                     <h5 class="review-title">{{ review.title }}</h5>
-                    <span class="review-date">{{ formatDate(review.date) }}</span>
+                    <span class="review-date">{{ formatDate(review.add_time) }}</span>
                   </div>
                   <p class="review-text">{{ review.content }}</p>
                   <div class="review-footer">
                     <div class="review-engagement">
                       <span class="helpful-count">
                         <i class="fas fa-thumbs-up"></i>
-                        {{ review.helpful }} helpful
+                         helpful
                       </span>
                       <span class="comment-count">
                         <i class="fas fa-comment"></i>
-                        {{ review.comments }} comments
+                         comments
                       </span>
                     </div>
                     <div class="review-actions">
@@ -532,6 +531,11 @@
                       <label for="location" class="form-label">Location</label>
                       <input type="text" id="location" v-model="editForm.location" class="form-input" 
                              placeholder="Your literary sanctuary" />
+                    </div>
+                    <div class="form-group">
+                      <label for="avatar" class="form-label">Avatar</label>
+                      <input type="file" @change="handleAvatarChange" accept="image/*" />
+                      <button id="select avatar" class="form-label" @click="uploadAvatar">上传头像</button>
                     </div>
                   </div>
                 </div>
@@ -654,6 +658,32 @@ const notificationFilter = ref('all')
 const searchQuery = ref('')
 const sortBy = ref('title')
 const libraryBooks = ref([])
+const favoriteReviews = ref([])
+const user = ref({
+  user_id: '',
+  nickname: '',
+  avatar_url: '',
+  email: ''
+})
+
+// 用户资料获取
+const fetchUserProfile = async () => {
+  const userId = localStorage.getItem('user_id')
+  if (!userId) {
+    console.error('User ID not found in localStorage. Redirecting to login.');
+    this.$router.push('/login');
+    return;
+  }
+  try {
+    const res = await axios.get(`/service-a/api/users/${userId}`)
+    user.value = res.data
+  } catch (error) {
+      console.error('Error fetching user data:', error);
+      // 如果用户信息获取失败，可能是用户未登录或会话过期，可以提示并重定向
+      alert('获取用户信息失败，请重新登录。');
+      this.$router.push('/login');
+  }
+}
 
 const fetchFavoriteBooks = async () => {
   const userId = localStorage.getItem('user_id')
@@ -664,18 +694,60 @@ const fetchFavoriteBooks = async () => {
     const bookIds = bookIdsRes.data
     if (bookIds.length > 0) {
       // 批量获取图书详情
-      const booksRes = await axios.get(`/api/users/${userId}/favorite_books`)
-      libraryBooks.value = booksRes.data.map(book => ({
-        ...book,
-        coverImg: book.cover_img, // 注意字段名
-        id: book.book_id,         // 注意字段名
-        // 其它字段按需适配
-      }))
+      const booksRes = await axios.get(`/service-b/api/books/batch`,{
+        params: {
+            ids: bookIds.join(',') // 拼接成逗号分隔的字符串
+          }
+        });
+      libraryBooks.value = booksRes.data
     } else {
       libraryBooks.value = []
     }
   } catch (e) {
     libraryBooks.value = []
+  }
+}
+
+const fetchFavoriteReviews = async () => {
+  const userId = localStorage.getItem('user_id')
+  if (!userId) return
+  try {
+    // 获取收藏的 reviewId 列表
+    const reviewIdsRes = await axios.get(`/service-c/api/reviews/favorite_reviews`, { params: { userId } })
+    const reviewIds = reviewIdsRes.data
+    if (reviewIds.length > 0) {
+      // 批量获取书评详情
+      const reviewsDetailResponse = await axios.get(`/service-c/api/reviews/batch`, { // service-c 有批量获取接口
+        params: {
+          ids: reviewIds.join(',')
+        }
+      });
+      favoriteReviews.value = await Promise.all(reviewsDetailResponse.data.map(async review => {
+            let reviewerNickname = '未知用户';
+            let reviewerAvatarUrl = 'https://via.placeholder.com/50';
+            try {
+              const userProfile = await axios.get(`/service-a/api/users/${review.userId}`);
+              reviewerNickname = userProfile.data.nickname || '匿名用户';
+              reviewerAvatarUrl = userProfile.data.avatar_url || 'https://via.placeholder.com/50';
+            } catch (userError) {
+              console.warn(`Could not fetch user info for review userId ${review.userId}:`, userError);
+            }
+            // 如果你的后端 Review 表里没有 likeCount 和 collectCount，这里需要从 engagement service 再次查询
+            // 如果你的 review_engagement.py 后端能返回这些，则不需要额外查询
+
+
+            return {
+              ...review,
+              reviewerNickname,
+              reviewerAvatarUrl,
+              // 这里假设后端返回的 review 对象包含了 likeCount 和 collectCount，否则需要额外获取
+            };
+          }));
+    } else {
+      favoriteReviews.value = []
+    }
+  } catch (e) {
+    favoriteReviews.value = []
   }
 }
 
@@ -685,7 +757,7 @@ onMounted(() => {
   fetchUserProfile()
 })
 
-// 未读通知数量
+// mock模拟数据：未读通知数量
 const unreadNotifications = ref(5)
 
 // 编辑表单数据
@@ -703,7 +775,7 @@ const editForm = ref({
   allowRecommendations: true
 })
 
-// 可选择的文学类型
+// mock 模拟数据：可选择的文学类型
 const availableGenres = ref([
   'Philosophy', 'Historical Fiction', 'Poetry', 'Science', 'Biography', 
   'Mystery', 'Romance', 'Fantasy', 'Thriller', 'Non-fiction'
@@ -715,34 +787,8 @@ const currentReading = ref({
   progress: 67
 })
 
-// 我的评论
-const myReviews = ref([])
 
-const fetchFavoriteReviews = async () => {
-  const userId = localStorage.getItem('user_id')
-  if (!userId) return
-  try {
-    // 获取收藏的 reviewId 列表
-    const reviewIdsRes = await axios.get(`/service-c/api/reviews/favorite_reviews`, { params: { userId } })
-    const reviewIds = reviewIdsRes.data
-    if (reviewIds.length > 0) {
-      // 批量获取书评详情
-      const reviewsRes = await axios.get(`/api/users/${userId}/favorite_reviews`)
-      myReviews.value = reviewsRes.data.map(review => ({
-        ...review,
-        id: review.review_id, // 注意字段名
-        // 其它字段按需适配
-      }))
-    } else {
-      myReviews.value = []
-    }
-  } catch (e) {
-    myReviews.value = []
-  }
-}
-
-
-// 通知数据
+// mock 模拟数据：通知数据
 const notifications = ref([
   {
     id: 1,
@@ -792,7 +838,7 @@ const notifications = ref([
 ])
 
 const recentCritiques = computed(() => {
-  return [...myReviews.value]
+  return [...favoriteReviews.value]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 5)
 })
@@ -827,7 +873,7 @@ const filteredLibraryBooks = computed(() => {
 })
 
 const filteredAndSortedBooks = computed(() => {
-  let books = [...filteredLibraryBooks.value]
+  let books = [...libraryBooks.value]
   
   // 排序
   switch (sortBy.value) {
@@ -838,7 +884,7 @@ const filteredAndSortedBooks = computed(() => {
       books.sort((a, b) => a.author.localeCompare(b.author))
       break
     case 'date':
-      books.sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate))
+      books.sort((a, b) => new Date(b.adde_time) - new Date(a.add_time))
       break
     case 'rating':
       books.sort((a, b) => (b.myRating || 0) - (a.myRating || 0))
@@ -849,8 +895,8 @@ const filteredAndSortedBooks = computed(() => {
 })
 
 const averageRating = computed(() => {
-  const total = myReviews.value.reduce((sum, review) => sum + review.rating, 0)
-  return total / myReviews.value.length || 0
+  const total = favoriteReviews.value.reduce((sum, review) => sum + review.rating, 0)
+  return total / favoriteReviews.value.length || 0
 })
 
 const averageBookRating = computed(() => {
@@ -986,21 +1032,56 @@ const dismissNotification = (notificationId) => {
 }
 
 // 编辑表单相关方法
-const saveProfile = () => {
-  console.log('Saving profile:', editForm.value)
-  alert('Profile saved successfully!')
+const saveProfile = async () => {
+  const userId = localStorage.getItem('user_id')
+  if (!userId) {
+    alert('用户未登录，请重新登录')
+    return
+  }
+  try {
+    await axios.put(`/service-a/api/users/${userId}/nickname`, {
+      nickname: editForm.value.username
+    })
+    user.value.nickname = editForm.value.username
+    alert('个人信息修改成功！')
+  } catch (e) {
+    alert('修改失败，请稍后重试')
+  }
+}
+
+const uploadAvatar = async () => {
+  if (!selectedAvatarFile.value) {
+    alert('请选择一个头像文件。')
+    return
+  }
+  try {
+    const userId = localStorage.getItem('user_id')
+    if (!userId) return
+    const formData = new FormData()
+    formData.append('avatar', selectedAvatarFile.value)
+    const response = await axios.post(`/service-a/api/users/${userId}/avatar`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    user.value.avatar_url = response.data.avatar_url
+    localStorage.setItem('user_avatar_url', user.value.avatar_url)
+    selectedAvatarFile.value = null
+    alert('头像上传成功！')
+  } catch (error) {
+    console.error('Error uploading avatar:', error)
+    alert('头像上传失败。')
+  }
 }
 
 const resetForm = () => {
   editForm.value = {
-    username: userProfile.value.username,
+    username: user.value.nickname,
     email: 'user@example.com',
-    title: userProfile.value.title,
+    title: user.value.title,
     location: 'Literary Sanctuary',
     bio: 'A passionate reader exploring the depths of human knowledge through literature.',
     monthlyGoal: userProfile.value.monthlyGoal,
     favoriteGenre: 'Philosophy',
-    favoriteGenres: [...userProfile.value.favoriteGenres],
+    favoriteGenres: [...user.value.favoriteGenres],
     profilePublic: true,
     showReadingProgress: true,
     allowRecommendations: true
@@ -1034,25 +1115,6 @@ const addNewBook = () => {
 
 const logout = () => {
   console.log('Logout user')
-}
-
-// 用户资料获取
-const fetchUserProfile = async () => {
-  const userId = localStorage.getItem('user_id')
-  if (!userId) return
-  try {
-    const res = await axios.get(`/service-a/api/users/${userId}`)
-    userProfile.value.username = res.data.nickname
-    userProfile.value.avatar = res.data.avatar_url
-    userProfile.value.email = res.data.email
-    userProfile.value.title = res.data.title || ''
-    userProfile.value.favoriteGenres = res.data.favoriteGenres || []
-    userProfile.value.monthlyGoal = res.data.monthlyGoal || 0
-    userProfile.value.monthlyRead = res.data.monthlyRead || 0
-  } catch (e) {
-    userProfile.value.username = '未登录'
-    userProfile.value.avatar = '/placeholder.svg?height=120&width=120'
-  }
 }
 
 console.log('Enhanced user center mounted')
@@ -1384,7 +1446,1563 @@ console.log('Enhanced user center mounted')
   font-family: inherit;
 }
 
-/* 修正后的复选框样式 */
+/* 保持原有的其他样式 */
+.profile-manuscript {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0d4c0;
+}
+
+.manuscript-header {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.scholar-portrait {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.portrait-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #d4b896;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.portrait-edit-quill {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #8d6e63;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.portrait-edit-quill:hover {
+  background-color: #5d4037;
+  transform: scale(1.1);
+}
+
+.scholar-details {
+  flex-grow: 1;
+}
+
+.scholar-name {
+  font-size: 2.2em;
+  color: #4e342e;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.scholar-title {
+  font-size: 1.2em;
+  color: #8d6e63;
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+
+.scholar-joined {
+  color: #795548;
+  margin-bottom: 1.5rem;
+}
+
+.scholar-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat-scroll {
+  text-align: center;
+  padding: 1rem;
+  background-color: #f0ebe0;
+  border-radius: 8px;
+  border: 1px solid #d4c7b2;
+  min-width: 100px;
+}
+
+.stat-number {
+  display: block;
+  font-size: 2em;
+  font-weight: 700;
+  color: #5d4037;
+}
+
+.stat-label {
+  font-size: 0.9em;
+  color: #795548;
+  font-style: italic;
+}
+
+/* Enhanced Personal Library 样式 */
+.library-content-enhanced {
+  background: linear-gradient(135deg, #fffaf0 0%, #f9f5eb 100%);
+  border-radius: 16px;
+  padding: 3rem;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0d4c0;
+  position: relative;
+  overflow: hidden;
+}
+
+.library-content-enhanced::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(212, 184, 150, 0.05) 0%, transparent 70%);
+  transform: rotate(45deg);
+}
+
+.library-header-enhanced {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px dashed #d4c7b2;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.library-title-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.section-title-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 2.5em;
+  color: #4e342e;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.section-title-enhanced i {
+  color: #8d6e63;
+  font-size: 0.9em;
+}
+
+.section-description {
+  color: #795548;
+  font-size: 1.1em;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.library-controls-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 400px;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box i {
+  position: absolute;
+  left: 1rem;
+  color: #a1887f;
+  font-size: 1.1em;
+  z-index: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  border: 2px solid #e8dccf;
+  border-radius: 25px;
+  background-color: #ffffff;
+  color: #4e342e;
+  font-family: inherit;
+  font-size: 1em;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #8d6e63;
+  box-shadow: 0 4px 15px rgba(141, 110, 99, 0.2);
+  transform: translateY(-1px);
+}
+
+.filter-controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.filter-select-enhanced {
+  flex: 1;
+  padding: 0.8rem 1.2rem;
+  border: 2px solid #e8dccf;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #4e342e;
+  font-family: inherit;
+  font-size: 0.95em;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.filter-select-enhanced:focus {
+  outline: none;
+  border-color: #8d6e63;
+  box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.1);
+}
+
+.view-toggle-enhanced {
+  width: 140px;
+  display: flex;
+  border: 2px solid #e8dccf;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.view-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  border: none;
+  background-color: transparent;
+  color: #795548;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.view-btn:hover {
+  background-color: #f9f5eb;
+}
+
+.view-btn.active {
+  background: linear-gradient(135deg, #8d6e63 0%, #795548 100%);
+  color: white;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.library-stats-enhanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-card-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.8rem;
+  background: linear-gradient(135deg, #ffffff 0%, #fefdfb 100%);
+  border-radius: 12px;
+  border: 1px solid #efebe9;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #d4b896 0%, #8d6e63 100%);
+}
+
+.stat-card-enhanced:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4b896 0%, #ecd9c7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(212, 184, 150, 0.3);
+}
+
+.stat-icon-wrapper.completed {
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.stat-icon-wrapper.reading {
+  background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.stat-icon-wrapper.average {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.stat-icon-wrapper i {
+  font-size: 1.5em;
+  color: white;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value-enhanced {
+  font-size: 2.2em;
+  font-weight: 700;
+  color: #4e342e;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.stat-name-enhanced {
+  font-size: 1em;
+  color: #795548;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* 固定尺寸的书籍网格 */
+.library-books-enhanced {
+  position: relative;
+  z-index: 1;
+}
+
+.library-books-enhanced.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.library-books-enhanced.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.library-book-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fefdfb 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #efebe9;
+  transition: all 0.4s ease;
+  position: relative;
+  height: 480px; /* 固定高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+.library-books-enhanced.list .library-book-card {
+  height: 200px; /* 列表视图固定高度 */
+  flex-direction: row;
+}
+
+.library-book-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.library-book-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #d4b896 0%, #8d6e63 100%);
+}
+
+.book-cover-area {
+  position: relative;
+  height: 200px; /* 固定封面区域高度 */
+  flex-shrink: 0;
+}
+
+.library-books-enhanced.list .book-cover-area {
+  width: 140px; /* 列表视图固定宽度 */
+  height: 100%;
+}
+
+.book-cover-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.book-cover-fixed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.library-book-card:hover .book-cover-fixed {
+  transform: scale(1.05);
+}
+
+.book-overlay-enhanced {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.library-book-card:hover .book-overlay-enhanced {
+  opacity: 1;
+}
+
+.quick-action-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8d6e63 0%, #5d4037 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.quick-action-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.book-status-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.book-status-indicator.reading {
+  background: rgba(255, 152, 0, 0.9);
+  color: white;
+}
+
+.book-status-indicator.completed {
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.book-info-area {
+  padding: 1.5rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.book-header {
+  margin-bottom: 1rem;
+}
+
+.book-title-fixed {
+  font-size: 1.3em;
+  color: #4e342e;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 2.6em; /* 固定两行高度 */
+}
+
+.book-author-fixed {
+  color: #795548;
+  font-size: 1em;
+  font-style: italic;
+  margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #8c7f73;
+  font-size: 0.9em;
+}
+
+.metadata-item i {
+  color: #a1887f;
+  width: 14px;
+}
+
+.book-progress-area, .book-rating-area {
+  margin-bottom: 1rem;
+}
+
+.progress-header, .rating-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.progress-label, .rating-label {
+  font-size: 0.9em;
+  color: #795548;
+  font-weight: 500;
+}
+
+.progress-percentage {
+  font-size: 0.9em;
+  color: #8d6e63;
+  font-weight: 600;
+}
+
+.progress-bar-enhanced {
+  width: 100%;
+  height: 6px;
+  background-color: #e8dccf;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill-enhanced {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9800 0%, #ffb74d 100%);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stars-display {
+  color: #ffd700;
+  font-size: 1.1em;
+}
+
+.rating-number {
+  color: #795548;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.completion-date {
+  font-size: 0.8em;
+  color: #8c7f73;
+  font-style: italic;
+}
+
+.book-actions-enhanced {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: auto;
+}
+
+.action-btn-enhanced {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.action-btn-enhanced.primary {
+  background: linear-gradient(135deg, #8d6e63 0%, #795548 100%);
+  color: white;
+  box-shadow: 0 3px 10px rgba(141, 110, 99, 0.3);
+}
+
+.action-btn-enhanced.primary:hover {
+  background: linear-gradient(135deg, #5d4037 0%, #4e342e 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(141, 110, 99, 0.4);
+}
+
+.action-btn-enhanced.secondary {
+  background-color: #f9f5eb;
+  color: #5d4037;
+  border: 1px solid #e8dccf;
+}
+
+.action-btn-enhanced.secondary:hover {
+  background-color: #f0ebe0;
+  transform: translateY(-2px);
+}
+
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #fefdfb 100%);
+  border-radius: 16px;
+  border: 2px dashed #d4c7b2;
+  position: relative;
+  z-index: 1;
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+  background: linear-gradient(135deg, #f0ebe0 0%, #e8dccf 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon i {
+  font-size: 2.5em;
+  color: #8d6e63;
+}
+
+.empty-title {
+  font-size: 2em;
+  color: #4e342e;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.empty-description {
+  font-size: 1.1em;
+  color: #795548;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.add-book-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #8d6e63 0%, #795548 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(141, 110, 99, 0.3);
+}
+
+.add-book-btn:hover {
+  background: linear-gradient(135deg, #5d4037 0%, #4e342e 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(141, 110, 99, 0.4);
+}
+
+/* 其他页面样式保持不变 */
+.reading-chronicles {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0d4c0;
+}
+
+.chronicle-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.chronicle-title {
+  font-size: 2.2em;
+  color: #4e342e;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #c0b2a3;
+}
+
+.chronicle-title::before {
+  content: '§';
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  color: #a1887f;
+}
+
+.chronicle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.chronicle-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border: 1px solid #efebe9;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chronicle-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-illumination {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #d4b896 0%, #ecd9c7 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-illumination i {
+  font-size: 1.5em;
+  color: #5d4037;
+}
+
+.card-inscription h4 {
+  font-size: 1.3em;
+  color: #4e342e;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+}
+
+.current-book {
+  font-size: 1.1em;
+  color: #5d4037;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.no-current {
+  color: #8c7f73;
+  font-style: italic;
+}
+
+.reading-goal, .reading-current {
+  margin-bottom: 0.3rem;
+  color: #795548;
+}
+
+.progress-scroll {
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e0d4c0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8d6e63, #a1887f);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.9em;
+  color: #795548;
+  font-style: italic;
+}
+
+.genre-seals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.genre-seal {
+  background-color: #e0d4c0;
+  color: #5a4b41;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #d4c7b2;
+}
+
+/* 最近活动样式 */
+.recent-activities {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0d4c0;
+}
+
+.activity-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.activity-title {
+  font-size: 2.2em;
+  color: #4e342e;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #c0b2a3;
+}
+
+.activity-title::before {
+  content: '§';
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  color: #a1887f;
+}
+
+.activity-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.activity-entry {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #efebe9;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-entry:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #d4b896 0%, #ecd9c7 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-icon i {
+  color: #5d4037;
+  font-size: 1.1em;
+}
+
+.activity-details {
+  flex-grow: 1;
+}
+
+.activity-description {
+  color: #4e342e;
+  margin-bottom: 0.3rem;
+  font-size: 1.05em;
+}
+
+.activity-timestamp {
+  color: #8c7f73;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+/* 最近收藏的图书样式 */
+.recent-collections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.collection-book {
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border: 1px solid #efebe9;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.collection-book:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover-container {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.collection-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.book-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.collection-book:hover .book-overlay {
+  opacity: 1;
+}
+
+.collection-book:hover .collection-cover {
+  transform: scale(1.1);
+}
+
+.view-book-btn {
+  background-color: #8d6e63;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-book-btn:hover {
+  background-color: #5d4037;
+  transform: scale(1.1);
+}
+
+.book-info-compact {
+  padding: 1rem;
+}
+
+.book-title-compact {
+  font-size: 1.1em;
+  color: #4e342e;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.book-author-compact {
+  color: #795548;
+  font-size: 0.9em;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+}
+
+.book-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stars {
+  color: #ffd700;
+  font-size: 0.9em;
+}
+
+.rating-text {
+  color: #795548;
+  font-size: 0.85em;
+}
+
+.added-date {
+  color: #8c7f73;
+  font-size: 0.8em;
+  font-style: italic;
+}
+
+/* Reviews, Notifications, Edit Info 样式保持不变 */
+.reviews-content {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0d4c0;
+}
+
+.reviews-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #c0b2a3;
+}
+
+.reviews-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.review-stat {
+  text-align: center;
+  padding: 1rem;
+  background-color: #f9f5eb;
+  border-radius: 8px;
+  border: 1px solid #e8dccf;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.review-item {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border: 1px solid #efebe9;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.review-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.review-book-info {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0ebe0;
+}
+
+.review-book-cover {
+  width: 80px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.review-book-details {
+  flex-grow: 1;
+}
+
+.review-book-title {
+  font-size: 1.3em;
+  color: #4e342e;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.review-book-author {
+  color: #795548;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stars-review {
+  color: #ffd700;
+  font-size: 1.1em;
+}
+
+.rating-value {
+  color: #795548;
+  font-weight: 600;
+}
+
+.review-content {
+  flex-grow: 1;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.review-title {
+  font-size: 1.4em;
+  color: #4e342e;
+  font-weight: 600;
+  margin: 0;
+}
+
+.review-date {
+  color: #8c7f73;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+.review-text {
+  color: #4e342e;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  font-size: 1.05em;
+}
+
+.review-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f0ebe0;
+}
+
+.review-engagement {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.helpful-count, .comment-count {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #795548;
+  font-size: 0.9em;
+}
+
+.helpful-count i, .comment-count i {
+  color: #a1887f;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.review-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  background-color: #f0ebe0;
+  color: #5d4037;
+  border: 1px solid #d4c7b2;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.3s ease;
+}
+
+.review-action-btn:hover {
+  background-color: #e0d4c0;
+  transform: translateY(-1px);
+}
+
+/* Notifications 页面样式 */
+.notifications-content {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0d4c0;
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #c0b2a3;
+}
+
+.notification-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background-color: #8d6e63;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+}
+
+.control-btn:hover:not(:disabled) {
+  background-color: #5d4037;
+  transform: translateY(-1px);
+}
+
+.control-btn:disabled {
+  background-color: #a1887f;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.notifications-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.notification-stat {
+  text-align: center;
+  padding: 1rem;
+  background-color: #f9f5eb;
+  border-radius: 8px;
+  border: 1px solid #e8dccf;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notification-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #efebe9;
+  transition: all 0.3s ease;
+}
+
+.notification-item.unread {
+  border-left: 4px solid #8d6e63;
+  background-color: #fefdfb;
+}
+
+.notification-item.important {
+  border-left: 4px solid #ff6b6b;
+  background: linear-gradient(135deg, #fff5f5 0%, #fefdfb 100%);
+}
+
+.notification-item:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.notification-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notification-icon.review {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  color: #1976d2;
+}
+
+.notification-icon.system {
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  color: #7b1fa2;
+}
+
+.notification-icon.recommendation {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%);
+  color: #f57c00;
+}
+
+.notification-icon.social {
+  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+  color: #388e3c;
+}
+
+.notification-content {
+  flex-grow: 1;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.notification-title {
+  font-size: 1.2em;
+  color: #4e342e;
+  font-weight: 600;
+  margin: 0;
+}
+
+.notification-time {
+  color: #8c7f73;
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.notification-message {
+  color: #5d4037;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.notification-action-btn {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.3s ease;
+}
+
+.notification-action-btn.primary {
+  background-color: #8d6e63;
+  color: white;
+}
+
+.notification-action-btn.primary:hover {
+  background-color: #5d4037;
+}
+
+.notification-action-btn.secondary {
+  background-color: #f0ebe0;
+  color: #5d4037;
+  border: 1px solid #d4c7b2;
+}
+
+.notification-action-btn.secondary:hover {
+  background-color: #e0d4c0;
+}
+
+/* Edit Info 页面样式 */
+.edit-content {
+  background-color: #fffaf0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0d4c0;
+}
+
+.edit-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px dashed #c0b2a3;
+}
+
+.section-title {
+  font-size: 2.2em;
+  color: #4e342e;
+  font-weight: 600;
+  margin: 0;
+}
+
+.edit-subtitle {
+  color: #795548;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+.edit-form-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.form-section {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 2rem;
+  border: 1px solid #efebe9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1.4em;
+  color: #4e342e;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #f0ebe0;
+}
+
+.form-section-title i {
+  color: #8d6e63;
+  font-size: 1.1em;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #5d4037;
+  font-size: 0.95em;
+  letter-spacing: 0.3px;
+}
+
+.form-input, .form-select, .form-textarea {
+  padding: 0.8rem 1rem;
+  border: 2px solid #e8dccf;
+  border-radius: 8px;
+  background-color: #fefdfb;
+  color: #4e342e;
+  font-family: inherit;
+  font-size: 1em;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #8d6e63;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.genre-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -1394,12 +3012,15 @@ console.log('Enhanced user center mounted')
   border-radius: 6px;
   transition: background-color 0.3s ease;
 }
+
 .checkbox-label:hover {
   background-color: #f9f5eb;
 }
+
 .checkbox-input {
   display: none;
 }
+
 .checkbox-custom {
   width: 20px;
   height: 20px;
@@ -1407,12 +3028,13 @@ console.log('Enhanced user center mounted')
   border-radius: 4px;
   position: relative;
   transition: all 0.3s ease;
-  display: inline-block;
 }
+
 .checkbox-input:checked + .checkbox-custom {
   background-color: #8d6e63;
   border-color: #8d6e63;
 }
+
 .checkbox-input:checked + .checkbox-custom::after {
   content: '✓';
   position: absolute;
@@ -1424,44 +3046,45 @@ console.log('Enhanced user center mounted')
   font-weight: bold;
 }
 
-/* 隐私选项 */
 .privacy-options {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1rem;
-  border-radius: 8px;
-  background: #f0ebe0;
 }
+
 .privacy-option {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  cursor: pointer;
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid #e8dccf;
+  border: 1px solid #f0ebe0;
   transition: all 0.3s ease;
 }
+
 .privacy-option:hover {
   background-color: #f9f5eb;
   border-color: #e8dccf;
 }
+
 .privacy-info {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
+
 .privacy-title {
   font-weight: 600;
   color: #4e342e;
 }
+
 .privacy-desc {
   font-size: 0.9em;
   color: #795548;
   line-height: 1.4;
 }
 
-/* 表单按钮 */
 .form-actions {
   display: flex;
   justify-content: center;
@@ -1469,6 +3092,7 @@ console.log('Enhanced user center mounted')
   padding-top: 2rem;
   border-top: 1px dashed #c0b2a3;
 }
+
 .form-btn {
   display: flex;
   align-items: center;
@@ -1483,21 +3107,25 @@ console.log('Enhanced user center mounted')
   letter-spacing: 0.3px;
   transition: all 0.3s ease;
 }
+
 .form-btn.primary {
   background: linear-gradient(135deg, #8d6e63 0%, #795548 100%);
   color: white;
   box-shadow: 0 4px 15px rgba(141, 110, 99, 0.3);
 }
+
 .form-btn.primary:hover {
   background: linear-gradient(135deg, #5d4037 0%, #4e342e 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(141, 110, 99, 0.4);
 }
+
 .form-btn.secondary {
   background-color: #f0ebe0;
   color: #5d4037;
   border: 2px solid #d4c7b2;
 }
+
 .form-btn.secondary:hover {
   background-color: #e0d4c0;
   transform: translateY(-2px);
@@ -1508,49 +3136,62 @@ console.log('Enhanced user center mounted')
   .sanctum-navigation {
     width: 22%;
   }
+  
   .sanctum-content {
     margin-left: 22%;
     max-width: calc(78% - 4rem);
   }
+
   .library-books-enhanced.grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
-  .library-header-enhanced {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .library-controls-enhanced {
-    min-width: auto;
-  }
 }
+
 @media (max-width: 992px) {
   .sanctum-navigation {
     width: 25%;
   }
+  
   .sanctum-content {
     margin-left: 25%;
     max-width: calc(75% - 4rem);
   }
+
   .library-header-enhanced {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .library-controls-enhanced {
+    min-width: auto;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+  }
+
+  .library-stats-enhanced {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
   .library-books-enhanced.grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
+
   .genre-checkboxes {
     grid-template-columns: 1fr;
   }
+
   .form-actions {
     flex-direction: column;
     align-items: center;
-    max-width: 100%;
-    padding: 1rem;
   }
 }
+
 @media (max-width: 768px) {
   .sanctum-navigation {
     width: 100%;
@@ -1558,39 +3199,130 @@ console.log('Enhanced user center mounted')
     height: auto;
     margin-top: 0;
   }
+  
   .sanctum-content {
     margin-left: 0;
     max-width: 100%;
     padding: 1rem;
   }
+
   .library-content-enhanced {
     padding: 2rem;
   }
+
   .library-stats-enhanced {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
+
   .library-books-enhanced.grid {
     grid-template-columns: 1fr;
   }
+
+  .library-book-card {
+    height: auto;
+    min-height: 400px;
+  }
+
+  .library-books-enhanced.list .library-book-card {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .library-books-enhanced.list .book-cover-area {
+    width: 100%;
+    height: 200px;
+  }
+
+  .book-actions-enhanced {
+    flex-direction: row;
+  }
+
+  .notifications-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .notification-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .notifications-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .notification-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .notification-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .notification-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .sanctum-title {
+    font-size: 1.8em;
+  }
+
+  .sanctum-subtitle {
+    font-size: 1em;
+  }
+
+  .library-content-enhanced {
+    padding: 1.5rem;
+  }
+
+  .section-title-enhanced {
+    font-size: 2em;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .library-stats-enhanced {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card-enhanced {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
   .library-book-card {
     min-height: 350px;
   }
-  .user-name {
+
+  .book-title-fixed {
     font-size: 1.1em;
   }
-  .emblem-portrait {
-    width: 70px;
-    height: 70px;
-  }
+
   .nav-link-enhanced {
     padding: 0.8rem 1rem;
   }
+
   .nav-text {
     font-size: 0.9em;
   }
-  .book-title-fixed {
+
+  .user-name {
     font-size: 1.1em;
+  }
+
+  .emblem-portrait {
+    width: 70px;
+    height: 70px;
   }
 }
 </style>
