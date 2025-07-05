@@ -34,17 +34,12 @@ const routes = [
   {
     path: '/auth', // <-- Add auth route
     name: 'auth',
-    component: AuthView
-  },
-  {
-    path: '/profile', // <-- Add auth route
-    name: 'profile',
-    component: save
+    component: AuthView,
   },
   {
     path: '/userview',
     name: 'UserView',
-    component: UserView,
+    component: save,
     meta: { requiresAuth: true } // 添加元信息，表示此路由需要认证
   },
   {

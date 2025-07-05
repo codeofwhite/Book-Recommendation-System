@@ -102,6 +102,8 @@ class BookModel:
                     row['bbeScore'] = int(row['bbeScore']) if row.get('bbeScore') else None
                     row['bbeVotes'] = int(row['bbeVotes']) if row.get('bbeVotes') else None
                     row['price'] = float(row['price']) if row.get('price') else None
+                    # bookId保持为字符串
+                    row['bookId'] = str(row['bookId']) if row.get('bookId') else None
                 except Exception as e:
                     print(f"{datetime.now()} Warning: Could not parse row data for bookId {row.get('bookId')}: {e}. Skipping row.")
                     continue
@@ -138,6 +140,8 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
+            # bookId作为字符串处理
+            book_id = str(book_id)
             book = collection.find_one({"bookId": book_id}, {'_id': 0})
             return book, None
         except Exception as e:
@@ -150,6 +154,8 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
+            # 确保所有ID都是字符串
+            book_ids = [str(bid) for bid in book_ids]
             books = list(collection.find({"bookId": {"$in": book_ids}}, {'_id': 0}))
             return books, None
         except Exception as e:
@@ -168,7 +174,9 @@ class BookModel:
                     "$or": [
                         {"title": {"$regex": keyword, "$options": "i"}},
                         {"author": {"$regex": keyword, "$options": "i"}},
-                        {"description": {"$regex": keyword, "$options": "i"}}
+                        {"description": {"$regex": keyword, "$options": "i"}},
+                        {"isbn": {"$regex": keyword, "$options": "i"}},
+                        {"bookId": {"$regex": keyword, "$options": "i"}}
                     ]
                 }
             filtered_books = list(collection.find(query, {'_id': 0}))
@@ -176,6 +184,137 @@ class BookModel:
         except Exception as e:
             print(f"Error searching local books in MongoDB: {e}")
             return None, "Failed to search books"
+
+    @classmethod
+    def create_book(cls, book_data):
+        """创建新书籍"""
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 生成下一个bookId（字符串格式）
+            # 先尝试找到最大的数字ID，然后+1
+            try:
+                # 获取所有bookId，尝试转换为数字并找到最大值
+                all_books = list(collection.find({}, {"bookId": 1, "_id": 0}))
+                numeric_ids = []
+                for book in all_books:
+                    try:
+                        numeric_ids.append(int(book["bookId"]))
+                    except (ValueError, TypeError):
+                        # 如果bookId不是数字，跳过
+                        continue
+                
+                if numeric_ids:
+                    next_id = str(max(numeric_ids) + 1)
+                else:
+                    next_id = "1"
+            except Exception:
+                # 如果出错，使用时间戳作为ID
+                next_id = str(int(datetime.now().timestamp()))
+            
+            # 准备书籍数据
+            book_data["bookId"] = next_id
+            book_data["rating"] = book_data.get("rating", 0.0)
+            book_data["numRatings"] = book_data.get("numRatings", 0)
+            book_data["createdAt"] = datetime.now().isoformat()
+            
+            # 插入新书籍
+            result = collection.insert_one(book_data)
+            if result.inserted_id:
+                # 返回创建的书籍
+                created_book = collection.find_one({"bookId": next_id}, {'_id': 0})
+                return created_book, None
+            else:
+                return None, "Failed to create book"
+        except Exception as e:
+            print(f"Error creating book in MongoDB: {e}")
+            return None, str(e)
+
+    @classmethod
+    def update_book(cls, book_id, update_data):
+        """更新书籍信息"""
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # bookId作为字符串处理
+            book_id = str(book_id)
+            
+            # 添加更新时间
+            update_data["updatedAt"] = datetime.now().isoformat()
+            
+            # 更新书籍
+            result = collection.update_one(
+                {"bookId": book_id}, 
+                {"$set": update_data}
+            )
+            
+            if result.matched_count == 0:
+                return None, "Book not found"
+            
+            # 返回更新后的书籍
+            updated_book = collection.find_one({"bookId": book_id}, {'_id': 0})
+            return updated_book, None
+        except Exception as e:
+            print(f"Error updating book in MongoDB: {e}")
+            return None, str(e)
+
+    @classmethod
+    def delete_book(cls, book_id):
+        """删除书籍"""
+        collection = cls.get_collection()
+        if collection is None:
+            return False, "Database connection failed"
+        try:
+            # bookId作为字符串处理
+            book_id = str(book_id)
+            
+            result = collection.delete_one({"bookId": book_id})
+            if result.deleted_count == 0:
+                return False, "Book not found"
+            
+            return True, None
+        except Exception as e:
+            print(f"Error deleting book from MongoDB: {e}")
+            return False, str(e)
+
+    @classmethod
+    def get_dashboard_stats(cls):
+        """获取仪表板统计数据"""
+        collection = cls.get_collection()
+        if collection is None:
+            return None, "Database connection failed"
+        try:
+            # 获取总书籍数
+            total_books = collection.count_documents({})
+            
+            # 计算平均评分
+            pipeline = [
+                {"$match": {"rating": {"$ne": None, "$gt": 0}}},
+                {"$group": {"_id": None, "avgRating": {"$avg": "$rating"}}}
+            ]
+            avg_result = list(collection.aggregate(pipeline))
+            avg_rating = round(avg_result[0]["avgRating"], 1) if avg_result else 0.0
+            
+            # 获取最近添加的书籍
+            recent_books = list(collection.find(
+                {"createdAt": {"$exists": True}}, 
+                {'_id': 0, 'title': 1, 'createdAt': 1, 'bookId': 1}
+            ).sort("createdAt", -1).limit(5))
+            
+            stats = {
+                "totalBooks": total_books,
+                "averageRating": avg_rating,
+                "totalUsers": 156,  # Mock data
+                "totalReviews": 423,  # Mock data
+                "recentBooks": recent_books
+            }
+            
+            return stats, None
+        except Exception as e:
+            print(f"Error getting dashboard stats: {e}")
+            return None, str(e)
 
     @staticmethod
     def search_douban_books(keyword):

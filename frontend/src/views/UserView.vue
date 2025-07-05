@@ -122,10 +122,8 @@ export default {
       try {
         // 首先从 service-c (user_engagement_service) 获取收藏的 book_id 列表
         // 注意：这里 /api/books/favorite_books 是我上面建议你新增的后端路由
-        const bookIdsResponse = await axios.get(`/service-c/api/books/favorite_books`, {
-          params: { userId }
-        });
-        const bookIds = bookIdsResponse.data;
+        const bookIdsResponse = await axios.get(`/api/users/${userId}/favorite_books`)
+        const bookIds = bookIdsResponse.data
         console.log(bookIds)
         if (bookIds.length > 0) {
           // 然后，根据这些 book_id 去 service-b (Book Management Service) 获取图书的详细信息

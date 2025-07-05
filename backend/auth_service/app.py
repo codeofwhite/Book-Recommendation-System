@@ -217,14 +217,16 @@ def get_favorite_books(user_id):
             "title": "Python编程从入门到实践",
             "author": "Eric Matthes",
             "cover_img": "https://via.placeholder.com/100x150?text=Python",
-            "add_time": "2024-01-15T10:00:00Z"
+            "add_time": "2024-01-15T10:00:00Z",
+            "rating" : 5
         },
         {
             "book_id": 2,
             "title": "深入理解JavaScript",
             "author": "Kyle Simpson",
             "cover_img": "https://via.placeholder.com/100x150?text=JS",
-            "add_time": "2024-02-20T14:30:00Z"
+            "add_time": "2024-02-20T14:30:00Z",
+            "rating" : 4
         }
     ]
     return jsonify(mock_books), 200
@@ -248,7 +250,9 @@ def get_favorite_reviews(user_id):
     mock_reviews = [
         {
             "review_id": 101,
+            "book_auther": "Eric Matthes",
             "book_title": "Python编程从入门到实践",
+            "title": "非常实用的Python入门书籍",
             "content": "这本书深入浅出，非常适合初学者，跟着例子一步步做很有成就感。",
             "rating": 5,
             "like_count": 25,
@@ -257,6 +261,8 @@ def get_favorite_reviews(user_id):
         {
             "review_id": 102,
             "book_title": "深入理解JavaScript",
+            "book_auther": "Kyle Simpson",
+            "title": "JavaScript的深度解析",
             "content": "对于JavaScript的高级概念讲解得很透彻，需要反复阅读。",
             "rating": 4,
             "like_count": 12,

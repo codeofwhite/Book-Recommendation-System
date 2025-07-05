@@ -193,8 +193,8 @@
 
 <script>
 import axios from 'axios';
-// 新增：导入日志函数
-import { trackBookView } from '../services/logger.js';
+
+
 
 export default {
   name: 'BookDetails',
