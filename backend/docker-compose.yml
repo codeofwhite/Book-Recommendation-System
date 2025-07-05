@@ -523,6 +523,27 @@ services:
       flink-job-submitter: # Ensure Flink job potentially started before this service
         condition: service_completed_successfully # Or service_healthy if job is long-running
 
+  # NEW SERVICE: Offline Recommendation Service
+  offline_recommendation_service:
+    build: ./offline_recommendation_service
+    container_name: offline_recommendation_service_app
+    ports:
+      - "5005:5005" 
+    environment:
+      REC_DB_HOST: recommendation_db
+      REC_DB_USER: rec_user
+      REC_DB_PASSWORD: rec_password
+      REC_DB_NAME: recommendation_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      OFFLINE_CRON_SCHEDULE: "0 2 * * *" # 例如：每天凌晨2点运行离线计算
+    depends_on:
+      recommendation_db:
+        condition: service_healthy # 依赖推荐数据库
+      redis:
+        condition: service_healthy # 依赖 Redis 存储结果
+
 volumes:
   auth_mysql_data:
   book_mongo_data:

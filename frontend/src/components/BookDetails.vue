@@ -14,7 +14,7 @@
           <div class="celestial-judgement">
             <span class="stars-bestowed">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 -
               Math.round(book.rating))
-              }}</span>
+            }}</span>
             <span class="whispers-of-appraisal">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
           </div>
 
@@ -62,7 +62,7 @@
           <h3 class="section-heading">Notable Figures Within</h3>
           <div class="characters-of-note">
             <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
-            }}</span>
+              }}</span>
           </div>
         </div>
 
@@ -292,28 +292,54 @@ export default {
     },
     async fetchUserEngagementStatus() {
       const userId = this.currentUserId;
+      const bookId = this.book.bookId;
+
+      // 始终尝试获取书籍的总点赞数和总收藏数
+      try {
+        const likeCountResponse = await axios.get(`/service-c/api/books/${bookId}/total_likes`);
+        this.likeCount = likeCountResponse.data.totalLikeCount;
+      } catch (error) {
+        console.error('Error fetching total like count:', error);
+        this.likeCount = 0;
+      }
+
+      // 如果需要显示总收藏数，也同样添加一个调用
+      // try {
+      //   const favoriteCountResponse = await axios.get(`/service-c/api/books/${bookId}/total_favorites`);
+      //   // 假设你有一个 data 属性叫做 totalCollectCount 或者直接更新 this.book.collectCount
+      //   // this.totalCollectCount = favoriteCountResponse.data.totalFavoriteCount;
+      // } catch (error) {
+      //   console.error('Error fetching total favorite count:', error);
+      // }
+
+      // 如果用户未登录，仅显示总数，个人状态保持默认值并提前返回
       if (!userId) {
-        console.log("User not logged in, skipping engagement status fetch.");
+        console.log("User not logged in. Displaying total counts only.");
+        this.isLiked = false;
+        this.isCollected = false;
         return;
       }
 
+      // 如果用户已登录，则获取用户的点赞和收藏状态
       try {
-        const likeResponse = await axios.get(`/service-c/api/books/${this.book.bookId}/like_status`, {
+        const likeStatusResponse = await axios.get(`/service-c/api/books/${bookId}/like_status`, {
           params: { userId }
         });
-        this.isLiked = likeResponse.data.isLiked;
-        this.likeCount = likeResponse.data.likeCount;
-
-        const collectResponse = await axios.get(`/service-c/api/books/${this.book.bookId}/favorite_status`, {
-          params: { userId }
-        });
-        this.isCollected = collectResponse.data.isFavorited;
-        // 如果后端返回收藏数量，可以在这里更新 this.collectCount = collectResponse.data.favoriteCount;
+        this.isLiked = likeStatusResponse.data.isLiked;
+        // this.likeCount = likeStatusResponse.data.likeCount; // 可选：如果后端在个人状态接口也返回了总数，可以再次更新
       } catch (error) {
-        console.error('Error fetching user engagement status for book:', error);
+        console.error('Error fetching user like status:', error);
         this.isLiked = false;
+      }
+
+      try {
+        const collectStatusResponse = await axios.get(`/service-c/api/books/${bookId}/favorite_status`, {
+          params: { userId }
+        });
+        this.isCollected = collectStatusResponse.data.isFavorited;
+      } catch (error) {
+        console.error('Error fetching user collect status:', error);
         this.isCollected = false;
-        this.likeCount = 0;
       }
     },
     async toggleLike() {
