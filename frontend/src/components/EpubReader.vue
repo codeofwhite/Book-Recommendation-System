@@ -1,4 +1,3 @@
-
 <template>
   <div class="epub-reader-container">
     <div v-if="isLoading" class="status-message">
@@ -11,7 +10,11 @@
       <button @click="goBack">返回详情页</button>
     </div>
     
-    <div id="epub-viewer-area"></div>
+    <div v-if="!isLoading && !error" class="reader-header">
+      <button @click="goBack" class="back-button">‹‹</button>
+    </div>
+    
+    <div id="epub-viewer-area" v-show="!isLoading && !error" :class="{ 'eye-protect-mode': isEyeProtectMode }"></div>
 
     <div v-if="!isLoading && !error" class="epub-reader-controls">
       <button @click="prevPage" class="pagination-button">‹ 上一页</button>
@@ -30,10 +33,15 @@
           <span v-if="totalPages > 0" class="page-display">/ {{ totalPages }} 页</span>
         </div>
 
-        <div class="font-size-controls">
-          <button @click="setFontSize('85%')" :class="{ active: currentFontSize === '85%' }">小</button>
-          <button @click="setFontSize('100%')" :class="{ active: currentFontSize === '100%' }">中</button>
-          <button @click="setFontSize('125%')" :class="{ active: currentFontSize === '125%' }">大</button>
+        <div class="appearance-controls">
+          <div class="font-size-controls">
+            <button @click="setFontSize('100%')" :class="{ active: currentFontSize === '100%' }">小</button>
+            <button @click="setFontSize('115%')" :class="{ active: currentFontSize === '115%' }">中</button>
+            <button @click="setFontSize('130%')" :class="{ active: currentFontSize === '130%' }">大</button>
+          </div>
+          <button @click="toggleEyeProtectMode" class="eye-protect-button" :class="{ active: isEyeProtectMode }">
+            {{ isEyeProtectMode ? '标准' : '护眼' }}
+          </button>
         </div>
       </div>
 
@@ -58,7 +66,13 @@ const error = ref(null);
 
 const totalPages = ref(0);
 const targetLocation = ref(1);
-const currentFontSize = ref('100%'); // Default font size
+const currentFontSize = ref('100%');
+const isEyeProtectMode = ref(false); // 护眼模式状态
+
+// 切换护眼模式
+const toggleEyeProtectMode = () => {
+  isEyeProtectMode.value = !isEyeProtectMode.value;
+};
 
 // --- Control Functions ---
 const nextPage = () => rendition.value?.next();
@@ -81,7 +95,6 @@ const onRelocated = (location) => {
 
 // --- Keyboard Navigation Handler ---
 const handleKeyPress = (event) => {
-  // Do not turn pages if the user is focused on an input field
   if (event.target.tagName.toUpperCase() === 'INPUT') {
     return;
   }
@@ -113,7 +126,6 @@ const loadEpub = async (bookId) => {
     isGeneratingLocations.value = false;
 
     rendition.value = book.value.renderTo('epub-viewer-area', {
-      
       width: '100%',
       height: '100%',
       spread: 'auto',
@@ -121,12 +133,11 @@ const loadEpub = async (bookId) => {
     });
     
     rendition.value.on('relocated', onRelocated);
-    
-    // Apply the default font size once the rendition is ready
     rendition.value.themes.fontSize(currentFontSize.value);
-
     await rendition.value.display();
 
+    targetLocation.value = 1;
+    jumpToLocation();
   } catch (err) {
     console.error('EPUB加载错误:', err);
     error.value = `加载失败: ${err.message}.`;
@@ -166,6 +177,35 @@ onBeforeUnmount(() => {
   justify-content: center;
   align-items: center;
   background-color: #f5f5f5;
+  position: relative;
+}
+
+.reader-header {
+  width: 100%;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.back-button {
+  position: absolute;
+  top: 1rem; left: 0.2rem;
+  background-color: transparent;
+  color: black;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 5px;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-left: 1rem;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background-color: #8d6e63;
+  color:white
 }
 
 #epub-viewer-area {
@@ -175,6 +215,11 @@ onBeforeUnmount(() => {
   height: 90vh;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   background-color: #ffffff;
+  transition: background-color 0.3s ease;
+}
+
+#epub-viewer-area.eye-protect-mode {
+  background-color: #fffaf0;
 }
 
 .epub-reader-controls {
@@ -191,6 +236,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 2rem;
+}
+
+.appearance-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .pagination-button {
@@ -256,6 +307,22 @@ onBeforeUnmount(() => {
   background-color: #6b5346;
   color: white;
   border-color: #6b5346;
+}
+
+.eye-protect-button {
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.3s ease;
+}
+
+.eye-protect-button.active {
+  background-color: #8d6e63;
+  color: white;
+  border-color: #8d6e63;
 }
 
 .status-message {

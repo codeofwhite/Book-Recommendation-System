@@ -26,7 +26,7 @@
               <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
             </button>
               <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
-                <span class="icon">📖</span> 线上阅读
+                <span class="icon">📖</span> Read Online
               </button>
           </div>
           <div class="tome-provenance-details-grid">
