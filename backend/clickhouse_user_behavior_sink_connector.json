@@ -14,7 +14,7 @@
     "password": "",
     "topics": "user_behavior_logs",
     "table.name": "user_behavior_logs:user_behavior_logs_raw",
-    "auto.create.tables": "true",
+    "auto.create.tables": "false",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "value.converter.schemas.enable": "false",
     "insert.mode": "insert",
