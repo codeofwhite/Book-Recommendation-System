@@ -11,7 +11,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False) # 存储哈希后的密码
-    avatar_url = db.Column(db.String(255), nullable=True, default='https://via.placeholder.com/150')
+    avatar_url = db.Column(db.String(255), nullable=True, default='https://th.bing.com/th/id/OIP.cTPVthB0oT1RXrEcSHaaTwHaHa?w=191&h=191&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3')
 
     # --- 新增字段 ---
     registration_date = db.Column(db.DateTime, nullable=False, default=func.now()) # 注册时间，自动设置为当前时间

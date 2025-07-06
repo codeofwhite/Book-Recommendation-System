@@ -91,7 +91,7 @@
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                }}</span>
+                  }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>
@@ -145,8 +145,7 @@
 
 <script>
 import axios from 'axios';
-
-
+import { trackBookClick, trackPageView } from '../services/logger';
 
 // Helper function to get user data from localStorage
 const getParsedUserData = () => {
@@ -204,6 +203,9 @@ export default {
       currentPage: 1,
       itemsPerPage: 5, // Number of books per page
       pageRange: 2, // Number of pages to show around the current page
+
+      pageViewStartTime: 0,
+      pageUrlOnMount: '', // 【新增】记录页面加载时的URL
     };
   },
   computed: {
@@ -312,6 +314,20 @@ export default {
     this.fetchUserData();
     this.fetchRecommendations();
   },
+  //埋点
+  mounted() {
+    this.pageViewStartTime = Date.now();
+    this.pageUrlOnMount = window.location.href;
+  },
+
+  beforeUnmount() {
+    const endTime = Date.now();
+    const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
+
+    // 【修改】调用 logger.js 中的函数，显式传递页面名称和捕获的URL
+    trackPageView('BookList', dwellTimeInSeconds, this.pageUrlOnMount);
+  },
+
   watch: {
     // Watch filteredBooks to reset currentPage when filters change
     filteredBooks() {

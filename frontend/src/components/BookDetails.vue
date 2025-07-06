@@ -193,7 +193,7 @@
 
 <script>
 import axios from 'axios';
-
+import { trackPageView, trackButtonClick } from '../services/logger.js';
 
 // Helper function to get user data from localStorage
 const getParsedUserData = () => {
@@ -231,6 +231,7 @@ export default {
       // currentUserNickname 和 currentUserAvatar 可以直接通过 computed 属性获取
     };
   },
+  
   computed: {
     // **核心修改：从 'user_data' 获取 userId**
     currentUserId() {
@@ -267,6 +268,18 @@ export default {
     shouldShowAwardsToggle() {
       return this.book && this.book.awards && this.book.awards.length > this.awardsLimit;
     }
+  },
+  //埋点
+  mounted() {
+    this.pageViewStartTime = Date.now();
+    this.pageUrlOnMount = window.location.href; // 【新增】在挂载时捕获URL
+  },
+  beforeUnmount() {
+    const endTime = Date.now();
+    const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
+
+    // 【修改】调用 logger.js 中的函数，显式传递页面名称和捕获的URL
+    trackPageView('BookDetails', dwellTimeInSeconds, this.pageUrlOnMount);
   },
   async created() {
     await this.fetchBookDetails();
@@ -343,7 +356,10 @@ export default {
       }
     },
     async toggleLike() {
-      if (!this.book || !this.book.bookId) return;
+      //喜欢按钮埋点
+       trackButtonClick('LikeButton', 'BookDetails', { bookId: this.book?.bookId });
+      
+       if (!this.book || !this.book.bookId) return;
 
       const userId = this.currentUserId;
       if (!userId) {
@@ -363,6 +379,8 @@ export default {
       }
     },
     async toggleCollect() {
+      //收藏按钮埋点
+      trackButtonClick('CollectButton', 'BookDetails', { bookId: this.book?.bookId });
       if (!this.book || !this.book.bookId) return;
 
       const userId = this.currentUserId;
@@ -447,6 +465,8 @@ export default {
       }
     },
     async submitReview() {
+      //提交书评埋点
+      trackButtonClick('SubmitReview', 'BookDetails', { bookId: this.book?.bookId });
       if (!this.book || !this.book.bookId) return;
       const bookId = this.book.bookId;
 

@@ -118,9 +118,7 @@ services:
       - "3309:3306" # Map to a new host port
     volumes:
       - user_engagement_mysql_data:/var/lib/mysql
-    # You might need an init script here if you want to pre-create Debezium user specifically for this DB
-    # 这边 auth 已经初始化了就要了
-    # - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql
+      - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql # <--- 解除注释并添加这一行
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -244,9 +242,9 @@ services:
         echo "Kafka is ready. Installing Debezium connectors..."
         confluent-hub install --no-prompt debezium/debezium-connector-mysql:3.1.2
         confluent-hub install --no-prompt debezium/debezium-connector-mongodb:3.1.2
-        # --- Install ClickHouse Kafka Sink Connector ---
-        confluent-hub install --no-prompt debezium/debezium-connector-clickhouse:latest # 或指定版本，如 1.0.0
-        /etc/confluent/docker/run # 运行 Kafka Connect
+        echo "Kafka is ready. Installing clickhouse/kafka-connect-sink:1.3.1"
+        confluent-hub install --no-prompt clickhouse/kafka-connect-sink:1.3.1
+        /etc/confluent/docker/run
     depends_on:
       kafka:
         condition: service_healthy
@@ -323,7 +321,7 @@ services:
         condition: service_healthy
       clickhouse: # Spark ETL 可能会写入 ClickHouse
         condition: service_healthy
-    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/etl_script.py --kafka-brokers ${KAFKA_BROKER_URL} --rec-db-host ${REC_DB_HOST} --rec-db-user ${REC_DB_USER} --rec-db-password ${REC_DB_PASSWORD} --rec-db-name ${REC_DB_NAME}
+    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/main.py
 
   # --- DataX Worker Service ---
   datax_worker:
@@ -361,7 +359,7 @@ services:
 
   # --- ClickHouse Service ---
   clickhouse:
-    image: yandex/clickhouse-server:latest # 推荐使用最新的稳定版
+    image: clickhouse/clickhouse-server:23.8 # 推荐使用最新的稳定版
     container_name: clickhouse_db
     ports:
       - "8123:8123"   # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
@@ -370,9 +368,6 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse # 数据持久化
       - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
-    # 可以挂载自定义配置，如果需要
-    # - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
-    # - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
     ulimits: # ClickHouse 对文件描述符有限制，建议调高
       nofile:
         soft: 262144
@@ -543,6 +538,22 @@ services:
         condition: service_healthy # 依赖推荐数据库
       redis:
         condition: service_healthy # 依赖 Redis 存储结果
+
+  # New Log Ingestion Service (Frontend Logs to Kafka)
+  log_service:
+    build: ./log_service # 假设你的Flask日志服务代码在 log_service 目录下
+    container_name: frontend_log_ingestion
+    ports:
+      - "5006:5006" # 为日志服务分配一个端口
+    environment:
+      KAFKA_BROKER_URL: kafka:29092 # 连接到 Kafka
+    depends_on:
+      kafka:
+        condition: service_healthy # 确保 Kafka 启动后再启动日志服务
+    # volumes: # 如果需要持久化日志文件，可以加上
+    #   - ./logs:/app/logs
+    networks:
+      - default
 
 volumes:
   auth_mysql_data:

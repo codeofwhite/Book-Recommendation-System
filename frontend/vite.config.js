@@ -1,47 +1,76 @@
+// vite.config.js
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { devProxy, prodProxy, ZHJProxy } from "./config"; // 导入所有配置
+// 导入所有定义好的代理配置
+import { devProxy, prodProxy, ZHJProxy } from "./config";
 
+// Vite 配置定义函数，它接收一个包含 `mode` 的对象
 export default defineConfig(({ mode }) => {
-  let currentProxy = devProxy; // 默认使用 devProxy
+  let currentProxy = devProxy; // 默认情况下，使用开发环境的代理配置
 
+  // 根据当前 Vite 的运行模式选择对应的代理配置
   if (mode === "production") {
+    // 如果是生产模式 (npm run build)，则使用生产环境配置
     currentProxy = prodProxy;
-  } else if (mode === "zhj") { // 根据模式选择 ZHJProxy
+  } else if (mode === "zhj") {
+    // 如果是自定义的 'zhj' 模式，则使用 ZHJ 环境配置
+    // 你需要在 package.json 中定义 "vite --mode zhj" 这样的命令来触发此模式
     currentProxy = ZHJProxy;
   }
 
   return {
+    // 注册 Vue 插件
     plugins: [vue()],
+    // 开发服务器配置
     server: {
+      host: '0.0.0.0', // 允许外部网络访问开发服务器，方便在移动设备或局域网内测试
+      port: 5173,      // 开发服务器运行的端口
       proxy: {
+        /**
+         * 代理规则：当前端请求以 '/service-a' 开头时，将其代理到 targetA 定义的地址。
+         * 例如：前端请求 /service-a/api/auth/login 会被代理到 http://localhost:5000/api/auth/login
+         * changeOrigin: true 更改请求头中的 Host 字段为目标 URL，这是跨域代理的常见需求。
+         * secure: false 允许代理 HTTPS 目标，即使证书无效。在开发环境中常用。
+         * rewrite: (path) => path.replace(/^\/service-a/, "") 将请求路径中的 '/service-a' 前缀移除，
+         * 因为后端服务通常不需要这个前缀。
+         */
         "/service-a": {
-          target: currentProxy.targetA,
+          target: currentProxy.targetA, // 认证服务
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/service-a/, ""),
         },
         "/service-b": {
-          target: currentProxy.targetB,
+          target: currentProxy.targetB, // 书籍管理服务
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/service-b/, ""),
         },
         "/service-c": {
-          target: currentProxy.targetC,
+          target: currentProxy.targetC, // 用户参与服务
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/service-c/, ""),
         },
-        // 新增 5002 端口的推荐服务代理
-        "/service-d": { // 使用 /service-d 作为推荐服务的前缀，你也可以改为 /api/recommendations
-          target: currentProxy.targetD,
+        "/service-d": {
+          // 这是新增的推荐服务代理
+          // 前端通过 '/service-d/api/recommendations' 访问推荐服务
+          target: currentProxy.targetD, // 推荐服务
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/service-d/, ""),
         },
+        "/service-e": {
+          // 这是新增的日志服务代理
+          // 前端通过 '/service-e/api/log' 访问日志服务
+          target: currentProxy.targetE, // 日志服务
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/service-e/, ""),
+        },
       },
     },
+    // 应用的基础路径，部署到非根目录时可能需要设置
     base: "/",
   };
 });

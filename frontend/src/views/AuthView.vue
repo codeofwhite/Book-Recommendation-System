@@ -84,8 +84,11 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useUserStore } from '../stores/userStore'; // 引入 userStore
+import { trackEvent  } from '../services/logger.js';
 
 const router = useRouter();
+const userStore = useUserStore(); // 获取 userStore 实例
 
 const username = ref('');
 const email = ref('');
@@ -135,69 +138,52 @@ const handleSubmit = async () => {
     : { username: username.value, password: password.value };
 
   try {
-    const response = await axios.post(endpoint, payload);
-    message.value = response.data.message;
-    isError.value = false;
-
+    // **核心修改：不再直接调用 axios.post，而是调用 userStore.login()**
+    // userStore.login() 内部会处理 axios 请求、解析响应、更新 Pinia 状态和 localStorage
     if (!isRegister.value) { // 登录逻辑
-      // **核心：从后端响应中解构出所有相关数据，包括 'token'**
-      const {
-        user_id, token, nickname, email, avatar_url, registration_date,
-        is_profile_complete, age, gender, location, occupation,
-        interest_tags, preferred_book_types, preferred_authors,
-        preferred_genres, preferred_reading_duration, last_login_date
-      } = response.data;
+      // 调用 userStore 的 login action
+      await userStore.login(payload); // 将用户名和密码作为凭据传递给 store 的 login action
 
-      // **重要检查：确保 user_id 和 token 都存在**
-      if (user_id && token) {
-        // **将所有用户数据（包括 auth_token）打包成一个对象**
-        const userDataToStore = {
-          user_id: user_id,
-          auth_token: token, // <-- 确保这一行存在且 token 被正确赋值
-          nickname: nickname || username.value,
-          email: email || '',
-          avatar_url: avatar_url || 'https://th.bing.com/th/id/OIP.cTPVthB0oT1RXrEcSHaaTwHaHa?w=191&h=191&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
-          registration_date: registration_date || null,
-          last_login_date: last_login_date || null,
-          age: age || null,
-          gender: gender || '',
-          location: location || '',
-          occupation: occupation || '',
-          interest_tags: interest_tags || '',
-          preferred_book_types: preferred_book_types || '',
-          preferred_authors: preferred_authors || '',
-          preferred_genres: preferred_genres || '',
-          preferred_reading_duration: preferred_reading_duration || '',
-          is_profile_complete: is_profile_complete === undefined ? false : is_profile_complete
-        };
+      // 登录成功后，Pinia Store 的状态（user, token, isLoggedIn）应该已经更新
+      // 可以在这里安全地访问 userStore.isLoggedIn 和 userStore.user
+      console.log('AuthView.vue: 登录成功！Pinia Store 状态已更新。');
 
-        // **只存储一个键 'user_data' 到 localStorage**
-        localStorage.setItem('user_data', JSON.stringify(userDataToStore));
-
-        // 记录最后登录时间（如果需要单独存储，也可以放在 userDataToStore 里）
-        localStorage.setItem('user_last_login_time', new Date().toISOString());
-
-        console.log('AuthView.vue: 登录成功！存储的用户数据:', userDataToStore);
-
-        // 发送自定义事件，通知 App.vue 更新登录状态
-        window.dispatchEvent(new Event('user-logged-in'));
-
-        // 根据 is_profile_complete 状态进行路由跳转
-        if (!userDataToStore.is_profile_complete) {
-          console.log("AuthView.vue: 用户资料不完整，跳转到 /user-onboarding");
-          router.push('/user-onboarding');
+      // 触发埋点事件，确保在 Pinia Store 状态更新后执行
+      // 使用 setTimeout 增加一个微小的延迟，确保响应式更新完成
+      setTimeout(() => {
+        if (userStore.isLoggedIn) {
+          trackEvent('user_login', {
+            user_id: userStore.user.user_id, // 从 Pinia Store 获取用户ID
+            login_method: 'username_password',
+            // 可以添加其他从 userStore.user 获取的用户属性，例如：
+            // nickname: userStore.user.nickname,
+            // email: userStore.user.email,
+          });
+          console.log('AuthView.vue: 登录埋点已发送，user_id 应该有值。');
         } else {
-          console.log("AuthView.vue: 用户资料完整，跳转到 /userview");
-          router.push('/userview');
+          console.error('AuthView.vue: 登录后 userStore.isLoggedIn 仍为 false，埋点未发送用户ID。');
         }
-        alert('登录成功！');
+      }, 50); // 50ms 延迟，给 Vue/Pinia 响应式更新留出时间
 
+      // 根据 userStore 中的最新状态进行路由跳转
+      // 确保从 userStore.user 中获取 is_profile_complete
+      if (!userStore.user.is_profile_complete) {
+        console.log("AuthView.vue: 用户资料不完整，跳转到 /user-onboarding");
+        router.push('/user-onboarding');
       } else {
-        isError.value = true;
-        message.value = '登录成功，但用户信息不完整（缺少用户ID或认证令牌），请联系管理员。';
-        console.error('AuthView.vue: Login successful but missing user_id or token in response:', response.data);
+        console.log("AuthView.vue: 用户资料完整，跳转到 /userview");
+        router.push('/userview');
       }
+      alert('登录成功！');
+
+      // 发送自定义事件，通知 App.vue 更新登录状态（如果 App.vue 仍然依赖这个事件）
+      window.dispatchEvent(new Event('user-logged-in'));
+
     } else { // 注册逻辑
+      // 注册逻辑可以保持不变，因为它不涉及用户状态的存储
+      const response = await axios.post(endpoint, payload); // 注册仍然直接使用 axios
+      message.value = response.data.message;
+      isError.value = false;
       username.value = '';
       email.value = '';
       password.value = '';
@@ -210,7 +196,7 @@ const handleSubmit = async () => {
       message.value = err.response.data.message;
     } else {
       message.value = '请求失败，请稍后再试。';
-      console.error('AuthView.vue: Auth request failed:', err);
+      console.error('AuthView.vue: 认证请求失败:', err);
     }
   } finally {
     loading.value = false;

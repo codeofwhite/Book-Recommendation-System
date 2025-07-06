@@ -18,11 +18,23 @@ npm run dev
 # 1. 进入 Kafka 容器
 docker exec -it kafka bash
 
-查看 Kafka topic：docker exec kafka kafka-topics --bootstrap-server kafka:29092 --list
-创建 docker exec kafka kafka-topics --create --topic user_book_interactions --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
-发送 kafka-console-producer --topic user_book_interactions --bootstrap-server kafka:29092
-看数据 docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:29092 --topic user_book_interactions --from-beginning --max-messages 5
-
+查看 Kafka topic：
+```
+docker exec kafka kafka-topics --bootstrap-server kafka:29092 --list
+```
+创建
+``` 
+docker exec kafka kafka-topics --create --topic user_book_interactions --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
+```
+发送 
+```
+kafka-console-producer --topic user_book_interactions --bootstrap-server kafka:29092
+```
+看数据 
+```
+docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:29092 --topic user_book_interactions --from-beginning --max-messages 5
+```
+```
 {"user_id": "user_A", "item_id": "book_001", "event_type": "view", "timestamp": 1678886400}
 {"user_id": "user_B", "item_id": "book_002", "event_type": "view", "timestamp": 1678886410}
 {"user_id": "user_A", "item_id": "book_003", "event_type": "view", "timestamp": 1678886420}
@@ -34,3 +46,4 @@ docker exec -it kafka bash
 {"user_id": "user_D", "item_id": "book_008", "event_type": "view", "timestamp": 1678886480}
 {"user_id": "user_A", "item_id": "book_009", "event_type": "view", "timestamp": 1678886490}
 {"user_id": "user_A", "item_id": "book_010", "event_type": "view", "timestamp": 1678886500}
+```
