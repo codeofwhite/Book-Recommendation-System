@@ -11,6 +11,6 @@
     "database.history.kafka.bootstrap.servers": "kafka:29092",
     "database.history.kafka.topic": "dbhistory.book_db_mongo",
     "snapshot.mode": "initial",
-    "topic.prefix": "book_db_cdc" 
+    "topic.prefix": "book_db_cdc"
   }
 }
