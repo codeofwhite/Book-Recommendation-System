@@ -5,34 +5,23 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const useUserStore = defineStore('user', () => {
     // 1. --- STATE ---
-    // 从 localStorage 初始化 state，这样即使用户刷新页面，登录状态也能保持
-    const user = ref(JSON.parse(localStorage.getItem('user_profile')) || null);
+    const user = ref(JSON.parse(localStorage.getItem('user_data')) || null);
     const token = ref(localStorage.getItem('auth_token') || null);
     const sessionId = ref(localStorage.getItem('session_id') || null);
 
     // 2. --- GETTERS ---
-    // Getter 用于派生 state，方便在组件中使用
     const isLoggedIn = computed(() => !!token.value && !!user.value);
-    
-    // 创建一个 Getter 来生成认证头，这在调用需要授权的 API 时非常有用
     const authHeader = computed(() => {
         return { headers: { Authorization: `Bearer ${token.value}` } };
     });
 
     // 3. --- ACTIONS ---
-    /**
-     * 设置用户和 Token，并持久化到 localStorage
-     * 这是一个内部辅助函数
-     * @param {object} userData - 用户信息对象
-     * @param {string} userToken - 认证 Token
-     */
     function setUserAndToken(userData, userToken) {
         user.value = userData;
         token.value = userToken;
-        localStorage.setItem('user_profile', JSON.stringify(userData));
+        localStorage.setItem('user_data', JSON.stringify(userData));
         localStorage.setItem('auth_token', userToken);
 
-        // 创建并存储一个新的会话 ID
         const newSessionId = uuidv4();
         sessionId.value = newSessionId;
         localStorage.setItem('session_id', newSessionId);
@@ -42,56 +31,64 @@ export const useUserStore = defineStore('user', () => {
      * 登录 Action
      * @param {object} credentials - 包含 username 和 password 的对象
      */
-    async function login(credentials) {
-        // 后端登录接口地址
+    async function login(credentials) { // <-- 确保这是唯一的 login 函数
         const endpoint = '/service-a/api/auth/login';
-        
         const response = await axios.post(endpoint, credentials);
 
-        // 假设后端成功后返回的数据结构如你组件中所示
-        const { user_id, token, nickname, email, avatar_url } = response.data;
+        const {
+            user_id, token, nickname, email, avatar_url, registration_date,
+            last_login_date, age, gender, location, occupation, interest_tags,
+            preferred_book_types, preferred_authors, preferred_genres,
+            preferred_reading_duration, is_profile_complete
+        } = response.data;
+
         if (user_id && token) {
-            const userData = {
-                id: user_id,
+            const userDataToStore = {
+                user_id: user_id,
+                auth_token: token,
                 nickname: nickname || credentials.username,
                 email: email || '',
-                avatar_url: avatar_url || 'https://via.placeholder.com/150'
+                avatar_url: avatar_url || 'https://th.bing.com/th/id/OIP.cTPVthB0oT1RXrEcSHaaTwHaHa?w=191&h=191&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+                registration_date: registration_date || null,
+                last_login_date: last_login_date || null,
+                age: age || null,
+                gender: gender || '',
+                location: location || '',
+                occupation: occupation || '',
+                interest_tags: interest_tags || '',
+                preferred_book_types: preferred_book_types || '',
+                preferred_authors: preferred_authors || '',
+                preferred_genres: preferred_genres || '',
+                preferred_reading_duration: preferred_reading_duration || '',
+                is_profile_complete: is_profile_complete === undefined ? false : is_profile_complete
             };
-            setUserAndToken(userData, token);
+            setUserAndToken(userDataToStore, token);
         } else {
-            // 如果成功响应中缺少关键信息，则抛出错误
             throw new Error('Login response missing token or user_id');
         }
-        return response.data; // 返回完整数据，以便组件可以显示成功消息
+        return response.data;
     }
 
-    /**
-     * 注册 Action
-     * @param {object} details - 包含 username, email, password 的对象
-     */
     async function register(details) {
         const endpoint = '/service-a/api/auth/register';
         const response = await axios.post(endpoint, details);
-        return response.data; // 直接返回后端响应
+        return response.data;
     }
 
-    /**
-     * 登出 Action
-     */
     function logout() {
         user.value = null;
         token.value = null;
         sessionId.value = null;
-        localStorage.removeItem('user_profile');
+        // 移除所有相关的 localStorage 项，包括 'user_data'
+        localStorage.removeItem('user_data'); // <-- 确保这里是 'user_data'
         localStorage.removeItem('auth_token');
         localStorage.removeItem('session_id');
-        // 可选：登出后跳转到登录页，这可以在组件中完成，也可以在这里触发
     }
 
-    // 暴露 state, getters, 和 actions
     return {
         user,
         token,
+        sessionId,
         isLoggedIn,
         authHeader,
         login,

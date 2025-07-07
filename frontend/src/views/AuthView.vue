@@ -83,29 +83,30 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router'; // Import useRouter
+import { useRouter } from 'vue-router';
+import { useUserStore } from '../stores/userStore'; // 引入 userStore
+import { trackEvent  } from '../services/logger.js';
 
-const router = useRouter(); // Initialize router
+const router = useRouter();
+const userStore = useUserStore(); // 获取 userStore 实例
 
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const isRegister = ref(false); // Default to login mode as requested by "这个就是登录界面"
+const isRegister = ref(false);
 const message = ref('');
 const isError = ref(false);
 const loading = ref(false);
 
 const toggleMode = () => {
   isRegister.value = !isRegister.value;
-  message.value = ''; // Clear message when toggling mode
+  message.value = '';
   isError.value = false;
-  // Clear form fields when toggling mode, for a cleaner experience
   username.value = '';
   email.value = '';
   password.value = '';
 };
 
-// Handle input focus/blur for animation
 const handleInputFocus = (event) => {
   event.target.parentElement.style.transform = 'translateX(5px)';
 };
@@ -114,9 +115,7 @@ const handleInputBlur = (event) => {
   event.target.parentElement.style.transform = 'translateX(0)';
 };
 
-// Handle button click for animation (optional, as :disabled handles state)
 const handleButtonClick = (event) => {
-  // Only apply animation if button is not disabled
   if (!loading.value) {
     const button = event.target;
     button.style.transform = 'translateY(1px)';
@@ -139,43 +138,55 @@ const handleSubmit = async () => {
     : { username: username.value, password: password.value };
 
   try {
-    const response = await axios.post(endpoint, payload);
-    message.value = response.data.message;
-    isError.value = false;
+    // **核心修改：不再直接调用 axios.post，而是调用 userStore.login()**
+    // userStore.login() 内部会处理 axios 请求、解析响应、更新 Pinia 状态和 localStorage
+    if (!isRegister.value) { // 登录逻辑
+      // 调用 userStore 的 login action
+      await userStore.login(payload); // 将用户名和密码作为凭据传递给 store 的 login action
 
-    if (!isRegister.value) {
-      // **--- 核心修改：登录成功逻辑 ---**
-      // 假设后端登录成功后返回 user_id, token, nickname, email, avatar_url
-      // 检查这些关键信息是否存在
-      const { user_id, token, nickname, email, avatar_url } = response.data;
+      // 登录成功后，Pinia Store 的状态（user, token, isLoggedIn）应该已经更新
+      // 可以在这里安全地访问 userStore.isLoggedIn 和 userStore.user
+      console.log('AuthView.vue: 登录成功！Pinia Store 状态已更新。');
 
-      if (user_id && token) {
-        // 将关键用户数据存储到 localStorage
-        localStorage.setItem('user_id', user_id);
-        localStorage.setItem('auth_token', token); // 你的token命名保持不变
-        localStorage.setItem('user_nickname', nickname || username.value); // 存储昵称，如果没有返回则用用户名
-        localStorage.setItem('user_email', email || ''); // 存储邮箱
-        localStorage.setItem('user_avatar_url', avatar_url || 'https://via.placeholder.com/150'); // 存储头像URL，提供默认值
+      // 触发埋点事件，确保在 Pinia Store 状态更新后执行
+      // 使用 setTimeout 增加一个微小的延迟，确保响应式更新完成
+      setTimeout(() => {
+        if (userStore.isLoggedIn) {
+          trackEvent('user_login', {
+            user_id: userStore.user.user_id, // 从 Pinia Store 获取用户ID
+            login_method: 'username_password',
+            // 可以添加其他从 userStore.user 获取的用户属性，例如：
+            // nickname: userStore.user.nickname,
+            // email: userStore.user.email,
+          });
+          console.log('AuthView.vue: 登录埋点已发送，user_id 应该有值。');
+        } else {
+          console.error('AuthView.vue: 登录后 userStore.isLoggedIn 仍为 false，埋点未发送用户ID。');
+        }
+      }, 50); // 50ms 延迟，给 Vue/Pinia 响应式更新留出时间
 
-        // *** ADD THIS LINE: Dispatch a custom event after successful login ***
-        window.dispatchEvent(new Event('user-logged-in'));
-
-        // 使用 router.push() 进行跳转到用户主页
-        router.push('/userview'); // 假设你的用户主页路由是 /dashboard
+      // 根据 userStore 中的最新状态进行路由跳转
+      // 确保从 userStore.user 中获取 is_profile_complete
+      if (!userStore.user.is_profile_complete) {
+        console.log("AuthView.vue: 用户资料不完整，跳转到 /user-onboarding");
+        router.push('/user-onboarding');
       } else {
-        // 如果登录成功但缺少关键信息，也视为错误
-        isError.value = true;
-        message.value = '登录成功，但用户信息不完整，请联系管理员。';
-        console.error('Login successful but missing user_id or token in response:', response.data);
+        console.log("AuthView.vue: 用户资料完整，跳转到 /userview");
+        router.push('/userview');
       }
-    } else {
-      // 注册成功后的处理
-      // After successful registration, clear fields and optionally switch to login mode
+      alert('登录成功！');
+
+      // 发送自定义事件，通知 App.vue 更新登录状态（如果 App.vue 仍然依赖这个事件）
+      window.dispatchEvent(new Event('user-logged-in'));
+
+    } else { // 注册逻辑
+      // 注册逻辑可以保持不变，因为它不涉及用户状态的存储
+      const response = await axios.post(endpoint, payload); // 注册仍然直接使用 axios
+      message.value = response.data.message;
+      isError.value = false;
       username.value = '';
       email.value = '';
       password.value = '';
-      // toggleMode(); // Uncomment to automatically switch to login after registration
-      // 可以给用户提示注册成功，并建议他们登录
       message.value = '注册成功！请登录。';
     }
 
@@ -184,14 +195,15 @@ const handleSubmit = async () => {
     if (err.response && err.response.data && err.response.data.message) {
       message.value = err.response.data.message;
     } else {
-      message.value = '请求失败，请稍后再试。'; // More user-friendly error
-      console.error('Auth request failed:', err);
+      message.value = '请求失败，请稍后再试。';
+      console.error('AuthView.vue: 认证请求失败:', err);
     }
   } finally {
     loading.value = false;
   }
 };
 </script>
+
 
 <style scoped>
 /* Base styles */

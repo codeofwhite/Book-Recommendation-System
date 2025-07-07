@@ -51,3 +51,50 @@ def search_local_books():
     if error:
         return jsonify({"error": error}), 500
     return jsonify(filtered_books)
+
+@book_bp.route('/books/popular', methods=['GET'])
+def get_popular_books_route():
+    limit = request.args.get('limit', 4, type=int) # 默认获取4本
+    books, error = BookModel.get_popular_books(limit)
+    if error:
+        return jsonify({"error": error}), 500
+    return jsonify(books)
+
+@book_bp.route('/books/personalized', methods=['GET'])
+def get_personalized_books_route():
+    limit = request.args.get('limit', 4, type=int)
+    # 实际应用中，这里会根据用户ID进行个性化推荐
+    # user_id = request.args.get('user_id') # 如果有用户认证系统的话
+    books, error = BookModel.get_personalized_books(limit=limit) # 暂时不传user_id
+    if error:
+        return jsonify({"error": error}), 500
+    return jsonify(books)
+
+@book_bp.route('/books/rankings/<ranking_type>', methods=['GET'])
+def get_book_rankings_route(ranking_type):
+    limit = request.args.get('limit', 5, type=int) # 榜单默认获取5本
+    books = []
+    error = None
+    if ranking_type == 'bestselling': # 畅销榜
+        # 假设畅销榜就是热门书籍
+        books, error = BookModel.get_popular_books(limit)
+    elif ranking_type == 'new_releases': # 新书榜
+        books, error = BookModel.get_new_books(limit)
+    elif ranking_type == 'top_rated': # 高分榜
+        books, error = BookModel.get_top_rated_books(limit)
+    else:
+        return jsonify({"error": "Invalid ranking type"}), 400
+
+    if error:
+        return jsonify({"error": error}), 500
+    return jsonify(books)
+
+@book_bp.route('/books/daily', methods=['GET'])
+def get_daily_book_route():
+    book, error = BookModel.get_daily_book()
+    if error:
+        return jsonify({"error": error}), 500
+    if book:
+        return jsonify(book)
+    else:
+        return jsonify({"error": "Daily book not found"}), 404

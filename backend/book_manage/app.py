@@ -2,9 +2,6 @@
 from flask import Flask
 from flask_cors import CORS
 
-# 导入配置
-from config import Config
-
 # 导入我们的Blueprint和Model
 from routes.book_routes import book_bp
 from models.book_model import BookModel

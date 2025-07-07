@@ -118,9 +118,7 @@ services:
       - "3309:3306" # Map to a new host port
     volumes:
       - user_engagement_mysql_data:/var/lib/mysql
-    # You might need an init script here if you want to pre-create Debezium user specifically for this DB
-    # 这边 auth 已经初始化了就要了
-    # - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql
+      - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql # <--- 解除注释并添加这一行
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -244,7 +242,9 @@ services:
         echo "Kafka is ready. Installing Debezium connectors..."
         confluent-hub install --no-prompt debezium/debezium-connector-mysql:3.1.2
         confluent-hub install --no-prompt debezium/debezium-connector-mongodb:3.1.2
-        /etc/confluent/docker/run # 运行 Kafka Connect
+        echo "Kafka is ready. Installing clickhouse/kafka-connect-sink:1.3.1"
+        confluent-hub install --no-prompt clickhouse/kafka-connect-sink:1.3.1
+        /etc/confluent/docker/run
     depends_on:
       kafka:
         condition: service_healthy
@@ -254,6 +254,8 @@ services:
         condition: service_healthy
       mongo_setup: # <--- ADD THIS: Ensure MongoDB replica set is initialized
         condition: service_completed_successfully
+      clickhouse: # Kafka Connect 需要 ClickHouse 来作为 Sink
+        condition: service_healthy
     networks:
       - default
 
@@ -304,6 +306,10 @@ services:
       REC_DB_USER: rec_user
       REC_DB_PASSWORD: rec_password
       REC_DB_NAME: recommendation_db
+      CLICKHOUSE_HOST: clickhouse # 添加 ClickHouse 连接信息
+      CLICKHOUSE_PORT: 8123       # HTTP 端口
+      CLICKHOUSE_USER: default    # 默认用户
+      CLICKHOUSE_PASSWORD:        # 默认无密码
     depends_on:
       kafka:
         condition: service_healthy
@@ -313,7 +319,9 @@ services:
         condition: service_healthy
       book_db_mongo:
         condition: service_healthy
-    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/etl_script.py --kafka-brokers ${KAFKA_BROKER_URL} --rec-db-host ${REC_DB_HOST} --rec-db-user ${REC_DB_USER} --rec-db-password ${REC_DB_PASSWORD} --rec-db-name ${REC_DB_NAME}
+      clickhouse: # Spark ETL 可能会写入 ClickHouse
+        condition: service_healthy
+    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/main.py
 
   # --- DataX Worker Service ---
   datax_worker:
@@ -336,6 +344,8 @@ services:
         condition: service_healthy
       recommendation_db: # 假设你的离线数据会同步到 recommendation_db
         condition: service_healthy
+      clickhouse: # DataX 可能需要同步数据到 ClickHouse
+        condition: service_healthy
     networks:
       - default # 确保与所有数据库服务在同一网络
     deploy: # 资源限制，根据你的数据量调整
@@ -344,8 +354,206 @@ services:
           cpus: '2.0'
           memory: 4G # DataX 可能会消耗较多内存，特别是处理大文件时
     command: ["tail", "-f", "/dev/null"] # 保持容器运行，以便手动或通过 cron 触发任务
-# Healthcheck for DataX itself is usually not necessary as it's an on-demand tool.
-# Its health is determined by its ability to complete a job.
+  # Healthcheck for DataX itself is usually not necessary as it's an on-demand tool.
+  # Its health is determined by its ability to complete a job.
+
+  # --- ClickHouse Service ---
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8 # 推荐使用最新的稳定版
+    container_name: clickhouse_db
+    ports:
+      - "8123:8123"   # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
+      - "9000:9000"   # 原生 TCP 接口 (用于 clickhouse-client)
+      - "9009:9009"   # MySQL 兼容接口 (如果需要，默认不开启)
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse # 数据持久化
+      - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
+    ulimits: # ClickHouse 对文件描述符有限制，建议调高
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider 'http://localhost:8123/ping' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # 给予启动时间
+
+  # --- HDFS Services ---
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
+    container_name: namenode
+    ports:
+      - "9870:9870" # HDFS Web UI
+      - "9900:9000" # HDFS Default Port
+    volumes:
+      - namenode_data:/hadoop/dfs/name # 持久化 NameNode 数据
+      - ./namenode-entrypoint.sh:/usr/local/bin/namenode-entrypoint.sh # 挂载你的启动脚本
+    environment:
+      # These typically come from Hadoop's core-site.xml, but can be set via env vars for Docker
+      HDFS_CONF_dfs_namenode_name_dir: file:///hadoop/dfs/name
+      HDFS_CONF_dfs_replication: 1 # For a single-node setup
+    env_file:
+      - ./hadoop.env # For HDFS specific configurations (explained below)
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-report"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Give NameNode ample time to start and format
+    command: ["bash", "/usr/local/bin/namenode-entrypoint.sh"]
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
+    container_name: datanode
+    volumes:
+      - datanode_data:/hadoop/dfs/data # 持久化 DataNode 数据
+    environment:
+      HDFS_CONF_dfs_datanode_data_dir: file:///hadoop/dfs/data
+    env_file:
+      - ./hadoop.env # For HDFS specific configurations
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-getServiceState", "hdfs://namenode:9000/"] # Check if connected to NameNode
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Flink JobManager - NEW ADDITION
+  # Flink JobManager (using your custom PyFlink image)
+  flink-jobmanager:
+    build: ./flink_py_image # Path to your custom Flink Python image Dockerfile
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081" # Flink Web UI
+      - "6123:6123" # RPC 端口
+    command: jobmanager # Start JobManager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
+        rest.address: flink-jobmanager
+        rest.port: 8081
+        taskmanager.numberOfTaskSlots: 1
+        python.executable: /usr/bin/python3
+    volumes:
+      - ./flink_jobs:/opt/flink/usrlib # Mount your Flink Job Python script
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis: # Flink job writes to Redis, so depend on it
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/overview || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Flink TaskManager (using your custom PyFlink image)
+  flink-taskmanager:
+    build: ./flink_py_image # Path to your custom Flink Python image Dockerfile
+    container_name: flink-taskmanager
+    command: taskmanager # Start TaskManager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
+        taskmanager.numberOfTaskSlots: 1
+        python.executable: /usr/bin/python3
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+
+  # Flink Job Submitter (one-off service to submit the PyFlink Job)
+  flink-job-submitter:
+    build: ./flink_py_image
+    container_name: flink-job-submitter
+    command: >
+      bash -c "
+        echo 'Waiting for Flink JobManager...' &&
+        until curl -f http://flink-jobmanager:8081/overview; do
+          sleep 5;
+        done &&
+        echo 'JobManager is ready. Submitting PyFlink Job...' &&
+        /opt/flink/bin/flink run --jarfile /opt/flink/usrlib/jars/flink-sql-connector-kafka-3.0.0-1.17.jar -py /opt/flink/usrlib/scripts/realtime_recommendation_job.py
+      " # <-- 注意这一整行
+    volumes:
+      - ./flink_jars:/opt/flink/usrlib/jars      # 将JAR包挂载到 /opt/flink/usrlib/jars
+      - ./flink_jobs:/opt/flink/usrlib/scripts   # 将Python脚本挂载到 /opt/flink/usrlib/scripts
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    restart: "no"
+
+  # Redis Service
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # New: Real-time Recommendation Service (Flask app reading from Redis)
+  realtime_recommendation_service:
+    build: ./realtime_recommendation_service # Path to your Dockerfile for this service
+    container_name: realtime_recommendation_service
+    ports:
+      - "5004:5004" # Expose on port 5004
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy # Ensure Redis is up before starting
+      flink-job-submitter: # Ensure Flink job potentially started before this service
+        condition: service_completed_successfully # Or service_healthy if job is long-running
+
+  # NEW SERVICE: Offline Recommendation Service
+  offline_recommendation_service:
+    build: ./offline_recommendation_service
+    container_name: offline_recommendation_service_app
+    ports:
+      - "5005:5005" 
+    environment:
+      REC_DB_HOST: recommendation_db
+      REC_DB_USER: rec_user
+      REC_DB_PASSWORD: rec_password
+      REC_DB_NAME: recommendation_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      OFFLINE_CRON_SCHEDULE: "0 2 * * *" # 例如：每天凌晨2点运行离线计算
+    depends_on:
+      recommendation_db:
+        condition: service_healthy # 依赖推荐数据库
+      redis:
+        condition: service_healthy # 依赖 Redis 存储结果
+
+  # New Log Ingestion Service (Frontend Logs to Kafka)
+  log_service:
+    build: ./log_service # 假设你的Flask日志服务代码在 log_service 目录下
+    container_name: frontend_log_ingestion
+    ports:
+      - "5006:5006" # 为日志服务分配一个端口
+    environment:
+      KAFKA_BROKER_URL: kafka:29092 # 连接到 Kafka
+    depends_on:
+      kafka:
+        condition: service_healthy # 确保 Kafka 启动后再启动日志服务
+    # volumes: # 如果需要持久化日志文件，可以加上
+    #   - ./logs:/app/logs
+    networks:
+      - default
 
 volumes:
   auth_mysql_data:
@@ -357,3 +565,8 @@ volumes:
   # 为 DataX 的任务和日志添加新的卷，这样即使容器重建，这些数据也能保留
   datax_jobs:
   datax_logs:
+  clickhouse_data: # 为 ClickHouse 添加数据卷
+  clickhouse_logs: # 为 ClickHouse 添加日志卷
+  namenode_data: # NameNode 数据卷
+  datanode_data: # DataNode 数据卷
+  redis_data:

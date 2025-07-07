@@ -10,7 +10,7 @@
       </div>
 
       <p v-if="loading" class="loading-message">
-        <div class="spinner"></div> 正在加载图书...
+      <div class="spinner"></div> 正在加载图书...
       </p>
       <p v-else-if="filteredBooks.length === 0" class="no-books-message">
         没有找到相关书籍或当前筛选条件下没有书籍。
@@ -49,7 +49,7 @@
             </div>
           </div>
         </div>
-        </div>
+      </div>
     </div>
 
     <aside class="right-sidebar">

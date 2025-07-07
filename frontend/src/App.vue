@@ -34,11 +34,38 @@ import { useUserStore } from './stores/userStore';
 const userStore = useUserStore();
 const router = useRouter();
 
+<<<<<<< HEAD
 // 3. (删除) 不再需要本地 isLoggedIn ref 和任何事件监听器 (onMounted, onUnmounted)。
 //    Pinia 的 state 本身就是响应式的，store.isLoggedIn 会自动更新 UI。
+=======
+// Function to check login status
+const checkLoginStatus = () => {
+  console.log("App.vue: checkLoginStatus called.");
+  const storedUserData = localStorage.getItem('user_data');
+  console.log("App.vue: Raw storedUserData from localStorage:", storedUserData);
+
+  if (storedUserData) {
+    try {
+      const userData = JSON.parse(storedUserData);
+      isLoggedIn.value = !!userData.auth_token; // 检查 auth_token 是否存在
+      console.log("App.vue: Parsed userData.auth_token:", userData.auth_token ? 'Exists' : 'Does NOT exist');
+      console.log("App.vue: isLoggedIn.value set to:", isLoggedIn.value);
+    } catch (e) {
+      console.error("App.vue: Error parsing user_data from localStorage:", e);
+      isLoggedIn.value = false;
+      localStorage.removeItem('user_data'); // 清除可能损坏的数据
+      console.log("App.vue: Cleared corrupted user_data from localStorage.");
+    }
+  } else {
+    isLoggedIn.value = false;
+    console.log("App.vue: No user_data found in localStorage. isLoggedIn.value set to false.");
+  }
+};
+>>>>>>> zhj
 
 // 4. 重构 logout 函数
 const logout = () => {
+<<<<<<< HEAD
   // 调用 store 中的 logout action，它会处理所有状态和 localStorage 的清理工作
   userStore.logout();
 
@@ -46,6 +73,48 @@ const logout = () => {
   router.push('/');
   alert('您已成功登出。');
 };
+=======
+  console.log("App.vue: logout called.");
+  // 清除 'user_data' 和 'user_last_login_time'
+  localStorage.removeItem('user_data');
+  localStorage.removeItem('user_last_login_time');
+
+  // 确保清除所有旧的单独存储的键，以防万一（只在过渡期需要）
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user_nickname');
+  localStorage.removeItem('user_email');
+  localStorage.removeItem('user_avatar_url');
+  localStorage.removeItem('user_registration_date');
+
+
+  isLoggedIn.value = false;
+  console.log("App.vue: All user data removed from localStorage. isLoggedIn.value set to false.");
+
+  router.push('/');
+  alert('您已成功登出。');
+};
+
+// Listen for custom events to update login status
+const handleLoginEvent = () => {
+  console.log("App.vue: 'user-logged-in' event received. Calling checkLoginStatus().");
+  checkLoginStatus();
+};
+
+onMounted(() => {
+  console.log("App.vue: Component mounted. Performing initial login status check.");
+  checkLoginStatus();
+  window.addEventListener('user-logged-in', handleLoginEvent);
+  // storage 事件在不同标签页/窗口之间共享存储时触发
+  window.addEventListener('storage', checkLoginStatus);
+});
+
+onUnmounted(() => {
+  console.log("App.vue: Component unmounted. Removing event listeners.");
+  window.removeEventListener('user-logged-in', handleLoginEvent);
+  window.removeEventListener('storage', checkLoginStatus);
+});
+>>>>>>> zhj
 </script>
 
 <style>
