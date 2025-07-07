@@ -25,19 +25,6 @@
         <p class="stat-number">{{ totalReviews }}</p>
       </div>
     </div>
-
-    <div class="recent-activity">
-      <h3>Recent Activity</h3>
-      <div class="activity-list">
-        <div class="activity-item" v-for="activity in recentActivities" :key="activity.id">
-          <div class="activity-icon">{{ activity.icon }}</div>
-          <div class="activity-content">
-            <p class="activity-text">{{ activity.text }}</p>
-            <span class="activity-time">{{ activity.time }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -46,16 +33,10 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 const allBooks = ref([])
-const totalUsers = ref(156)
+const totalUsers = ref(0)
+const loading = ref(false)
+const error = ref(null)
 const totalReviews = ref(423)
-
-const recentActivities = ref([
-  { id: 1, icon: '📖', text: 'New book "The Great Adventure" added', time: '2 hours ago' },
-  { id: 2, icon: '👤', text: 'New user registered: john_doe', time: '4 hours ago' },
-  { id: 3, icon: '⭐', text: 'Book "Mystery Novel" received 5-star review', time: '6 hours ago' },
-  { id: 4, icon: '✏️', text: 'Book "Science Fiction" updated', time: '1 day ago' },
-])
-
 const totalBooks = computed(() => allBooks.value.length)
 
 const averageRating = computed(() => {
@@ -63,6 +44,23 @@ const averageRating = computed(() => {
   const sum = allBooks.value.reduce((acc, book) => acc + (book.rating || 0), 0)
   return (sum / allBooks.value.length).toFixed(1)
 })
+
+// Fetch users from API
+// 获取用户总数
+const fetchTotalUsers = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const response = await axios.get('/service-a/api/users') // 请确认你的 API 路径
+    totalUsers.value = response.data.total || 0
+  } catch (err) {
+    console.error('Error fetching total users:', err)
+    error.value = err.response?.data?.error || 'Failed to fetch user statistics'
+  } finally {
+    loading.value = false
+  }
+}
 
 const fetchBooks = async () => {
   try {
@@ -73,7 +71,10 @@ const fetchBooks = async () => {
   }
 }
 
-onMounted(fetchBooks)
+onMounted(() => {
+  fetchBooks()
+  fetchTotalUsers()
+})
 </script>
 
 <style scoped>

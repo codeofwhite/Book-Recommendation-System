@@ -2,58 +2,52 @@
   <div class="admin-panel-card">
     <div class="header-section">
       <h2>Manage Users</h2>
-      <p>View, edit, or manage user accounts and their permissions.</p>
+      <p>View, edit, or manage user accounts.</p>
+    </div>
+
+    <!-- Add User Button -->
+    <div class="action-bar">
+      <button @click="showCreateModal = true" class="create-btn">
+        ➕ Add New User
+      </button>
     </div>
 
     <div class="filter-bar">
-      <select v-model="statusFilter" class="filter-select">
-        <option value="all">All Users</option>
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-        <option value="banned">Banned</option>
-      </select>
-      <select v-model="roleFilter" class="filter-select">
-        <option value="all">All Roles</option>
-        <option value="admin">Admin</option>
-        <option value="user">User</option>
-        <option value="moderator">Moderator</option>
-      </select>
       <input 
         type="text" 
         v-model="searchKeyword" 
+        @input="debounceSearch"
         placeholder="Search users..." 
         class="search-input"
       />
+      <button @click="fetchUsers" class="search-btn">🔍 Search</button>
     </div>
 
-    <div class="users-container">
-      <div v-for="user in paginatedUsers" :key="user.id" class="user-card">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading users...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-if="error" class="error-container">
+      <p class="error-message">{{ error }}</p>
+      <button @click="fetchUsers" class="retry-btn">Retry</button>
+    </div>
+
+    <!-- Users Container -->
+    <div v-if="!loading && !error" class="users-container">
+      <div v-for="user in users" :key="user.id" class="user-card">
         <div class="user-header">
           <div class="user-info">
-            <div class="user-avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
+            <div class="user-avatar">
+              <img v-if="user.avatar_url" :src="user.avatar_url" :alt="user.username" />
+              <span v-else>{{ user.username.charAt(0).toUpperCase() }}</span>
+            </div>
             <div class="user-details">
-              <h4>{{ user.name }}</h4>
+              <h4>{{ user.username }}</h4>
               <span class="user-email">{{ user.email }}</span>
             </div>
-          </div>
-          <div class="user-badges">
-            <span :class="['status-badge', user.status]">{{ user.status.toUpperCase() }}</span>
-            <span :class="['role-badge', user.role]">{{ user.role.toUpperCase() }}</span>
-          </div>
-        </div>
-
-        <div class="user-stats">
-          <div class="stat-item">
-            <span class="stat-label">Joined:</span>
-            <span class="stat-value">{{ formatDate(user.joinedAt) }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Reviews:</span>
-            <span class="stat-value">{{ user.reviewCount }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Last Login:</span>
-            <span class="stat-value">{{ formatDate(user.lastLogin) }}</span>
           </div>
         </div>
 
@@ -65,44 +59,82 @@
             ✏️ Edit
           </button>
           <button 
-            v-if="user.status === 'active'"
-            @click="toggleUserStatus(user.id, 'inactive')"
-            class="action-btn deactivate-btn"
-          >
-            ⏸️ Deactivate
-          </button>
-          <button 
-            v-if="user.status === 'inactive'"
-            @click="toggleUserStatus(user.id, 'active')"
-            class="action-btn activate-btn"
-          >
-            ▶️ Activate
-          </button>
-          <button 
-            v-if="user.status !== 'banned'"
-            @click="banUser(user.id)"
-            class="action-btn ban-btn"
-          >
-            🚫 Ban
-          </button>
-          <button 
             @click="viewUserDetails(user)"
             class="action-btn details-btn"
           >
             👁️ Details
           </button>
+          <button 
+            @click="deleteUser(user.id)"
+            class="action-btn delete-btn"
+          >
+            🗑️ Delete
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="pagination">
-      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-btn">
+    <!-- Empty State -->
+    <div v-if="!loading && !error && users.length === 0" class="empty-state">
+      <div class="empty-icon">👥</div>
+      <p>No users found matching your criteria.</p>
+      <button @click="clearFilters" class="clear-filters-btn">Clear Search</button>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="pagination && pagination.pages > 1" class="pagination">
+      <button 
+        @click="goToPage(pagination.current_page - 1)" 
+        :disabled="!pagination.has_prev" 
+        class="pagination-btn"
+      >
         ← Previous
       </button>
-      <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
-      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="pagination-btn">
+      <span class="pagination-info">
+        Page {{ pagination.current_page }} of {{ pagination.pages }} 
+        ({{ pagination.total }} total users)
+      </span>
+      <button 
+        @click="goToPage(pagination.current_page + 1)" 
+        :disabled="!pagination.has_next" 
+        class="pagination-btn"
+      >
         Next →
       </button>
+    </div>
+
+    <!-- Create User Modal -->
+    <div v-if="showCreateModal" class="modal-overlay" @click="closeCreateModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Create New User</h3>
+          <button class="close-button" @click="closeCreateModal">×</button>
+        </div>
+        <form @submit.prevent="createUser" class="edit-form">
+          <div class="form-group">
+            <label>Username:</label>
+            <input type="text" v-model="newUser.username" required>
+          </div>
+          <div class="form-group">
+            <label>Email:</label>
+            <input type="email" v-model="newUser.email" required>
+          </div>
+          <div class="form-group">
+            <label>Password:</label>
+            <input type="password" v-model="newUser.password" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label>Avatar URL (optional):</label>
+            <input type="url" v-model="newUser.avatar_url">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="cancel-button" @click="closeCreateModal">Cancel</button>
+            <button type="submit" class="save-button" :disabled="creating">
+              {{ creating ? 'Creating...' : 'Create User' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Edit User Modal -->
@@ -114,32 +146,22 @@
         </div>
         <form @submit.prevent="saveUser" class="edit-form">
           <div class="form-group">
-            <label>Name:</label>
-            <input type="text" v-model="editingUser.name" required>
+            <label>Username:</label>
+            <input type="text" v-model="editingUser.username" required>
           </div>
           <div class="form-group">
             <label>Email:</label>
             <input type="email" v-model="editingUser.email" required>
           </div>
           <div class="form-group">
-            <label>Role:</label>
-            <select v-model="editingUser.role">
-              <option value="user">User</option>
-              <option value="moderator">Moderator</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Status:</label>
-            <select v-model="editingUser.status">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="banned">Banned</option>
-            </select>
+            <label>Avatar URL:</label>
+            <input type="url" v-model="editingUser.avatar_url">
           </div>
           <div class="form-actions">
             <button type="button" class="cancel-button" @click="closeEditModal">Cancel</button>
-            <button type="submit" class="save-button">Save Changes</button>
+            <button type="submit" class="save-button" :disabled="updating">
+              {{ updating ? 'Saving...' : 'Save Changes' }}
+            </button>
           </div>
         </form>
       </div>
@@ -154,36 +176,19 @@
         </div>
         <div class="modal-body" v-if="selectedUser">
           <div class="detail-section">
-            <h4>Basic Information</h4>
+            <h4>User Information</h4>
             <div class="detail-row">
-              <strong>Name:</strong> {{ selectedUser.name }}
+              <strong>ID:</strong> {{ selectedUser.id }}
+            </div>
+            <div class="detail-row">
+              <strong>Username:</strong> {{ selectedUser.username }}
             </div>
             <div class="detail-row">
               <strong>Email:</strong> {{ selectedUser.email }}
             </div>
-            <div class="detail-row">
-              <strong>Role:</strong> 
-              <span :class="['role-badge', selectedUser.role]">{{ selectedUser.role.toUpperCase() }}</span>
-            </div>
-            <div class="detail-row">
-              <strong>Status:</strong> 
-              <span :class="['status-badge', selectedUser.status]">{{ selectedUser.status.toUpperCase() }}</span>
-            </div>
-          </div>
-          
-          <div class="detail-section">
-            <h4>Activity Information</h4>
-            <div class="detail-row">
-              <strong>Joined:</strong> {{ formatDate(selectedUser.joinedAt) }}
-            </div>
-            <div class="detail-row">
-              <strong>Last Login:</strong> {{ formatDate(selectedUser.lastLogin) }}
-            </div>
-            <div class="detail-row">
-              <strong>Total Reviews:</strong> {{ selectedUser.reviewCount }}
-            </div>
-            <div class="detail-row">
-              <strong>Books Read:</strong> {{ selectedUser.booksRead }}
+            <div class="detail-row" v-if="selectedUser.avatar_url">
+              <strong>Avatar:</strong> 
+              <img :src="selectedUser.avatar_url" alt="Avatar" class="detail-avatar">
             </div>
           </div>
         </div>
@@ -193,157 +198,182 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 
-const users = ref([
-  {
-    id: 1,
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
-    role: 'admin',
-    status: 'active',
-    joinedAt: new Date('2023-06-15T10:30:00'),
-    lastLogin: new Date('2024-01-15T14:20:00'),
-    reviewCount: 23,
-    booksRead: 45
-  },
-  {
-    id: 2,
-    name: 'Bob Smith',
-    email: 'bob@example.com',
-    role: 'user',
-    status: 'active',
-    joinedAt: new Date('2023-08-22T09:15:00'),
-    lastLogin: new Date('2024-01-14T16:45:00'),
-    reviewCount: 12,
-    booksRead: 28
-  },
-  {
-    id: 3,
-    name: 'Carol Davis',
-    email: 'carol@example.com',
-    role: 'moderator',
-    status: 'active',
-    joinedAt: new Date('2023-05-10T11:00:00'),
-    lastLogin: new Date('2024-01-13T13:30:00'),
-    reviewCount: 34,
-    booksRead: 67
-  },
-  {
-    id: 4,
-    name: 'David Wilson',
-    email: 'david@example.com',
-    role: 'user',
-    status: 'inactive',
-    joinedAt: new Date('2023-09-05T14:20:00'),
-    lastLogin: new Date('2023-12-20T10:15:00'),
-    reviewCount: 8,
-    booksRead: 15
-  },
-  {
-    id: 5,
-    name: 'Eva Brown',
-    email: 'eva@example.com',
-    role: 'user',
-    status: 'banned',
-    joinedAt: new Date('2023-11-12T16:45:00'),
-    lastLogin: new Date('2024-01-05T09:30:00'),
-    reviewCount: 3,
-    booksRead: 7
-  },
-  {
-    id: 6,
-    name: 'Frank Miller',
-    email: 'frank@example.com',
-    role: 'user',
-    status: 'active',
-    joinedAt: new Date('2023-07-18T12:00:00'),
-    lastLogin: new Date('2024-01-12T18:20:00'),
-    reviewCount: 19,
-    booksRead: 32
-  },
-  {
-    id: 7,
-    name: 'Grace Lee',
-    email: 'grace@example.com',
-    role: 'moderator',
-    status: 'active',
-    joinedAt: new Date('2023-04-03T08:30:00'),
-    lastLogin: new Date('2024-01-11T15:10:00'),
-    reviewCount: 41,
-    booksRead: 89
-  },
-  {
-    id: 8,
-    name: 'Henry Taylor',
-    email: 'henry@example.com',
-    role: 'user',
-    status: 'inactive',
-    joinedAt: new Date('2023-10-28T13:15:00'),
-    lastLogin: new Date('2023-12-15T11:45:00'),
-    reviewCount: 5,
-    booksRead: 12
-  }
-])
+// Reactive data
+const users = ref([])
+const pagination = ref(null)
+const loading = ref(false)
+const error = ref(null)
 
-const statusFilter = ref('all')
-const roleFilter = ref('all')
+// Search
 const searchKeyword = ref('')
 const currentPage = ref(1)
-const pageSize = 6
+const perPage = ref(12)
+
+// Modal states
+const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDetailsModal = ref(false)
 const editingUser = ref({})
 const selectedUser = ref(null)
-
-const filteredUsers = computed(() => {
-  let filtered = users.value
-
-  if (statusFilter.value !== 'all') {
-    filtered = filtered.filter(user => user.status === statusFilter.value)
-  }
-
-  if (roleFilter.value !== 'all') {
-    filtered = filtered.filter(user => user.role === roleFilter.value)
-  }
-
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter(user =>
-      user.name.toLowerCase().includes(keyword) ||
-      user.email.toLowerCase().includes(keyword)
-    )
-  }
-
-  return filtered.sort((a, b) => new Date(b.lastLogin) - new Date(a.lastLogin))
+const newUser = ref({
+  username: '',
+  email: '',
+  password: '',
+  avatar_url: ''
 })
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredUsers.value.length / pageSize))
-)
+// Loading states
+const creating = ref(false)
+const updating = ref(false)
 
-const paginatedUsers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return filteredUsers.value.slice(start, start + pageSize)
-})
+// Search debounce
+let searchTimeout = null
 
-const goToPage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
+
+// Fetch users from API
+const fetchUsers = async (page = 1) => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const params = {
+      page: page,
+      per_page: perPage.value
+    }
+    
+    if (searchKeyword.value.trim()) {
+      params.search = searchKeyword.value.trim()
+    }
+    
+    const response = await axios.get(`/service-a/api/users`, { params })
+    
+    users.value = response.data.users || []
+    pagination.value = {
+      total: response.data.total,
+      pages: response.data.pages,
+      current_page: response.data.current_page,
+      per_page: response.data.per_page,
+      has_next: response.data.has_next,
+      has_prev: response.data.has_prev
+    }
+    
     currentPage.value = page
+    
+  } catch (err) {
+    console.error('Error fetching users:', err)
+    error.value = err.response?.data?.error || 'Failed to fetch users'
+  } finally {
+    loading.value = false
   }
 }
 
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+// Create new user
+const createUser = async () => {
+  if (creating.value) return
+  
+  creating.value = true
+  
+  try {
+    await axios.post(`/service-a/api/users`, newUser.value)
+    
+    // Reset form
+    newUser.value = {
+      username: '',
+      email: '',
+      password: '',
+      avatar_url: ''
+    }
+    
+    closeCreateModal()
+    await fetchUsers(currentPage.value)
+    
+    alert('User created successfully!')
+    
+  } catch (err) {
+    console.error('Error creating user:', err)
+    alert(err.response?.data?.error || 'Failed to create user')
+  } finally {
+    creating.value = false
+  }
 }
 
+// Edit user
 const editUser = (user) => {
   editingUser.value = { ...user }
   showEditModal.value = true
+}
+
+// Save user changes
+const saveUser = async () => {
+  if (updating.value) return
+  
+  updating.value = true
+  
+  try {
+    const response = await axios.put(`/service-a/api/users/${editingUser.value.id}`, editingUser.value)
+    
+    // Update local user data
+    const index = users.value.findIndex(u => u.id === editingUser.value.id)
+    if (index !== -1) {
+      users.value[index] = response.data
+    }
+    
+    closeEditModal()
+    alert('User updated successfully!')
+    
+  } catch (err) {
+    console.error('Error updating user:', err)
+    alert(err.response?.data?.error || 'Failed to update user')
+  } finally {
+    updating.value = false
+  }
+}
+
+// Delete user
+const deleteUser = async (userId) => {
+  if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    return
+  }
+  
+  try {
+    await axios.delete(`/service-a/api/users/${userId}`)
+    
+    // Remove from local data
+    users.value = users.value.filter(u => u.id !== userId)
+    
+    alert('User deleted successfully!')
+    
+  } catch (err) {
+    console.error('Error deleting user:', err)
+    alert(err.response?.data?.error || 'Failed to delete user')
+  }
+}
+
+// View user details
+const viewUserDetails = (user) => {
+  selectedUser.value = user
+  showDetailsModal.value = true
+}
+
+// Pagination
+const goToPage = (page) => {
+  if (page >= 1 && page <= pagination.value.pages) {
+    fetchUsers(page)
+  }
+}
+
+// Modal controls
+const closeCreateModal = () => {
+  showCreateModal.value = false
+  newUser.value = {
+    username: '',
+    email: '',
+    password: '',
+    avatar_url: ''
+  }
 }
 
 const closeEditModal = () => {
@@ -351,45 +381,29 @@ const closeEditModal = () => {
   editingUser.value = {}
 }
 
-const saveUser = () => {
-  const index = users.value.findIndex(u => u.id === editingUser.value.id)
-  if (index !== -1) {
-    users.value[index] = { ...editingUser.value }
-  }
-  closeEditModal()
-  alert('User updated successfully!')
-}
-
-const toggleUserStatus = (userId, newStatus) => {
-  const user = users.value.find(u => u.id === userId)
-  if (user) {
-    user.status = newStatus
-    alert(`User ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`)
-  }
-}
-
-const banUser = (userId) => {
-  if (confirm('Are you sure you want to ban this user? This action can be reversed later.')) {
-    const user = users.value.find(u => u.id === userId)
-    if (user) {
-      user.status = 'banned'
-      alert('User banned successfully!')
-    }
-  }
-}
-
-const viewUserDetails = (user) => {
-  selectedUser.value = user
-  showDetailsModal.value = true
-}
-
 const closeDetailsModal = () => {
   showDetailsModal.value = false
   selectedUser.value = null
 }
 
+// Utility functions
+const debounceSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1
+    fetchUsers(1)
+  }, 500)
+}
+
+const clearFilters = () => {
+  searchKeyword.value = ''
+  currentPage.value = 1
+  fetchUsers(1)
+}
+
+// Initialize
 onMounted(() => {
-  console.log('Users loaded:', users.value.length)
+  fetchUsers()
 })
 </script>
 
@@ -415,21 +429,34 @@ onMounted(() => {
   font-size: 1.1em;
 }
 
+.action-bar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.create-btn {
+  padding: 12px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.create-btn:hover {
+  background-color: #218838;
+}
+
 .filter-bar {
   display: flex;
   gap: 16px;
   margin-bottom: 24px;
   align-items: center;
   flex-wrap: wrap;
-}
-
-.filter-select {
-  padding: 10px 12px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  background-color: white;
-  font-size: 1em;
-  min-width: 120px;
 }
 
 .search-input {
@@ -446,9 +473,93 @@ onMounted(() => {
   border-color: #3498db;
 }
 
+.search-btn {
+  padding: 10px 16px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.search-btn:hover {
+  background-color: #2980b9;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px;
+  color: #e74c3c;
+}
+
+.error-message {
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.retry-btn {
+  padding: 10px 20px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  background-color: #c0392b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #7f8c8d;
+}
+
+.empty-icon {
+  font-size: 4em;
+  margin-bottom: 16px;
+}
+
+.clear-filters-btn {
+  padding: 10px 20px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+.clear-filters-btn:hover {
+  background-color: #5a6268;
+}
+
 .users-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 20px;
   margin-bottom: 24px;
 }
@@ -466,9 +577,6 @@ onMounted(() => {
 }
 
 .user-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 16px;
 }
 
@@ -489,6 +597,13 @@ onMounted(() => {
   justify-content: center;
   font-weight: bold;
   font-size: 1.4em;
+  overflow: hidden;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .user-details h4 {
@@ -500,79 +615,6 @@ onMounted(() => {
 .user-email {
   color: #7f8c8d;
   font-size: 0.9em;
-}
-
-.user-badges {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-}
-
-.status-badge, .role-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75em;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.active {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-badge.inactive {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.banned {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.role-badge.admin {
-  background-color: #e7e3ff;
-  color: #5a4fcf;
-}
-
-.role-badge.moderator {
-  background-color: #cff4fc;
-  color: #055160;
-}
-
-.role-badge.user {
-  background-color: #e2e3e5;
-  color: #383d41;
-}
-
-.user-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: white;
-  border-radius: 6px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-label {
-  font-size: 0.8em;
-  color: #7f8c8d;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 0.9em;
-  color: #2c3e50;
-  font-weight: 600;
 }
 
 .user-actions {
@@ -603,30 +645,12 @@ onMounted(() => {
   background-color: #ffeaa7;
 }
 
-.activate-btn {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.activate-btn:hover {
-  background-color: #c3e6cb;
-}
-
-.deactivate-btn {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.deactivate-btn:hover {
-  background-color: #ffeaa7;
-}
-
-.ban-btn {
+.delete-btn {
   background-color: #f8d7da;
   color: #721c24;
 }
 
-.ban-btn:hover {
+.delete-btn:hover {
   background-color: #f5c6cb;
 }
 
@@ -644,6 +668,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   gap: 16px;
+  margin-top: 24px;
 }
 
 .pagination-btn {
@@ -669,6 +694,7 @@ onMounted(() => {
 .pagination-info {
   font-weight: 500;
   color: #495057;
+  text-align: center;
 }
 
 /* Modal Styles */
@@ -737,8 +763,7 @@ onMounted(() => {
   color: #495057;
 }
 
-.form-group input,
-.form-group select {
+.form-group input {
   width: 100%;
   padding: 10px 12px;
   border: 2px solid #e9ecef;
@@ -747,8 +772,7 @@ onMounted(() => {
   transition: border-color 0.3s ease;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.form-group input:focus {
   outline: none;
   border-color: #3498db;
 }
@@ -784,8 +808,13 @@ onMounted(() => {
   background-color: #5a6268;
 }
 
-.save-button:hover {
+.save-button:hover:not(:disabled) {
   background-color: #218838;
+}
+
+.save-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
 }
 
 .modal-body {
@@ -813,7 +842,14 @@ onMounted(() => {
 
 .detail-row strong {
   color: #495057;
-  min-width: 100px;
+  min-width: 80px;
+}
+
+.detail-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 @media (max-width: 768px) {
@@ -828,10 +864,6 @@ onMounted(() => {
   
   .search-input {
     min-width: auto;
-  }
-  
-  .user-stats {
-    grid-template-columns: 1fr 1fr;
   }
 }
 </style>
