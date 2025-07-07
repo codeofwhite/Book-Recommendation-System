@@ -1,39 +1,17 @@
 <template>
-<<<<<<< HEAD
-  <div
-    class="book-of-the-day-container"
-    :style="{ backgroundImage: book ? `url(${book.coverUrl})` : 'none' }"
-  >
-    <div class="background-overlay"></div>
-    
-=======
   <div class="book-of-the-day-container" :style="{ backgroundImage: book ? `url(${book.coverUrl})` : 'none' }">
     <div class="background-overlay"></div>
     <div class="background-texture"></div>
->>>>>>> zhj
     <div v-if="isLoading" class="loading-spinner"></div>
     <div v-if="error" class="error-message">{{ error }}</div>
 
     <div v-if="book" class="content-wrapper" :class="{ loaded: !isLoading }">
-<<<<<<< HEAD
-      <!-- 左侧图书信息 -->
-=======
->>>>>>> zhj
       <div class="info-section">
         <div class="time-display">{{ currentTime }}</div>
         <h1 class="book-title">{{ book.title }}</h1>
         <p class="book-author">{{ book.author }}</p>
         <blockquote class="book-quote">"{{ book.quote }}"</blockquote>
         <router-link :to="`/books/${book.id}`" class="see-more-button">
-<<<<<<< HEAD
-          >see more
-        </router-link>
-      </div>
-
-      <!-- 右侧书评面板 -->
-      <div class="review-section">
-        <BookReviewPanel :book-id="book.id" />
-=======
           > 沉浸阅读 (Unfold the Narrative)
         </router-link>
       </div>
@@ -41,19 +19,12 @@
       <div class="cover-display-section">
         <img :src="book.coverUrl" :alt="book.title" class="book-cover-image" />
         <div class="cover-frame"></div>
->>>>>>> zhj
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-<<<<<<< HEAD
-import { ref, onMounted, onUnmounted } from 'vue';
-import BookReviewPanel from '../components/BookReviewPanel.vue'; // 导入新组件
-
-// --- 响应式数据 ---
-=======
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios'; // 确保导入 axios，如果你要从后端获取每日一书
 
@@ -64,30 +35,12 @@ const props = defineProps({
   }
 });
 
->>>>>>> zhj
 const isLoading = ref(true);
 const error = ref(null);
 const book = ref(null);
 const currentTime = ref('');
 let timerId = null;
 
-<<<<<<< HEAD
-// --- 数据获取 ---
-const fetchBookOfTheDay = async () => {
-  isLoading.value = true;
-  error.value = null;
-  try {
-    // 使用模拟数据
-    await new Promise(resolve => setTimeout(resolve, 200)); // 模拟网络延迟
-    book.value = {
-      id: '9787532788226',
-      title: '沙丘',
-      author: '弗兰克·赫伯特',
-      // 请确保这个图片URL是有效的，并且允许跨域访问
-      coverUrl: 'https://pic3.zhimg.com/v2-e27b6692c148f856de9ff7da8a23c046_r.jpg',
-      quote: '我绝不能恐惧。恐惧是思维杀手。恐惧是带来彻底毁灭的小小死神。'
-    };
-=======
 // 定义 API 基路径，如果你的 BookOfTheDay 是一个独立页面，可能也需要它
 const API_BASE_URL = '/service-b/api';
 
@@ -125,7 +78,6 @@ const fetchBookData = async () => {
     } else {
       error.value = "今日推荐书籍数据为空。";
     }
->>>>>>> zhj
   } catch (err) {
     console.error("获取每日一书失败:", err);
     error.value = "无法加载今日推荐，请稍后再试。";
@@ -136,25 +88,6 @@ const fetchBookData = async () => {
 
 // --- 时间格式化与更新 ---
 const formatTime = (date) => {
-<<<<<<< HEAD
-    const year = date.getFullYear();
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const day = date.getDate();
-    
-    // 格式化时间为 AM/PM
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-
-    // 组合成 "Jul. 3 2025 AM 10:59" 格式
-    return `${month}. ${day} ${year} ${ampm} ${hours}:${minutesStr}`;
-};
-
-
-=======
   const year = date.getFullYear();
   const month = date.toLocaleString('en-US', { month: 'short' });
   const day = date.getDate();
@@ -169,18 +102,13 @@ const formatTime = (date) => {
   return `${month}. ${day} ${year} ${ampm} ${hours}:${minutesStr}`;
 };
 
->>>>>>> zhj
 const updateTime = () => {
   currentTime.value = formatTime(new Date());
 };
 
 // --- 生命周期钩子 ---
 onMounted(() => {
-<<<<<<< HEAD
-  fetchBookOfTheDay();
-=======
   fetchBookData(); // 调用新的数据获取函数
->>>>>>> zhj
   updateTime();
   timerId = setInterval(updateTime, 1000);
 });
@@ -190,8 +118,6 @@ onUnmounted(() => {
     clearInterval(timerId);
   }
 });
-<<<<<<< HEAD
-=======
 
 // --- 监听 initialBook prop 的变化，以便在 prop 更新时重新加载数据 ---
 // 当 BookOfTheDay 组件作为子组件时，父组件可能在异步获取到 dailyBook 后才传入 prop
@@ -201,7 +127,6 @@ watch(() => props.initialBook, (newVal) => {
   }
 }, { immediate: true }); // immediate: true 使得 watch 在组件挂载时也立即执行一次
 
->>>>>>> zhj
 </script>
 
 <style scoped>
@@ -214,14 +139,6 @@ watch(() => props.initialBook, (newVal) => {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-<<<<<<< HEAD
-  transition: background-image 1s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-family: 'Georgia', 'Times New Roman', Times, serif;
-=======
   transition: background-image 1.5s ease-in-out;
   /* 更长的背景图过渡 */
   display: flex;
@@ -233,7 +150,6 @@ watch(() => props.initialBook, (newVal) => {
   /* 增强衬线字体家族 */
   overflow: hidden;
   /* 防止内容溢出 */
->>>>>>> zhj
 }
 
 .background-overlay {
@@ -242,12 +158,6 @@ watch(() => props.initialBook, (newVal) => {
   left: 0;
   width: 100%;
   height: 100%;
-<<<<<<< HEAD
-  background-color: rgba(0, 0, 0, 0.4); /* 半透明黑色遮罩，确保文字可读性 */
-  z-index: 1;
-}
-
-=======
   background-color: rgba(30, 20, 10, 0.65);
   /* 更深沉、更偏棕色的半透明遮罩 */
   /* backdrop-filter: blur(5px) brightness(0.8); */
@@ -278,22 +188,10 @@ watch(() => props.initialBook, (newVal) => {
 }
 
 /* 内容容器 */
->>>>>>> zhj
 .content-wrapper {
   position: relative;
   z-index: 2;
   display: flex;
-<<<<<<< HEAD
-  justify-content: space-between;
-  align-items: center;
-  width: 90%;
-  max-width: 1400px;
-  padding: 0 5%;
-  gap: 4rem;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
-=======
   justify-content: center;
   /* 默认居中，响应式再调整 */
   align-items: center;
@@ -309,7 +207,6 @@ watch(() => props.initialBook, (newVal) => {
   /* 初始位置更低 */
   transition: opacity 1s ease 0.4s, transform 1s ease 0.4s;
   /* 更长的入场动画 */
->>>>>>> zhj
 }
 
 .content-wrapper.loaded {
@@ -317,65 +214,12 @@ watch(() => props.initialBook, (newVal) => {
   transform: translateY(0);
 }
 
-<<<<<<< HEAD
-=======
 /* 左侧信息区 */
->>>>>>> zhj
 .info-section {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-<<<<<<< HEAD
-}
-
-.time-display {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-  letter-spacing: 1px;
-}
-
-.book-title {
-  font-size: 4.5rem;
-  font-weight: normal;
-  margin: 0;
-  line-height: 1.1;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-.book-author {
-  font-size: 2rem;
-  font-style: normal; /* 按照图片样式，改为非斜体 */
-  margin: 1rem 0 2.5rem 0;
-  opacity: 0.9;
-  text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.5);
-}
-
-.book-quote {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  max-width: 50ch;
-  margin: 0;
-  font-style: italic; /* 引用内容使用斜体 */
-}
-
-.see-more-button {
-  margin-top: 3rem;
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 1.1rem;
-  transition: transform 0.3s;
-  display: inline-block;
-}
-
-.see-more-button:hover {
-  transform: translateX(10px);
-}
-
-.review-section {
-  flex-shrink: 0; /* 防止书评面板被压缩 */
-=======
   max-width: 60%;
   /* 限制文字宽度，避免过长 */
   text-align: left;
@@ -600,7 +444,6 @@ watch(() => props.initialBook, (newVal) => {
     opacity: 1;
     transform: scale(1);
   }
->>>>>>> zhj
 }
 
 /* 加载和错误状态 */
@@ -609,14 +452,9 @@ watch(() => props.initialBook, (newVal) => {
   border: 5px solid rgba(255, 255, 255, 0.2);
   border-top-color: #fff;
   border-radius: 50%;
-<<<<<<< HEAD
-  width: 50px;
-  height: 50px;
-=======
   width: 60px;
   /* 稍大 */
   height: 60px;
->>>>>>> zhj
   animation: spin 1s linear infinite;
 }
 
@@ -628,15 +466,6 @@ watch(() => props.initialBook, (newVal) => {
 
 .error-message {
   z-index: 3;
-<<<<<<< HEAD
-  font-size: 1.5rem;
-  background-color: rgba(211, 47, 47, 0.8);
-  padding: 1rem 2rem;
-  border-radius: 8px;
-}
-
-/* 响应式设计 */
-=======
   font-size: 1.8rem;
   /* 字体更大 */
   background-color: rgba(160, 0, 0, 0.8);
@@ -674,31 +503,12 @@ watch(() => props.initialBook, (newVal) => {
   }
 }
 
->>>>>>> zhj
 @media (max-width: 992px) {
   .content-wrapper {
     flex-direction: column;
     justify-content: center;
     text-align: center;
     gap: 3rem;
-<<<<<<< HEAD
-  }
-  .info-section {
-    align-items: center;
-  }
-  .book-quote {
-    padding-left: 0;
-    text-align: center;
-  }
-  .book-title {
-    font-size: 3rem;
-  }
-  .book-author {
-    font-size: 1.5rem;
-  }
-}
-</style>
-=======
     padding: 20px;
   }
 
@@ -775,4 +585,3 @@ watch(() => props.initialBook, (newVal) => {
   }
 }
 </style>
->>>>>>> zhj

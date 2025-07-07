@@ -196,10 +196,6 @@
 
 <script>
 import axios from 'axios';
-<<<<<<< HEAD
-// 新增：导入日志函数
-import { trackBookView } from '../services/logger.js';
-=======
 import { trackPageView, trackButtonClick } from '../services/logger.js';
 
 // Helper function to get user data from localStorage
@@ -215,7 +211,6 @@ const getParsedUserData = () => {
   }
   return null;
 };
->>>>>>> zhj
 
 export default {
   name: 'BookDetails',
@@ -315,11 +310,8 @@ export default {
           console.warn("--- 前端测试 ---: 正在为书籍 " + bookId + " 注入模拟的 EPUB 链接。");
           // this.$set 是一个 Vue 方法，确保向响应式对象添加新属性时，视图也能更新
           this.book.epubUrl = '/TestEpub/Twilight.epub'; 
-          // ======================== 前端测试代码块 (开始) ========================
 
         }
-
-
       } catch (error) {
         console.error('Error fetching book details:', error);
         this.book = null;
@@ -327,6 +319,13 @@ export default {
         this.loading = false;
       }
     },
+
+    // 线上阅读功能
+    readOnline() {
+      if (!this.book || !this.book.bookId) return;
+      this.$router.push({ name: 'EpubReader', params: { bookId: this.book.bookId } });
+    },
+
     async fetchUserEngagementStatus() {
       const userId = this.currentUserId;
       const bookId = this.book.bookId;
@@ -581,74 +580,6 @@ export default {
         alert('更新评论收藏状态失败，请重试。');
       }
     },
-<<<<<<< HEAD
-    // 你可能还需要一个方法来提交对评论的评论 (子评论)
-    async submitCommentToReview(reviewId) {
-      // 类似 submitReview，但目标是 /api/reviews/<review_id>/comments
-      // 这里只是一个占位符，需要根据你的 UI 和需求实现
-      alert(`对书评 ${reviewId} 提交评论的功能待实现。`);
-    },
-    // 你可能还需要一个方法来删除子评论
-    async deleteComment(commentId) {
-      // 类似 deleteReview，但目标是 /api/comments/<comment_id>
-      // 这里只是一个占位符，需要根据你的 UI 和需求实现
-      if (!confirm('确定要删除这条子评论吗？')) {
-        return;
-      }
-      try {
-        const response = await axios.delete(`/service-c/api/comments/${commentId}`, {
-          params: { userId: this.currentUserId } // 如果后端需要 userId
-        });
-        console.log('Comment deleted:', response.data);
-        alert('子评论删除成功！');
-        // 刷新评论或移除被删除的评论
-        this.fetchBookReviews(); // 简单粗暴地刷新所有书评来更新子评论
-      } catch (error) {
-        console.error('Error deleting comment:', error);
-        alert('删除子评论失败，请重试。');
-      }
-    },
-    async toggleReviewLike(review) {
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
-      const endpoint = `/service-c/api/reviews/${review.id}/like`; // 调用书评点赞 API
-
-      try {
-        const response = await axios.post(endpoint, { userId });
-        review.isLikedByCurrentUser = response.data.isLiked;
-        review.likeCount = response.data.likeCount;
-      } catch (error) {
-        console.error('Error toggling review like status:', error);
-        alert('Failed to update review like status. Please try again.');
-      }
-    },
-    async toggleReviewCollect(review) {
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
-      const endpoint = `/service-c/api/reviews/${review.id}/favorite`; // 调用书评收藏 API
-
-      try {
-        const response = await axios.post(endpoint, { userId });
-        review.isCollectedByCurrentUser = response.data.isFavorited; // 注意这里是 isFavorited
-        review.collectCount = response.data.favoriteCount; // 更新收藏数量
-      } catch (error) {
-        console.error('Error toggling review collect status:', error);
-        alert('Failed to update review collection status. Please try again.');
-      }
-    },
-
-        /**
-     * 新增：处理点击“线上阅读”按钮的事件
-     */
-    readOnline() {
-      if (!this.book || !this.book.bookId) return;
-      // 使用 Vue Router 导航到 EpubReader 页面
-      // 我们通过路由参数传递 bookId，阅读器页面将根据此 ID 获取 EPUB 文件
-      this.$router.push({ name: 'EpubReader', params: { bookId: this.book.bookId } });
-    },
-
-=======
->>>>>>> zhj
     goBack() {
       this.$router.go(-1);
     },

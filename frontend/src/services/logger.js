@@ -1,20 +1,3 @@
-<<<<<<< HEAD
-
-import { useUserStore } from '../stores/userStore';
-
-const LOG_API_ENDPOINT = null; // Still in frontend-only debug mode
-
-/**
- * Formats and processes user behavior logs.
- * In debug mode (LOG_API_ENDPOINT is null), it prints to the console.
- * @param {string} eventType - The type of event.
- * @param {object} payload - Event-specific data.
- */
-export async function trackEvent(eventType, payload = {}) {
-  const userStore = useUserStore();
-  const userId = userStore.isLoggedIn ? userStore.user.id : null;
-  const sessionId = userStore.sessionId;
-=======
 import { useUserStore } from '../stores/userStore';
 import axios from 'axios';
 
@@ -34,34 +17,25 @@ export async function trackEvent(eventType, payload = {}, customPageUrl = null) 
   console.log('userStore.user:', userStore.user);
   const userId = userStore.isLoggedIn ? userStore.user.user_id : null; // <--- 保持这里不变，但现在会正确获取到值
   const sessionId = userStore.sessionId; // <--- 确保 sessionId 能正确获取
->>>>>>> zhj
 
+  // 2. 构建标准化的日志数据结构
   const logData = {
     userId: userId,
     sessionId: sessionId,
     eventType: eventType,
     timestamp: new Date().toISOString(),
-<<<<<<< HEAD
-    pageUrl: window.location.href,
-    payload: payload
-  };
-
-=======
     // **【优化】** 优先使用传入的URL，如果未提供，再使用全局的 window.location.href
     pageUrl: customPageUrl || window.location.href,
     payload: payload,
   };
 
   // 3. 根据环境决定如何处理日志
->>>>>>> zhj
   if (!LOG_API_ENDPOINT) {
     console.groupCollapsed(`[EVENT LOG] => ${eventType}`);
     console.log('Timestamp:', new Date().toLocaleTimeString());
     console.log('Log Data:', logData);
     console.groupEnd();
     return;
-<<<<<<< HEAD
-=======
   }
 
   try {
@@ -75,33 +49,9 @@ export async function trackEvent(eventType, payload = {}, customPageUrl = null) 
     }
   } catch (error) {
     console.error('Failed to send log to backend:', error);
->>>>>>> zhj
   }
-  
-  // Backend sending logic remains here for when we re-enable it
 }
 
-<<<<<<< HEAD
-/**
- * Tracks a user clicking on a book.
- * @param {string} bookId - The ID of the book that was clicked.
- */
-export const trackBookClick = (bookId) => {
-  trackEvent('click_book', { bookId });
-};
-
-/**
- * NEW: Tracks how long a user viewed a book's details page.
- * @param {string} bookId - The ID of the book being viewed.
- * @param {number} dwellTimeInSeconds - The total time in seconds the user spent on the page.
- */
-export const trackBookView = (bookId, dwellTimeInSeconds) => {
-  trackEvent('view_book_detail', { 
-    bookId: bookId, 
-    dwellTime: dwellTimeInSeconds 
-  });
-};
-=======
 // --- 以下是导出的、供组件使用的具体事件跟踪函数 ---
 
 export const trackBookClick = (bookId) => {
@@ -134,4 +84,3 @@ export const trackButtonClick = (buttonName, pageName, context = {}) => {
     ...context,
   });
 };
->>>>>>> zhj

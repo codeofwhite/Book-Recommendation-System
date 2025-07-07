@@ -2,11 +2,10 @@
   <div id="app">
     <nav class="main-nav">
       <router-link to="/" class="nav-item">The Grand Hall</router-link>
-      <router-link to="/book_of_the_day" class="nav-item">Daily Recommendation</router-link>
       <router-link to="/books" class="nav-item">The Catalogue</router-link>
       <router-link to="/about" class="nav-item">About Our Establishment</router-link>
 
-      <template v-if="userStore.isLoggedIn">
+      <template v-if="isLoggedIn">
         <router-link to="/userview" class="nav-item user-dashboard-button">My Scriptorium</router-link>
         <a href="#" @click.prevent="logout" class="nav-item logout-button">Depart the Archives</a>
       </template>
@@ -26,18 +25,12 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-// 1. 导入 useUserStore
-import { useUserStore } from './stores/userStore';
 
-// 2. 获取 store 和 router 实例
-const userStore = useUserStore();
 const router = useRouter();
+const isLoggedIn = ref(false);
 
-<<<<<<< HEAD
-// 3. (删除) 不再需要本地 isLoggedIn ref 和任何事件监听器 (onMounted, onUnmounted)。
-//    Pinia 的 state 本身就是响应式的，store.isLoggedIn 会自动更新 UI。
-=======
 // Function to check login status
 const checkLoginStatus = () => {
   console.log("App.vue: checkLoginStatus called.");
@@ -61,19 +54,9 @@ const checkLoginStatus = () => {
     console.log("App.vue: No user_data found in localStorage. isLoggedIn.value set to false.");
   }
 };
->>>>>>> zhj
 
-// 4. 重构 logout 函数
+// Function to handle logout
 const logout = () => {
-<<<<<<< HEAD
-  // 调用 store 中的 logout action，它会处理所有状态和 localStorage 的清理工作
-  userStore.logout();
-
-  // 登出后跳转到首页
-  router.push('/');
-  alert('您已成功登出。');
-};
-=======
   console.log("App.vue: logout called.");
   // 清除 'user_data' 和 'user_last_login_time'
   localStorage.removeItem('user_data');
@@ -114,7 +97,6 @@ onUnmounted(() => {
   window.removeEventListener('user-logged-in', handleLoginEvent);
   window.removeEventListener('storage', checkLoginStatus);
 });
->>>>>>> zhj
 </script>
 
 <style>
@@ -149,8 +131,6 @@ onUnmounted(() => {
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   /* A delicate bottom border */
-  
-  z-index: 100;
 }
 
 .nav-item {
@@ -229,10 +209,8 @@ onUnmounted(() => {
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   /* A subtle top shadow */
   letter-spacing: 0.5px;
-  z-index: 100;
 }
-
-body {
+body{
   margin: 0;
 }
 </style>

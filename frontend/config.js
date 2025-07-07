@@ -22,10 +22,10 @@ const devProxy = {
  * 所有服务均指向指定 IP 地址的端口
  */
 const ZHJProxy = {
-  targetA: "http://10.242.30.147:5000",
-  targetB: "http://10.242.30.147:5001",
-  targetC: "http://10.242.30.147:5003",
-  targetD: "http://10.242.30.147:5002",
+  targetA: "http://10.242.23.167:5000",
+  targetB: "http://10.242.23.167:5001",
+  targetC: "http://10.242.23.167:5003",
+  targetD: "http://10.242.23.167:5002",
   // 注意：ZHJProxy 缺少 targetE (日志服务) 的配置。
   // 如果 ZHJ 环境下也有日志服务，请在这里添加。
   targetE: "http://10.242.30.147:5006", // 示例

@@ -6,13 +6,9 @@ import BookList from '../views/BookList.vue'
 import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
 import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
-<<<<<<< HEAD
 import BookOfTheDay from "../views/BookOfTheDay.vue";
 import EpubReader from "../components/EpubReader.vue";
-=======
 import UserOnboarding from '../components/UserOnboarding.vue'; // 问卷页面组件
-import BookOfTheDay from "../views/BookOfTheDay.vue";
->>>>>>> zhj
 
 const routes = [
   {

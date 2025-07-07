@@ -73,8 +73,7 @@
               <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
             </div>
             <div class="tome-inscriptions">
-              <!-- 新增：@click 事件来触发日志记录 -->
-              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"  @click="handleBookClick(book)">
+              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
               <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>
@@ -148,10 +147,6 @@
 import axios from 'axios';
 import { trackBookClick, trackPageView } from '../services/logger';
 
-<<<<<<< HEAD
-//新增 导入我们创建的日志函数
-import { trackBookClick } from '../services/logger.js';
-=======
 // Helper function to get user data from localStorage
 const getParsedUserData = () => {
   const storedUserData = localStorage.getItem('user_data');
@@ -165,7 +160,6 @@ const getParsedUserData = () => {
   }
   return null;
 };
->>>>>>> zhj
 
 export default {
   name: 'BookListWithRecommendation',
@@ -344,12 +338,6 @@ export default {
     },
   },
   methods: {
-<<<<<<< HEAD
-     // 新增：处理书籍点击事件的方法
-    handleBookClick(book) {
-      // 在导航前记录点击事件
-      trackBookClick(book.bookId);
-=======
     async fetchUserData() {
       const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
 
@@ -395,7 +383,6 @@ export default {
           this.router.push({ name: 'auth' });
         }
       }
->>>>>>> zhj
     },
     handleSearch() {
       this.applyFilters();
