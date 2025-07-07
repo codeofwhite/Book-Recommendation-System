@@ -1,13 +1,12 @@
 <template>
   <div class="epub-reader-container">
     <div v-if="isLoading" class="status-message">
-      <p>📖 正在为您翻开书卷...</p>
-      <p v-if="isGeneratingLocations" style="font-size: 1rem; margin-top: 10px;">(首次加载正在生成页码, 请稍候...)</p>
+      <p>📖 Loading...</p>
     </div>
     <div v-if="error" class="status-message error">
-      <p>❌ 无法加载此书。</p>
+      <p>❌ Erro: This book cannot be loaded.</p>
       <p><small>{{ error }}</small></p>
-      <button @click="goBack">返回详情页</button>
+      <button @click="goBack">‹‹</button>
     </div>
     
     <div v-if="!isLoading && !error" class="reader-header">
@@ -17,7 +16,7 @@
     <div id="epub-viewer-area" v-show="!isLoading && !error" :class="{ 'eye-protect-mode': isEyeProtectMode }"></div>
 
     <div v-if="!isLoading && !error" class="epub-reader-controls">
-      <button @click="prevPage" class="pagination-button">‹ 上一页</button>
+      <button @click="prevPage" class="pagination-button">‹ Prev</button>
 
       <div class="center-controls">
         <div class="page-jump-controls">
@@ -29,23 +28,23 @@
             :min="1"
             :max="totalPages"
           />
-          <button @click="jumpToLocation" class="jump-button">跳转</button>
-          <span v-if="totalPages > 0" class="page-display">/ {{ totalPages }} 页</span>
+          <button @click="jumpToLocation" class="jump-button">Jump to</button>
+          <span v-if="totalPages > 0" class="page-display">/ {{ totalPages }} page</span>
         </div>
 
         <div class="appearance-controls">
           <div class="font-size-controls">
-            <button @click="setFontSize('100%')" :class="{ active: currentFontSize === '100%' }">小</button>
-            <button @click="setFontSize('115%')" :class="{ active: currentFontSize === '115%' }">中</button>
-            <button @click="setFontSize('130%')" :class="{ active: currentFontSize === '130%' }">大</button>
+            <button @click="setFontSize('100%')" :class="{ active: currentFontSize === '100%' }">S</button>
+            <button @click="setFontSize('115%')" :class="{ active: currentFontSize === '115%' }">M</button>
+            <button @click="setFontSize('130%')" :class="{ active: currentFontSize === '130%' }">L</button>
           </div>
           <button @click="toggleEyeProtectMode" class="eye-protect-button" :class="{ active: isEyeProtectMode }">
-            {{ isEyeProtectMode ? '标准' : '护眼' }}
+            {{ isEyeProtectMode ? 'Change Background' : 'Change Background' }}
           </button>
         </div>
       </div>
 
-      <button @click="nextPage" class="pagination-button">下一页 ›</button>
+      <button @click="nextPage" class="pagination-button">Next ›</button>
     </div>
   </div>
 </template>
@@ -61,7 +60,6 @@ const router = useRouter();
 const book = ref(null);
 const rendition = ref(null);
 const isLoading = ref(true);
-const isGeneratingLocations = ref(false);
 const error = ref(null);
 
 const totalPages = ref(0);
@@ -120,10 +118,8 @@ const loadEpub = async (bookId) => {
     book.value = ePub(epubFileUrl);
     await book.value.ready;
 
-    isGeneratingLocations.value = true;
     await book.value.locations.generate(1024);
     totalPages.value = book.value.locations.length();
-    isGeneratingLocations.value = false;
 
     rendition.value = book.value.renderTo('epub-viewer-area', {
       width: '100%',
