@@ -55,6 +55,7 @@ class RecommendationTrainer:
             logging.debug(f"Loaded {len(self.users_df)} users.")
             logging.debug(f"Loaded {len(self.books_df)} books.")
 
+            # 导入用户互动记录
             behavior_logs = self.data_loader.load_user_behavior_logs()
             book_favorites = self.data_loader.load_book_favorites()
             book_likes = self.data_loader.load_book_likes()
@@ -275,6 +276,7 @@ class RecommendationTrainer:
             self.item_similarity_matrix = None
             logging.error("No item similarity matrix could be calculated!")
 
+    # 这边测试一下哈利波特系列的书籍
     def _debug_harry_potter_content_similarity(self):
         """
         调试：打印哈利波特系列书籍之间的内容相似度。

@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+import requests
 from utils.redis_utils import RedisClient
 from models.trainer import RecommendationTrainer
 import threading
@@ -68,24 +69,77 @@ def run_offline_training_job():
 #         schedule.run_pending()
 #         time.sleep(1)
 
+# Define your Service B URL, just like you did for real-time recommendations
+# Ensure this matches your Docker Compose service name (e.g., 'book_manage')
+SERVICE_B_BASE_URL = "http://book_manage:5001" 
+
 @app.route('/recommend/user/<int:user_id>', methods=['GET'])
 def get_user_recommendations(user_id):
     """
-    获取指定用户的推荐图书列表
+    获取指定用户的推荐图书列表，并补充图书详情。
     """
-    recommendations = redis_client.get_user_recommendations(user_id)
-    if recommendations:
-        return jsonify({
-            "user_id": user_id,
-            "recommendations": recommendations,
-            "message": "Recommendations retrieved successfully."
-        }), 200
-    else:
+    # Assuming redis_client.get_user_recommendations(user_id) returns a list of dicts like:
+    # [{"book_id": "...", "score": ...}, ...]
+    raw_recommendations = redis_client.get_user_recommendations(user_id) # This comes from your Redis client wrapper
+
+    if not raw_recommendations:
         return jsonify({
             "user_id": user_id,
             "recommendations": [],
             "message": "No recommendations found for this user, or offline job not yet run."
         }), 404
+
+    detailed_recommendations = []
+    for rec_item in raw_recommendations:
+        book_id = rec_item.get('book_id')
+        if not book_id:
+            continue # Skip if book_id is missing
+
+        try:
+            # Call Service B to get book details
+            book_details_url = f"{SERVICE_B_BASE_URL}/api/books/{book_id}"
+            print(f"Attempting to fetch details for offline recommendation: {book_details_url}") # Debug print
+            response = requests.get(book_details_url)
+
+            if response.status_code == 200:
+                book_data = response.json()
+                print(f"Successfully fetched book data for {book_id} (offline): {book_data}") # Debug print
+                
+                # Combine recommendation score with detailed book info
+                detailed_rec = {
+                    "bookId": book_data.get("bookId"), # Ensure it's 'bookId' for frontend
+                    "title": book_data.get("title"),
+                    "author": book_data.get("author"),
+                    "coverImg": book_data.get("coverImg"),
+                    "score": rec_item.get("score") # Keep the recommendation score
+                }
+                detailed_recommendations.append(detailed_rec)
+            else:
+                print(f"Failed to fetch details for book_id {book_id} (offline): Status {response.status_code}, Response: {response.text}")
+                # Fallback if details fetching fails
+                detailed_recommendations.append({
+                    "bookId": book_id,
+                    "title": rec_item.get('title', '未知标题'),
+                    "author": "未知作者",
+                    "coverImg": "https://via.placeholder.com/150",
+                    "score": rec_item.get("score")
+                })
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching details for book_id {book_id} (offline): {e}")
+            # Fallback if connection fails
+            detailed_recommendations.append({
+                "bookId": book_id,
+                "title": rec_item.get('title', '未知标题'),
+                "author": "未知作者",
+                "coverImg": "https://via.placeholder.com/150",
+                "score": rec_item.get("score")
+            })
+
+    return jsonify({
+        "user_id": user_id,
+        "recommendations": detailed_recommendations,
+        "message": "Recommendations retrieved successfully."
+    }), 200
 
 @app.route('/recommend/trigger_offline_job', methods=['POST'])
 def trigger_offline_job():

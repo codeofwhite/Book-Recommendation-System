@@ -54,7 +54,7 @@ def search_local_books():
 
 @book_bp.route('/books/popular', methods=['GET'])
 def get_popular_books_route():
-    limit = request.args.get('limit', 4, type=int) # 默认获取4本
+    limit = request.args.get('limit', 20, type=int) # 默认获取4本
     books, error = BookModel.get_popular_books(limit)
     if error:
         return jsonify({"error": error}), 500

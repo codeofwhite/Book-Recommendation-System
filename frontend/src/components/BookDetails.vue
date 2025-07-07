@@ -62,7 +62,7 @@
           <h3 class="section-heading">Notable Figures Within</h3>
           <div class="characters-of-note">
             <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
-              }}</span>
+            }}</span>
           </div>
         </div>
 
@@ -176,9 +176,34 @@
         </transition>
       </div>
 
+      ---
+
+      <div class="realtime-recommendations-section">
+        <h3 class="sidebar-section-title">实时推荐：为您量身定制的卷轴</h3>
+        <p v-if="realtimeRecommendations.length === 0 && !loadingRecommendations" class="no-recommendations-message">
+          尚无实时推荐。探索更多书籍以生成个性化推荐！
+        </p>
+        <p v-else-if="loadingRecommendations" class="loading-message">
+          正在为您生成实时推荐...
+        </p>
+        <ul v-else class="recommendations-list">
+          <li v-for="recBook in realtimeRecommendations" :key="recBook.bookId" class="recommendation-item">
+            <router-link :to="`/books/${recBook.bookId}`" class="recommendation-link">
+              <img :src="recBook.coverImg" :alt="recBook.title" class="recommendation-cover" />
+              <div class="recommendation-info">
+                <span class="recommendation-title">{{ recBook.title }}</span>
+                <span class="recommendation-author">作者: {{ recBook.author }}</span>
+              </div>
+            </router-link>
+          </li>
+        </ul>
+      </div>
+
+      ---
+
       <div class="scribe-notes-section">
         <h3 class="sidebar-section-title">Further Recommendations</h3>
-        <p class="sidebar-text">More recommended chronicles to behold...</p>
+        <p class="sidebar-text">更多推荐典籍待您细品...</p>
       </div>
     </div>
   </div>
@@ -228,10 +253,12 @@ export default {
       descriptionLimit: 300,
       showAllAwards: false,
       awardsLimit: 3,
-      // currentUserNickname 和 currentUserAvatar 可以直接通过 computed 属性获取
+      // 【新增】实时推荐数据
+      realtimeRecommendations: [],
+      loadingRecommendations: false,
     };
   },
-  
+
   computed: {
     // **核心修改：从 'user_data' 获取 userId**
     currentUserId() {
@@ -240,7 +267,7 @@ export default {
     },
     // **核心修改：从 'user_data' 获取 nickname**
     getCurrentUserNickname() {
-      const userData = getParsedUserData();
+      const userData = getParsedParsedUserData();
       return userData ? (userData.nickname || userData.email || '访客') : '访客'; // 提供 email 作为备用，或直接 '访客'
     },
     // **核心修改：从 'user_data' 获取 avatar_url**
@@ -282,14 +309,47 @@ export default {
     trackPageView('BookDetails', dwellTimeInSeconds, this.pageUrlOnMount);
   },
   async created() {
+    await this.loadBookData();
     await this.fetchBookDetails();
     if (this.book && this.book.bookId) {
       await this.fetchBookReviews();
       await this.fetchUserEngagementStatus();
+      // 【新增】获取实时推荐
+      await this.fetchRealtimeRecommendations();
       await this.performDoubanSearch(this.book.title);
     }
   },
+  // 【新增】监听路由参数变化
+  watch: {
+    '$route.params.bookId': {
+      handler: 'loadBookData', // 当 bookId 变化时，调用 loadBookData 方法
+      immediate: false // initial call is handled by created
+    }
+  },
   methods: {
+    // 【新增】一个统一的加载数据的方法
+    async loadBookData() {
+      this.loading = true; // 开始加载时显示加载状态
+      try {
+        await this.fetchBookDetails();
+        if (this.book && this.book.bookId) {
+          await this.fetchBookReviews();
+          await this.fetchUserEngagementStatus();
+          await this.performDoubanSearch(this.book.title);
+          await this.fetchRealtimeRecommendations();
+        } else {
+          // 如果 book 为空，清空相关数据，防止显示旧数据
+          this.bookReviews = [];
+          this.doubanSearchResults = [];
+          this.realtimeRecommendations = [];
+        }
+      } catch (error) {
+        console.error('Error loading book data:', error);
+        this.book = null; // 加载失败时清空书籍数据
+      } finally {
+        this.loading = false; // 加载完成隐藏加载状态
+      }
+    },
     async fetchBookDetails() {
       this.loading = true;
       try {
@@ -357,9 +417,9 @@ export default {
     },
     async toggleLike() {
       //喜欢按钮埋点
-       trackButtonClick('LikeButton', 'BookDetails', { bookId: this.book?.bookId });
-      
-       if (!this.book || !this.book.bookId) return;
+      trackButtonClick('LikeButton', 'BookDetails', { bookId: this.book?.bookId });
+
+      if (!this.book || !this.book.bookId) return;
 
       const userId = this.currentUserId;
       if (!userId) {
@@ -593,6 +653,35 @@ export default {
       }
       return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
     },
+    // 【新增】获取实时更新的推荐数据的方法
+    // 【修正】获取实时更新的推荐数据的方法
+    async fetchRealtimeRecommendations() {
+      const userId = this.currentUserId;
+      if (!userId) {
+        console.log("用户未登录，无法获取实时推荐。");
+        this.realtimeRecommendations = [];
+        return;
+      }
+
+      this.loadingRecommendations = true;
+      try {
+        const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
+        // 【核心修改】从 response.data 中取出 recommendations 数组
+        // 并且如果 recommendations 字段不存在，则默认为空数组
+        this.realtimeRecommendations = response.data.recommendations || [];
+        console.log("实时推荐数据:", this.realtimeRecommendations); // 新增：打印获取到的实时推荐数据
+
+      } catch (error) {
+        console.error('Error fetching realtime recommendations:', error);
+        this.realtimeRecommendations = [];
+        // 如果错误消息是“Redis中没有实时更新的推荐数据”，可以给用户一个更友好的提示
+        if (error.response && error.response.data && error.response.data.message === "Redis 中没有实时更新的推荐数据。") {
+          console.log("Redis 中当前没有该用户的实时推荐数据。");
+        }
+      } finally {
+        this.loadingRecommendations = false;
+      }
+    }
   }
 };
 </script>
@@ -1487,5 +1576,92 @@ export default {
   background-color: #e8f5e9;
   border-color: #27ae60;
   color: #27ae60;
+}
+
+/* 这里可以添加针对实时推荐区域的样式 */
+.realtime-recommendations-section {
+  background-color: #fcf8e3;
+  border: 1px solid #d4c8a2;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.realtime-recommendations-section .sidebar-section-title {
+  color: #8b4513;
+  font-family: 'Georgia', serif;
+  font-size: 1.3em;
+  margin-bottom: 15px;
+  text-align: center;
+  border-bottom: 1px dashed #d4c8a2;
+  padding-bottom: 10px;
+}
+
+.recommendations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px;
+  border-bottom: 1px dashed #e0d8c2;
+  transition: background-color 0.3s ease;
+}
+
+.recommendation-item:last-child {
+  border-bottom: none;
+}
+
+.recommendation-item:hover {
+  background-color: #f5f0d9;
+}
+
+.recommendation-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+}
+
+.recommendation-cover {
+  width: 50px;
+  height: 75px;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 1px solid #d4c8a2;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.recommendation-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.recommendation-title {
+  font-weight: bold;
+  color: #5a3d2b;
+  font-size: 1em;
+  line-height: 1.3;
+}
+
+.recommendation-author {
+  font-size: 0.85em;
+  color: #7b6d5f;
+  margin-top: 3px;
+}
+
+.no-recommendations-message,
+.loading-message {
+  text-align: center;
+  color: #7b6d5f;
+  font-style: italic;
+  padding: 10px;
 }
 </style>

@@ -96,7 +96,7 @@ class RedisClient:
             logging.error(traceback.format_exc())
             return False
 
-# 如果你需要在本地单独测试这个文件，可以保留下面的 __main__ 块
+# 如果需要在本地单独测试这个文件，可以保留下面的 __main__ 块
 # 但请确保 Config 能够被正确模拟或导入
 if __name__ == '__main__':
     # 简单的测试用例

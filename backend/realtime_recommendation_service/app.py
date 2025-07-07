@@ -2,6 +2,7 @@ import os
 import json
 from flask import Flask, jsonify, request
 import redis
+import requests
 
 app = Flask(__name__)
 
@@ -11,6 +12,8 @@ app = Flask(__name__)
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
+redis_client = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
 
 # 全局 Redis 客户端对象
 r = None
@@ -112,6 +115,111 @@ def get_user_recent_views(user_id):
     except Exception as e:
         print(f"从 Redis 获取用户 '{user_id}' 最近浏览数据时出错: {e}")
         return jsonify({"error": "获取数据失败", "details": str(e)}), 500
+
+# 新增路由：获取所有用户的实时更新推荐
+@app.route('/redis/all_realtime_updated_recommendations', methods=['GET'])
+def get_all_realtime_updated_recommendations():
+    """
+    从 Redis 中获取所有用户由 Flink 实时更新后的推荐列表。
+    这些数据由 Flink Job 写入，键以 'realtime_updated_recommendations:user:' 开头。
+    """
+    if not r:
+        return jsonify({"error": "Redis 未初始化或连接失败"}), 500
+    
+    try:
+        # 使用 SCAN 命令迭代所有匹配 'realtime_updated_recommendations:user:*' 的键
+        # 注意：这里不能用 HGETALL，因为 Flink 是用 SETEX 存储每个用户的推荐，而不是哈希表
+        all_recs_parsed = {}
+        # scan_iter 允许我们安全地迭代大量键
+        for key in r.scan_iter("realtime_updated_recommendations:user:*"):
+            # Redis 的 key 是字节串，decode_responses=True 应该已经处理
+            # 确保 key 是字符串，并从中提取 user_id
+            user_id = key.split(':')[-1] 
+            value = r.get(key)
+            if value:
+                try:
+                    # 将获取到的 JSON 字符串反序列化为 Python 列表
+                    all_recs_parsed[user_id] = json.loads(value)
+                except json.JSONDecodeError:
+                    print(f"警告: 键 '{key}' 的 JSON 解码失败。原始数据: {value}")
+                    # 如果解码失败，返回原始数据以便调试
+                    all_recs_parsed[user_id] = value 
+            
+        if not all_recs_parsed:
+            return jsonify({"message": "Redis 中没有实时更新的推荐数据。"}), 200
+        
+        return jsonify({"message": "成功获取所有用户实时更新的推荐数据", "data": all_recs_parsed}), 200
+
+    except Exception as e:
+        print(f"从 Redis 获取所有实时更新推荐数据时出错: {e}")
+        return jsonify({"error": "获取数据失败", "details": str(e)}), 500
+
+# 【重点】定义你的书籍服务（service-b）的URL。请根据你的实际部署修改。
+SERVICE_B_BASE_URL = "http://book_manage:5001" 
+
+@app.route('/realtime_updated_recommendations/<user_id>', methods=['GET'])
+def get_realtime_recommendations(user_id):
+    redis_key = f"realtime_updated_recommendations:user:{user_id}"
+    recommendations_data_str = redis_client.get(redis_key)
+
+    if not recommendations_data_str:
+        return jsonify({"message": "Redis 中没有实时更新的推荐数据。", "recommendations": []}), 200
+
+    # Redis 中存储的原始推荐数据，例如： [{"book_id": "...", "score": ...}]
+    raw_recommendations_list = json.loads(recommendations_data_str)
+
+    detailed_recommendations = []
+    for rec_item in raw_recommendations_list:
+        # 从原始推荐数据中获取 book_id (Redis可能存储的是book_id, 但前端需要bookId)
+        book_id = rec_item.get('book_id')
+        if not book_id: # 检查是否存在 book_id
+            continue # 如果没有 book_id，跳过此项
+
+        try:
+            # 调用 service-b 的书籍详情接口
+            book_details_url = f"{SERVICE_B_BASE_URL}/api/books/{book_id}"
+            print(f"Attempting to fetch book details from: {book_details_url}") # 新增：打印正在请求的URL
+            response = requests.get(book_details_url)
+
+            if response.status_code == 200:
+                # 【修正：先赋值，再打印】
+                book_data = response.json()
+                print(f"Successfully fetched book data for {book_id}: {book_data}") # 打印Service B返回的完整JSON
+                # 整合推荐分数和书籍详情
+                detailed_rec = {
+                    "bookId": book_data.get("bookId"), # 确保使用 "bookId" 字段
+                    "title": book_data.get("title"),
+                    "author": book_data.get("author"), # 【新增】获取作者信息
+                    "coverImg": book_data.get("coverImg"), # 【新增】获取封面图片信息
+                    "score": rec_item.get("score") # 保留推荐分数
+                }
+                detailed_recommendations.append(detailed_rec)
+            else:
+                print(f"Failed to fetch details for book_id {book_id}: Status {response.status_code}, Response: {response.text}")
+                # 如果获取详情失败，至少返回现有信息并提供默认值
+                detailed_recommendations.append({
+                    "bookId": book_id,
+                    "title": rec_item.get('title', '未知标题'),
+                    "author": "未知作者", # 默认作者
+                    "coverImg": "https://via.placeholder.com/150", # 默认封面
+                    "score": rec_item.get("score")
+                })
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching details for book_id {book_id}: {e}")
+            # 如果请求本身失败，也提供默认值
+            detailed_recommendations.append({
+                "bookId": book_id,
+                "title": rec_item.get('title', '未知标题'),
+                "author": "未知作者",
+                "coverImg": "https://via.placeholder.com/150",
+                "score": rec_item.get("score")
+            })
+
+    return jsonify({
+        "message": f"成功获取用户 '{user_id}' 的实时更新推荐数据",
+        "recommendations": detailed_recommendations,
+        "user_id": user_id
+    })
 
 # --- 应用启动 ---
 if __name__ == '__main__':

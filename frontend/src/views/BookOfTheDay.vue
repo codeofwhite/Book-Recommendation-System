@@ -256,7 +256,7 @@ watch(() => props.initialBook, (newVal) => {
 
 /* 书名 */
 .book-title {
-  font-size: 5.5rem;
+  font-size: 3.5rem;
   /* 字体更大 */
   font-weight: 700;
   /* 更粗的标题 */

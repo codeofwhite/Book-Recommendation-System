@@ -19,10 +19,12 @@
           <section class="section-container" id="popular-books">
             <div class="section-header">
               <h2 class="section-title">Volumes of Esteem: Acclaimed by the Cognoscenti</h2>
-              <router-link to="/books" class="more-link">Peruse the Archives &gt;</router-link>
+              <a href="#" @click.prevent="openBookModal('popular')" class="more-link">
+                Peruse the Archives &gt;
+              </a>
             </div>
             <div class="book-grid">
-              <div v-for="book in popularBooks" :key="book.id" class="book-card">
+              <div v-for="book in popularBooks.slice(0, 4)" :key="book.id" class="book-card">
                 <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
@@ -39,10 +41,12 @@
           <section class="section-container" id="personalized-books">
             <div class="section-header">
               <h2 class="section-title">Curated for Your Discerning Eye</h2>
-              <router-link to="/books" class="more-link">More Selections Befitting Your Taste &gt;</router-link>
+              <a href="#" @click.prevent="openBookModal('personalized')" class="more-link">
+                More Selections Befitting Your Taste &gt;
+              </a>
             </div>
             <div class="book-grid">
-              <div v-for="book in personalizedBooks" :key="book.id" class="book-card">
+              <div v-for="book in personalizedBooks.slice(0, 4)" :key="book.id" class="book-card">
                 <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
@@ -122,25 +126,28 @@
         </div>
       </aside>
     </div>
+
+    <BookListModal :is-visible="isModalVisible" :title="modalTitle" :books="modalBooks" @close="closeBookModal"
+      @view-details="viewBookDetails" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue'; // 移除 computed
 import { useRouter } from 'vue-router';
-import axios from 'axios'; // 引入axios
-import BookOfTheDay from '../views/BookOfTheDay.vue'; // 导入 BookOfTheDay 组件
+import axios from 'axios';
+import BookOfTheDay from '../views/BookOfTheDay.vue';
+import BookListModal from '../components/BookListModal.vue'; // 【新增】导入 BookListModal 组件
 
 const router = useRouter();
 const loading = ref(true);
 const isSidebarOpen = ref(false);
-const showTooltip = ref(false); // 新增：控制气泡显示状态
+const showTooltip = ref(false);
 
 const popularBooks = ref([]);
 const personalizedBooks = ref([]);
-const bookRankings = ref([]); // 修改为响应式对象，等待从后端获取榜单数据
+const bookRankings = ref([]);
 const activities = ref([
-  // 活动数据暂时保持模拟，因为后端没有提供活动接口
   { id: 'a1', title: '夏日读书挑战赛：奇幻文学专题', date: '2025.07.01 - 2025.08.31', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
   { id: 'a2', title: '线上读书分享会：哲学思辨之夜', date: '2025.07.15 19:00', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
   { id: 'a3', title: '线下作家见面会：历史长河探秘', date: '2025.07.20 14:00', image: 'https://th.bing.com/th/id/OIP.CyDI-M6iaUlGY7yOyQeM8wHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
@@ -149,25 +156,38 @@ const activities = ref([
 
 const dailyBook = ref(null);
 
+// 【移除】showAllPopular 和 showAllPersonalized
+
+// 【移除】displayedPopularBooks 和 displayedPersonalizedBooks 计算属性
+
+// 【新增】模态框相关状态
+const isModalVisible = ref(false);
+const modalTitle = ref('');
+const modalBooks = ref([]);
+
 // 提取API基路径
-const API_BASE_URL = '/service-b/api'; // 根据您的后端服务地址调整，如果前端和后端不是在同一个域和端口，需要完整的URL，例如 'http://localhost:5000/api'
+const API_BASE_URL = '/service-b/api';
+
+// Helper function to get user data from localStorage
+const getParsedUserData = () => {
+  const storedUserData = localStorage.getItem('user_data');
+  if (storedUserData) {
+    try {
+      return JSON.parse(storedUserData);
+    } catch (e) {
+      console.error("Error parsing user_data from localStorage:", e);
+      return null;
+    }
+  }
+  return null;
+};
 
 const fetchData = async () => {
   loading.value = true;
   try {
-    // 获取热门书籍
-    const popularRes = await axios.get(`${API_BASE_URL}/books/popular?limit=4`);
+    // 获取所有热门书籍（不再限制数量，为模态框准备完整数据）
+    const popularRes = await axios.get(`${API_BASE_URL}/books/popular`);
     popularBooks.value = popularRes.data.map(book => ({
-      id: book.id || book.bookId, // 确保ID可用
-      title: book.title,
-      author: book.author,
-      genres: book.genres, // genres 已经是数组
-      coverImg: book.coverImg // 确保字段名正确
-    }));
-
-    // 获取个性化推荐书籍
-    const personalizedRes = await axios.get(`${API_BASE_URL}/books/personalized?limit=4`);
-    personalizedBooks.value = personalizedRes.data.map(book => ({
       id: book.id || book.bookId,
       title: book.title,
       author: book.author,
@@ -175,7 +195,39 @@ const fetchData = async () => {
       coverImg: book.coverImg
     }));
 
-    // 获取榜单数据
+    // 获取所有个性化推荐书籍 (为模态框准备完整数据)
+    const loggedInUser = getParsedUserData();
+    const userId = loggedInUser ? loggedInUser.user_id : null;
+
+    if (userId) {
+      try {
+        const offlineRecommendationApiUrl = `/service-g/recommend/user/${userId}`;
+        console.log(`尝试获取用户 ${userId} 的离线推荐：${offlineRecommendationApiUrl}`);
+        const personalizedRes = await axios.get(offlineRecommendationApiUrl);
+
+        personalizedBooks.value = personalizedRes.data.recommendations.map(book => ({
+          id: book.bookId,
+          title: book.title,
+          author: book.author,
+          coverImg: book.coverImg,
+          genres: book.genres || ['未知分类']
+        }));
+        console.log("离线个性化推荐数据:", personalizedBooks.value);
+
+      } catch (error) {
+        console.error('Error fetching personalized (offline) recommendations:', error);
+        personalizedBooks.value = [];
+        if (error.response && error.response.status === 404) {
+          console.log("当前用户没有离线推荐数据，或离线任务尚未运行。");
+        }
+      }
+    } else {
+      console.log("用户未登录，无法获取个性化（离线）推荐。");
+      personalizedBooks.value = [];
+    }
+
+
+    // 获取榜单数据 (保持不变)
     const bestsellingRes = await axios.get(`${API_BASE_URL}/books/rankings/bestselling?limit=7`);
     const newReleasesRes = await axios.get(`${API_BASE_URL}/books/rankings/new_releases?limit=7`);
 
@@ -198,7 +250,7 @@ const fetchData = async () => {
       }
     ];
 
-    // 获取每日一书
+    // 获取每日一书 (保持不变)
     const dailyBookRes = await axios.get(`${API_BASE_URL}/books/daily`);
     if (dailyBookRes.data) {
       dailyBook.value = {
@@ -211,28 +263,24 @@ const fetchData = async () => {
     }
 
   } catch (error) {
-    console.error('Error fetching data:', error);
-    // 可以在这里设置一个错误状态或显示错误消息给用户
+    console.error('Error fetching data (main sections):', error);
   } finally {
     loading.value = false;
   }
 };
 
-let tooltipTimer = null; // 新增：用于清除气泡定时器
+let tooltipTimer = null;
 
 onMounted(() => {
   fetchData();
-  // 在组件挂载后 3 秒显示气泡
   tooltipTimer = setTimeout(() => {
-    // 只有当侧边栏未打开时才显示气泡
     if (!isSidebarOpen.value) {
       showTooltip.value = true;
     }
-  }, 3000); // 3 秒后显示
+  }, 3000);
 });
 
 onUnmounted(() => {
-  // 在组件卸载时清除定时器，避免内存泄漏
   if (tooltipTimer) {
     clearTimeout(tooltipTimer);
   }
@@ -241,7 +289,7 @@ onUnmounted(() => {
 const viewBookDetails = (bookId) => {
   router.push(`/books/${bookId}`);
   isSidebarOpen.value = false;
-  hideTooltip(); // 点击后隐藏气泡
+  hideTooltip();
 };
 
 const scrollToSection = (id) => {
@@ -253,15 +301,33 @@ const scrollToSection = (id) => {
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
-  hideTooltip(); // 点击按钮后隐藏气泡
+  hideTooltip();
 };
 
-// 新增：隐藏气泡的函数
 const hideTooltip = () => {
   showTooltip.value = false;
-  // 一旦隐藏，可选地设置一个标记，确保不再自动显示（例如，存入 localStorage）
-  // localStorage.setItem('hasSeenDailyBookTooltip', 'true');
 };
+
+// 【新增】打开书籍列表模态框
+const openBookModal = (type) => {
+  if (type === 'popular') {
+    modalTitle.value = '全部热门图书';
+    modalBooks.value = popularBooks.value;
+  } else if (type === 'personalized') {
+    modalTitle.value = '全部个性化推荐';
+    modalBooks.value = personalizedBooks.value;
+  }
+  isModalVisible.value = true;
+};
+
+// 【新增】关闭书籍列表模态框
+const closeBookModal = () => {
+  isModalVisible.value = false;
+  modalTitle.value = '';
+  modalBooks.value = [];
+};
+
+// 【移除】togglePopularBooks 和 togglePersonalizedBooks 方法
 </script>
 
 <style scoped>

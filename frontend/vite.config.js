@@ -53,20 +53,32 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/service-c/, ""),
         },
         "/service-d": {
-          // 这是新增的推荐服务代理
-          // 前端通过 '/service-d/api/recommendations' 访问推荐服务
-          target: currentProxy.targetD, // 推荐服务
+          // 这是旧的推荐服务代理，现在不再用于离线推荐，但保留以防万一
+          target: currentProxy.targetD, 
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/service-d/, ""),
         },
         "/service-e": {
-          // 这是新增的日志服务代理
-          // 前端通过 '/service-e/api/log' 访问日志服务
-          target: currentProxy.targetE, // 日志服务
+          // 这是日志服务代理
+          target: currentProxy.targetE, 
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/service-e/, ""),
+        },
+        // Flask 应用的 Redis 数据查看器接口代理 (实时推荐)
+        "/service-f": {
+          target: currentProxy.targetF, 
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/service-f/, ""),
+        },
+        // 【新增】离线推荐服务代理
+        "/service-g": {
+          target: currentProxy.targetG, // 离线推荐服务
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/service-g/, ""),
         },
       },
     },

@@ -117,11 +117,17 @@
       <aside class="oracle-sidebar">
         <div class="oracle-header">
           <h3 class="oracle-title">Whispers from the Oracle</h3>
-          <p class="oracle-subtitle">Guided by the Constellations of Thy Past Readings</p>
+          <p class="oracle-subtitle">为您量身定制的卷轴 (实时推荐)</p>
         </div>
         <div class="oracle-list">
-          <transition-group name="recommendation-slide" tag="div">
-            <div v-for="(rec, index) in recommendations" :key="index" class="oracle-insight">
+          <p v-if="loadingRecommendations" class="scribe-message">
+            正在为您生成实时推荐...
+          </p>
+          <p v-else-if="realtimeRecommendations.length === 0" class="no-recommendations-message">
+            尚无实时推荐。探索更多书籍以生成个性化推荐！
+          </p>
+          <transition-group name="recommendation-slide" tag="div" v-else>
+            <div v-for="(rec, index) in realtimeRecommendations" :key="rec.bookId || index" class="oracle-insight">
               <router-link :to="{ name: 'BookDetails', params: { bookId: rec.bookId } }" class="oracle-insight-link">
                 <div class="oracle-effigy">
                   <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
@@ -129,10 +135,6 @@
                 <div class="oracle-details">
                   <h4 class="oracle-insight-title">{{ rec.title }}</h4>
                   <p class="oracle-insight-author">{{ rec.author }}</p>
-                  <div class="oracle-celestial-guidance">
-                    <span class="stars-illuminated-small">{{ '★'.repeat(Math.round(rec.rating)) }}</span>
-                    <span class="whispers-of-critics-small">({{ rec.rating }})</span>
-                  </div>
                 </div>
               </router-link>
             </div>
@@ -182,8 +184,11 @@ export default {
       inputSearchKeyword: '',
       initialSearchKeyword: '',
       allBooks: [], // This will hold ALL fetched books
-      recommendations: [],
-      loading: true,
+      // recommendations: [],
+      // 【新增】实时推荐数据
+      realtimeRecommendations: [],
+      loadingRecommendations: false, // 新增：实时推荐的加载状态
+      loading: true, // 这是主列表的加载状态
 
       // Filter states
       availableGenres: [], // All unique genres found in books
@@ -312,7 +317,8 @@ export default {
     this.inputSearchKeyword = this.initialSearchKeyword;
     this.fetchBooks(); // Fetch all books initially
     this.fetchUserData();
-    this.fetchRecommendations();
+    // this.fetchRecommendations();
+    this.fetchRealtimeRecommendationsForList(); // <--- 调用新的实时推荐方法
   },
   //埋点
   mounted() {
@@ -402,39 +408,50 @@ export default {
         this.loading = false;
       }
     },
-    async fetchRecommendations() {
+    // 【修改】获取实时更新的推荐数据的方法，用于书籍列表页
+    async fetchRealtimeRecommendationsForList() {
       const loggedInUser = getParsedUserData();
       const userId = loggedInUser ? loggedInUser.user_id : null;
+
+      if (!userId) {
+        console.log("用户未登录，无法获取实时推荐。");
+        this.realtimeRecommendations = []; // 清空推荐
+        return;
+      }
+
+      this.loadingRecommendations = true; // 显示加载状态
       try {
-        const recommendationApiUrl = `/service-d/recommendations/offline/${userId}`; // 根据实际API网关或Nginx配置调整
-        const response = await axios.get(recommendationApiUrl);
+        // 调用实时推荐的接口
+        const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
 
-        // 后端返回的 recommendations 列表，只包含 book_id, title, category
-        const recommendedBookIds = response.data.recommendations;
-
-        // 根据后端推荐的 book_id，从 allBooks 中查找完整的书籍信息
-        // 这里的查找逻辑可以优化，例如使用 Map 结构来提高查找效率
-        const fullRecommendations = recommendedBookIds.map(recBook => {
-          // 在 allBooks 中找到匹配的完整书籍信息
-          const fullBookInfo = this.allBooks.find(book => book.bookId === recBook.book_id);
-          // 合并后端返回的简化信息和 allBooks 中的完整信息
-          // 确保显示在侧边栏的推荐书籍有 coverImg, author, rating 等字段
-          return {
-            bookId: recBook.book_id,
-            title: recBook.title,
-            category: recBook.category,
-            reason: recBook.reason, // 模拟推荐理由
-            coverImg: fullBookInfo ? fullBookInfo.coverImg : 'path/to/default/cover.jpg', // 默认图片
-            author: fullBookInfo ? fullBookInfo.author : 'Unknown Author',
-            rating: fullBookInfo ? fullBookInfo.rating : 0 // 默认评分
-          };
-        });
-
-        this.recommendations = fullRecommendations;
+        // 后端返回的 recommendations 列表，应包含 bookId, title, author, coverImg, score
+        // 示例后端返回:
+        // {
+        //   "message": "成功获取用户 '2' 的实时更新推荐数据",
+        //   "recommendations": [
+        //     {
+        //       "author": "J.K. Rowling",
+        //       "bookId": "6.Harry_Potter_and_the_Goblet_of_Fire",
+        //       "coverImg": "http://example.com/cover1.jpg",
+        //       "score": 0.46,
+        //       "title": "Harry Potter and the Goblet of Fire"
+        //     },
+        //     // ...
+        //   ],
+        //   "user_id": "2"
+        // }
+        this.realtimeRecommendations = response.data.recommendations || [];
+        console.log("实时推荐数据 (BookList):", this.realtimeRecommendations);
 
       } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        this.recommendations = [];
+        console.error('Error fetching realtime recommendations for book list:', error);
+        this.realtimeRecommendations = []; // 出错时清空推荐
+        // 如果错误消息是“Redis中没有实时更新的推荐数据”，可以给用户一个更友好的提示
+        if (error.response && error.response.data && error.response.data.message === "Redis 中没有实时更新的推荐数据。") {
+          console.log("Redis 中当前没有该用户的实时推荐数据。");
+        }
+      } finally {
+        this.loadingRecommendations = false; // 隐藏加载状态
       }
     },
     extractFilterOptions() {
