@@ -54,11 +54,6 @@ const routes = [
     component: BookOfTheDay,
     props: true
   },
-  {
-    path: '/skim', // <-- Add auth route
-    name: 'skim',
-    component: Skim
-  },
 ];
 
 const router = createRouter({

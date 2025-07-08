@@ -180,6 +180,8 @@ def get_user_behavior_logs_data():
         loader = DataLoader()
         df = loader.load_user_behavior_logs()
 
+        print(f"Backend API is preparing to send {len(df)} rows.") # <--- Add this line
+
         if not df.empty:
             return jsonify({
                 "status": "success",

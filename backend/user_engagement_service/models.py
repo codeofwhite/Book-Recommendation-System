@@ -1,5 +1,6 @@
 # user_profile_service/models.py
 
+from operator import and_, or_
 import uuid
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -386,7 +387,6 @@ class ReviewModel:
             2: 'rejected'
         }
         return status_map.get(status_code, 'unknown')
-
 
 class CommentModel:
     

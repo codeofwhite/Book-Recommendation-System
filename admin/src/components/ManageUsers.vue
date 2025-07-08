@@ -5,7 +5,6 @@
       <p>View, edit, or manage user accounts.</p>
     </div>
 
-    <!-- Add User Button -->
     <div class="action-bar">
       <button @click="showCreateModal = true" class="create-btn">
         ➕ Add New User
@@ -13,29 +12,21 @@
     </div>
 
     <div class="filter-bar">
-      <input 
-        type="text" 
-        v-model="searchKeyword" 
-        @input="debounceSearch"
-        placeholder="Search users..." 
-        class="search-input"
-      />
+      <input type="text" v-model="searchKeyword" @input="debounceSearch" placeholder="Search users..."
+        class="search-input" />
       <button @click="fetchUsers" class="search-btn">🔍 Search</button>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>Loading users...</p>
     </div>
 
-    <!-- Error State -->
     <div v-if="error" class="error-container">
       <p class="error-message">{{ error }}</p>
       <button @click="fetchUsers" class="retry-btn">Retry</button>
     </div>
 
-    <!-- Users Container -->
     <div v-if="!loading && !error" class="users-container">
       <div v-for="user in users" :key="user.id" class="user-card">
         <div class="user-header">
@@ -52,58 +43,38 @@
         </div>
 
         <div class="user-actions">
-          <button 
-            @click="editUser(user)"
-            class="action-btn edit-btn"
-          >
+          <button @click="editUser(user)" class="action-btn edit-btn">
             ✏️ Edit
           </button>
-          <button 
-            @click="viewUserDetails(user)"
-            class="action-btn details-btn"
-          >
+          <button @click="viewUserDetails(user)" class="action-btn details-btn">
             👁️ Details
           </button>
-          <button 
-            @click="deleteUser(user.id)"
-            class="action-btn delete-btn"
-          >
-            🗑️ Delete
+          <button @click="banUser(user.id)" class="action-btn ban-btn">
+            🚫 Ban User
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Empty State -->
     <div v-if="!loading && !error && users.length === 0" class="empty-state">
       <div class="empty-icon">👥</div>
       <p>No users found matching your criteria.</p>
       <button @click="clearFilters" class="clear-filters-btn">Clear Search</button>
     </div>
 
-    <!-- Pagination -->
     <div v-if="pagination && pagination.pages > 1" class="pagination">
-      <button 
-        @click="goToPage(pagination.current_page - 1)" 
-        :disabled="!pagination.has_prev" 
-        class="pagination-btn"
-      >
+      <button @click="goToPage(pagination.current_page - 1)" :disabled="!pagination.has_prev" class="pagination-btn">
         ← Previous
       </button>
       <span class="pagination-info">
-        Page {{ pagination.current_page }} of {{ pagination.pages }} 
+        Page {{ pagination.current_page }} of {{ pagination.pages }}
         ({{ pagination.total }} total users)
       </span>
-      <button 
-        @click="goToPage(pagination.current_page + 1)" 
-        :disabled="!pagination.has_next" 
-        class="pagination-btn"
-      >
+      <button @click="goToPage(pagination.current_page + 1)" :disabled="!pagination.has_next" class="pagination-btn">
         Next →
       </button>
     </div>
 
-    <!-- Create User Modal -->
     <div v-if="showCreateModal" class="modal-overlay" @click="closeCreateModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -137,7 +108,6 @@
       </div>
     </div>
 
-    <!-- Edit User Modal -->
     <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -167,7 +137,6 @@
       </div>
     </div>
 
-    <!-- User Details Modal -->
     <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetailsModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -187,7 +156,7 @@
               <strong>Email:</strong> {{ selectedUser.email }}
             </div>
             <div class="detail-row" v-if="selectedUser.avatar_url">
-              <strong>Avatar:</strong> 
+              <strong>Avatar:</strong>
               <img :src="selectedUser.avatar_url" alt="Avatar" class="detail-avatar">
             </div>
           </div>
@@ -237,19 +206,19 @@ let searchTimeout = null
 const fetchUsers = async (page = 1) => {
   loading.value = true
   error.value = null
-  
+
   try {
     const params = {
       page: page,
       per_page: perPage.value
     }
-    
+
     if (searchKeyword.value.trim()) {
       params.search = searchKeyword.value.trim()
     }
-    
+
     const response = await axios.get(`/service-a/api/users`, { params })
-    
+
     users.value = response.data.users || []
     pagination.value = {
       total: response.data.total,
@@ -259,9 +228,9 @@ const fetchUsers = async (page = 1) => {
       has_next: response.data.has_next,
       has_prev: response.data.has_prev
     }
-    
+
     currentPage.value = page
-    
+
   } catch (err) {
     console.error('Error fetching users:', err)
     error.value = err.response?.data?.error || 'Failed to fetch users'
@@ -273,12 +242,12 @@ const fetchUsers = async (page = 1) => {
 // Create new user
 const createUser = async () => {
   if (creating.value) return
-  
+
   creating.value = true
-  
+
   try {
     await axios.post(`/service-a/api/users`, newUser.value)
-    
+
     // Reset form
     newUser.value = {
       username: '',
@@ -286,12 +255,12 @@ const createUser = async () => {
       password: '',
       avatar_url: ''
     }
-    
+
     closeCreateModal()
     await fetchUsers(currentPage.value)
-    
+
     alert('User created successfully!')
-    
+
   } catch (err) {
     console.error('Error creating user:', err)
     alert(err.response?.data?.error || 'Failed to create user')
@@ -309,21 +278,21 @@ const editUser = (user) => {
 // Save user changes
 const saveUser = async () => {
   if (updating.value) return
-  
+
   updating.value = true
-  
+
   try {
     const response = await axios.put(`/service-a/api/users/${editingUser.value.id}`, editingUser.value)
-    
+
     // Update local user data
     const index = users.value.findIndex(u => u.id === editingUser.value.id)
     if (index !== -1) {
       users.value[index] = response.data
     }
-    
+
     closeEditModal()
     alert('User updated successfully!')
-    
+
   } catch (err) {
     console.error('Error updating user:', err)
     alert(err.response?.data?.error || 'Failed to update user')
@@ -337,15 +306,15 @@ const deleteUser = async (userId) => {
   if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
     return
   }
-  
+
   try {
     await axios.delete(`/service-a/api/users/${userId}`)
-    
+
     // Remove from local data
     users.value = users.value.filter(u => u.id !== userId)
-    
+
     alert('User deleted successfully!')
-    
+
   } catch (err) {
     console.error('Error deleting user:', err)
     alert(err.response?.data?.error || 'Failed to delete user')
@@ -504,8 +473,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-container {
@@ -856,12 +830,12 @@ onMounted(() => {
   .users-container {
     grid-template-columns: 1fr;
   }
-  
+
   .filter-bar {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .search-input {
     min-width: auto;
   }

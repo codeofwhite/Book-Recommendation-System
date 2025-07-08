@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
-from models import db, Review, Comment # 导入 Review 和 Comment 模型
+from models import ReviewFavorite, ReviewLike, db, Review, Comment # 导入 Review 和 Comment 模型
 import uuid
 from datetime import datetime
 

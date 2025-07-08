@@ -12,13 +12,8 @@
         <option value="approved">Approved</option>
         <option value="rejected">Rejected</option>
       </select>
-      <input 
-        type="text" 
-        v-model="searchKeyword" 
-        @input="debounceSearch"
-        placeholder="Search reviews..." 
-        class="search-input"
-      />
+      <input type="text" v-model="searchKeyword" @input="debounceSearch" placeholder="Search reviews..."
+        class="search-input" />
       <button @click="fetchReviews" class="search-btn">🔍 Search</button>
     </div>
 
@@ -55,7 +50,8 @@
             <strong>Book ID:</strong> {{ review.bookId }}
           </div>
           <div class="rating">
-            <span class="stars">{{ '★'.repeat(Math.floor(review.rating)) }}{{ '☆'.repeat(5 - Math.floor(review.rating)) }}</span>
+            <span class="stars">{{ '★'.repeat(Math.floor(review.rating)) }}{{ '☆'.repeat(5 - Math.floor(review.rating))
+            }}</span>
             <span class="rating-text">({{ review.rating }}/5)</span>
           </div>
           <div class="review-text">
@@ -67,39 +63,21 @@
         </div>
 
         <div class="review-actions">
-          <button 
-            v-if="review.status === 'pending'" 
-            @click="approveReview(review.id)"
-            class="action-btn approve-btn"
-            :disabled="updating"
-          >
+          <button v-if="review.status === 'pending'" @click="approveReview(review.id)" class="action-btn approve-btn"
+            :disabled="updating">
             ✅ Approve
           </button>
-          <button 
-            v-if="review.status === 'pending'" 
-            @click="rejectReview(review.id)"
-            class="action-btn reject-btn"
-            :disabled="updating"
-          >
+          <button v-if="review.status === 'pending'" @click="rejectReview(review.id)" class="action-btn reject-btn"
+            :disabled="updating">
             ❌ Reject
           </button>
-          <button 
-            @click="deleteReview(review.id)"
-            class="action-btn delete-btn"
-            :disabled="deleting"
-          >
+          <button @click="deleteReview(review.id)" class="action-btn delete-btn" :disabled="deleting">
             🗑️ Delete
           </button>
-          <button 
-            @click="viewDetails(review)"
-            class="action-btn details-btn"
-          >
+          <button @click="viewDetails(review)" class="action-btn details-btn">
             👁️ Details
           </button>
-          <button 
-            @click="viewComments(review.id)"
-            class="action-btn comments-btn"
-          >
+          <button @click="viewComments(review.id)" class="action-btn comments-btn">
             💬 Comments
           </button>
         </div>
@@ -115,22 +93,14 @@
 
     <!-- Pagination -->
     <div v-if="pagination && pagination.pages > 1" class="pagination">
-      <button 
-        @click="goToPage(pagination.current_page - 1)" 
-        :disabled="!pagination.has_prev" 
-        class="pagination-btn"
-      >
+      <button @click="goToPage(pagination.current_page - 1)" :disabled="!pagination.has_prev" class="pagination-btn">
         ← Previous
       </button>
       <span class="pagination-info">
-        Page {{ pagination.current_page }} of {{ pagination.pages }} 
+        Page {{ pagination.current_page }} of {{ pagination.pages }}
         ({{ pagination.total }} total reviews)
       </span>
-      <button 
-        @click="goToPage(pagination.current_page + 1)" 
-        :disabled="!pagination.has_next" 
-        class="pagination-btn"
-      >
+      <button @click="goToPage(pagination.current_page + 1)" :disabled="!pagination.has_next" class="pagination-btn">
         Next →
       </button>
     </div>
@@ -156,7 +126,7 @@
             <strong>Rating:</strong> {{ selectedReview.rating }}/5 stars
           </div>
           <div class="detail-row">
-            <strong>Status:</strong> 
+            <strong>Status:</strong>
             <span :class="['status-badge', selectedReview.status]">{{ selectedReview.status.toUpperCase() }}</span>
           </div>
           <div class="detail-row">
@@ -185,11 +155,11 @@
             <div class="loading-spinner"></div>
             <p>Loading comments...</p>
           </div>
-          
+
           <div v-if="comments.length === 0 && !loadingComments" class="no-comments">
             <p>No comments found for this review.</p>
           </div>
-          
+
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
             <div class="comment-header">
               <strong>{{ comment.userId }}</strong>
@@ -245,23 +215,23 @@ const API_BASE = '/service-c/api'
 const fetchReviews = async (page = 1) => {
   loading.value = true
   error.value = null
-  
+
   try {
     const params = {
       page: page,
       per_page: perPage.value
     }
-    
+
     if (statusFilter.value !== 'all') {
       params.status = statusFilter.value
     }
-    
+
     if (searchKeyword.value.trim()) {
       params.search = searchKeyword.value.trim()
     }
-    
+
     const response = await axios.get(`${API_BASE}/reviews`, { params })
-    
+
     reviews.value = response.data.reviews || []
     pagination.value = {
       total: response.data.total,
@@ -271,9 +241,9 @@ const fetchReviews = async (page = 1) => {
       has_next: response.data.has_next,
       has_prev: response.data.has_prev
     }
-    
+
     currentPage.value = page
-    
+
   } catch (err) {
     console.error('Error fetching reviews:', err)
     error.value = err.response?.data?.error || 'Failed to fetch reviews'
@@ -285,7 +255,7 @@ const fetchReviews = async (page = 1) => {
 // Fetch comments for a review
 const fetchComments = async (reviewId) => {
   loadingComments.value = true
-  
+
   try {
     const response = await axios.get(`${API_BASE}/reviews/${reviewId}/comments`)
     comments.value = response.data.comments || []
@@ -300,20 +270,20 @@ const fetchComments = async (reviewId) => {
 // Approve review
 const approveReview = async (reviewId) => {
   if (updating.value) return
-  
+
   updating.value = true
-  
+
   try {
     await axios.put(`${API_BASE}/reviews/${reviewId}/status`, { status: 'approved' })
-    
+
     // Update local data
     const index = reviews.value.findIndex(r => r.id === reviewId)
     if (index !== -1) {
       reviews.value[index].status = 'approved'
     }
-    
+
     alert('Review approved successfully!')
-    
+
   } catch (err) {
     console.error('Error approving review:', err)
     alert(err.response?.data?.error || 'Failed to approve review')
@@ -325,20 +295,20 @@ const approveReview = async (reviewId) => {
 // Reject review
 const rejectReview = async (reviewId) => {
   if (updating.value) return
-  
+
   updating.value = true
-  
+
   try {
     await axios.put(`${API_BASE}/reviews/${reviewId}/status`, { status: 'rejected' })
-    
+
     // Update local data
     const index = reviews.value.findIndex(r => r.id === reviewId)
     if (index !== -1) {
       reviews.value[index].status = 'rejected'
     }
-    
+
     alert('Review rejected successfully!')
-    
+
   } catch (err) {
     console.error('Error rejecting review:', err)
     alert(err.response?.data?.error || 'Failed to reject review')
@@ -352,19 +322,19 @@ const deleteReview = async (reviewId) => {
   if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
     return
   }
-  
+
   if (deleting.value) return
-  
+
   deleting.value = true
-  
+
   try {
     await axios.delete(`${API_BASE}/reviews/${reviewId}`)
-    
+
     // Remove from local data
     reviews.value = reviews.value.filter(r => r.id !== reviewId)
-    
+
     alert('Review deleted successfully!')
-    
+
   } catch (err) {
     console.error('Error deleting review:', err)
     alert(err.response?.data?.error || 'Failed to delete review')
@@ -378,15 +348,15 @@ const deleteComment = async (commentId) => {
   if (!confirm('Are you sure you want to delete this comment?')) {
     return
   }
-  
+
   try {
     await axios.delete(`${API_BASE}/comments/${commentId}`)
-    
+
     // Remove from local data
     comments.value = comments.value.filter(c => c.id !== commentId)
-    
+
     alert('Comment deleted successfully!')
-    
+
   } catch (err) {
     console.error('Error deleting comment:', err)
     alert(err.response?.data?.error || 'Failed to delete comment')
@@ -542,8 +512,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-container {
@@ -957,11 +932,11 @@ onMounted(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .search-input {
     min-width: auto;
   }
-  
+
   .review-actions {
     justify-content: center;
   }

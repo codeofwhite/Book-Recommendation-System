@@ -43,15 +43,11 @@ export async function trackEvent(eventType, payload = {}, customPageUrl = null) 
       headers: {
         'Content-Type': 'application/json',
       },
-        'Content-Type': 'application/json',
-      },
     });
     if (import.meta.env.DEV) {
       console.log('Log successfully sent to backend:', logData);
-      console.log('Log successfully sent to backend:', logData);
     }
   } catch (error) {
-    console.error('Failed to send log to backend:', error);
     console.error('Failed to send log to backend:', error);
   }
 }

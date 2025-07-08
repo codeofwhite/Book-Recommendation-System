@@ -9,14 +9,7 @@
     <div class="csv-import-section">
       <h3>📁 Import from CSV</h3>
       <div class="csv-import-area">
-        <input 
-          type="file" 
-          ref="csvFileInput" 
-          @change="handleCSVUpload" 
-          accept=".csv"
-          class="csv-input"
-          id="csv-upload"
-        >
+        <input type="file" ref="csvFileInput" @change="handleCSVUpload" accept=".csv" class="csv-input" id="csv-upload">
         <label for="csv-upload" class="csv-upload-label">
           <span class="upload-icon">📤</span>
           Choose CSV File
@@ -62,7 +55,8 @@
 
       <div class="form-group">
         <label for="description">📝 Description</label>
-        <textarea id="description" v-model="book.description" rows="4" placeholder="Enter book description..."></textarea>
+        <textarea id="description" v-model="book.description" rows="4"
+          placeholder="Enter book description..."></textarea>
       </div>
 
       <div class="form-row">
@@ -133,11 +127,11 @@ const handleCSVUpload = (event) => {
       const csv = e.target.result
       const lines = csv.split('\n')
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-      
+
       if (lines.length > 1) {
         const firstDataLine = lines[1].split(',')
         const csvData = {}
-        
+
         headers.forEach((header, index) => {
           if (firstDataLine[index]) {
             csvData[header] = firstDataLine[index].trim().replace(/"/g, '')

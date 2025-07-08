@@ -21,16 +21,17 @@
           <li>
             <router-link to="/users" active-class="active">Manage Users</router-link>
           </li>
-          </ul>
+        </ul>
       </nav>
     </aside>
 
     <main class="main-content">
       <header class="main-header">
         <h1>Welcome, Administrator!</h1>
-        </header>
+      </header>
       <div class="content-area">
-        <router-view /> </div>
+        <router-view />
+      </div>
     </main>
   </div>
 </template>
@@ -52,7 +53,8 @@
 /* Sidebar Styles */
 .sidebar {
   width: 250px;
-  background-color: #2c3e50; /* Dark blue/grey */
+  background-color: #2c3e50;
+  /* Dark blue/grey */
   color: white;
   padding: 20px;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -68,7 +70,8 @@
 .sidebar-header h2 {
   margin: 0;
   font-size: 1.5em;
-  color: #ecf0f1; /* Light grey */
+  color: #ecf0f1;
+  /* Light grey */
 }
 
 .sidebar-nav ul {
@@ -85,14 +88,16 @@
   display: block;
   padding: 10px 15px;
   text-decoration: none;
-  color: #bdc3c7; /* Muted light grey */
+  color: #bdc3c7;
+  /* Muted light grey */
   border-radius: 5px;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .sidebar-nav a:hover,
 .sidebar-nav a.active {
-  background-color: #34495e; /* Slightly lighter dark blue/grey */
+  background-color: #34495e;
+  /* Slightly lighter dark blue/grey */
   color: #ffffff;
 }
 

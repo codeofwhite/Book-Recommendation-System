@@ -1,7 +1,8 @@
 import pandas as pd
 from sqlalchemy import create_engine
 from config import Config
-import re # 导入正则表达式模块
+import re  # 导入正则表达式模块
+
 
 class DataLoader:
     def __init__(self):
@@ -14,7 +15,10 @@ class DataLoader:
         """从 rec_user_profiles 表加载用户数据 (使用 MySQL)"""
         print("Loading user profiles from rec_user_profiles (MySQL)...")
         # 确保这里查询的是你的用户表实际名称，例如 rec_user_profiles 或直接是 user 表
-        df = pd.read_sql("SELECT id, username, email, age, gender, location, interest_tags, preferred_book_types, preferred_authors, preferred_genres FROM rec_user_profiles", self.mysql_engine)
+        df = pd.read_sql(
+            "SELECT id, username, email, age, gender, location, interest_tags, preferred_book_types, preferred_authors, preferred_genres FROM rec_user_profiles",
+            self.mysql_engine,
+        )
         # 注意：如果 interest_tags, preferred_book_types, preferred_authors, preferred_genres 是字符串，可能需要进一步处理（如分割成列表）
         print(f"Loaded {len(df)} user profiles.")
         return df
@@ -23,14 +27,17 @@ class DataLoader:
         """从 rec_books 表加载图书数据 (使用 MySQL)"""
         print("Loading book data from rec_books (MySQL)...")
         # 根据你提供的字段，我们加载更多信息，即使 category 暂时没有数据
-        df = pd.read_sql("""
+        df = pd.read_sql(
+            """
             SELECT 
                 book_id, title, category, author, rating, description, language, isbn, genres, 
                 characters, book_format, edition, pages, publisher, publish_date, 
                 first_publish_date, awards, num_ratings, ratings_by_stars, liked_percent, 
                 setting, cover_img, bbe_score, bbe_votes, price
             FROM rec_books
-        """, self.mysql_engine)
+        """,
+            self.mysql_engine,
+        )
         print(f"Loaded {len(df)} book data.")
         return df
 
@@ -39,8 +46,10 @@ class DataLoader:
         从 ClickHouse 的 default.user_behavior_logs_raw 表加载用户行为日志数据。
         根据提供的字段示例，提取 user_id, book_id (作为 item_id), event_type, 和交互强度。
         """
-        print("Loading user behavior logs from ClickHouse default.user_behavior_logs_raw...")
-        
+        print(
+            "Loading user behavior logs from ClickHouse default.user_behavior_logs_raw..."
+        )
+
         query = """
         SELECT
             user_id,
@@ -81,12 +90,12 @@ class DataLoader:
             AND extract(page_url, '/books/([^/]+)') != '' 
         ORDER BY user_id, timestamp
         """
-        
+
         df = pd.read_sql(query, self.clickhouse_engine)
 
-        df = df.dropna(subset=['item_id'])
-        df = df[df['item_id'] != '']
-        df['interaction_value'] = df['interaction_value'].astype(int)
+        df = df.dropna(subset=["item_id"])
+        df = df[df["item_id"] != ""]
+        df["interaction_value"] = df["interaction_value"].astype(int)
 
         if not df.empty:
             print(f"Loaded {len(df)} user behavior logs.")
@@ -98,7 +107,10 @@ class DataLoader:
         """从 MySQL 的 BOOK_FAVORITE 表加载图书收藏数据"""
         print("Loading book favorite data from BOOK_FAVORITE (MySQL)...")
         # 收藏是强烈的正向反馈，可以给较高的交互值
-        df = pd.read_sql("SELECT user_id, book_id, add_time AS timestamp, 20 AS interaction_value FROM BOOK_FAVORITE", self.mysql_engine)
+        df = pd.read_sql(
+            "SELECT user_id, book_id, add_time AS timestamp, 20 AS interaction_value FROM BOOK_FAVORITE",
+            self.mysql_engine,
+        )
         if not df.empty:
             print(f"Loaded {len(df)} book favorites.")
         else:
@@ -109,7 +121,10 @@ class DataLoader:
         """从 MySQL 的 BOOK_LIKE 表加载图书点赞数据"""
         print("Loading book like data from BOOK_LIKE (MySQL)...")
         # 点赞也是强烈的正向反馈，可以给较高的交互值
-        df = pd.read_sql("SELECT user_id, book_id, like_time AS timestamp, 18 AS interaction_value FROM BOOK_LIKE", self.mysql_engine)
+        df = pd.read_sql(
+            "SELECT user_id, book_id, like_time AS timestamp, 18 AS interaction_value FROM BOOK_LIKE",
+            self.mysql_engine,
+        )
         if not df.empty:
             print(f"Loaded {len(df)} book likes.")
         else:
@@ -121,28 +136,18 @@ class DataLoader:
         print("Loading book review data from REVIEW (MySQL)...")
         # 评论包含评分，这是非常直接的显式反馈
         # 我们将 rating 映射到 interaction_value，并加上一个基础值，例如 rating * 5
-        df = pd.read_sql("SELECT user_id, book_id, post_time AS timestamp, rating * 5 AS interaction_value FROM REVIEW WHERE rating IS NOT NULL", self.mysql_engine)
+        df = pd.read_sql(
+            "SELECT user_id, book_id, post_time AS timestamp, rating * 5 AS interaction_value FROM REVIEW WHERE rating IS NOT NULL",
+            self.mysql_engine,
+        )
         if not df.empty:
             print(f"Loaded {len(df)} book reviews.")
         else:
             print("No book review data loaded.")
         return df
 
-    # 你可以决定是否需要 ReviewFavorite 和 ReviewLike 数据，
-    # 通常推荐系统更关注用户与图书本身的交互。如果书评的点赞收藏对图书推荐有间接帮助，可以考虑加载。
-    # 示例：
-    # def load_review_favorites(self):
-    #     print("Loading review favorite data from REVIEW_FAVORITE (MySQL)...")
-    #     df = pd.read_sql("SELECT user_id, review_id, add_time AS timestamp, 5 AS interaction_value FROM REVIEW_FAVORITE", self.mysql_engine)
-    #     return df
 
-    # def load_review_likes(self):
-    #     print("Loading review like data from REVIEW_LIKE (MySQL)...")
-    #     df = pd.read_sql("SELECT user_id, review_id, like_time AS timestamp, 3 AS interaction_value FROM REVIEW_LIKE", self.mysql_engine)
-    #     return df
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 简单测试所有数据加载
     loader = DataLoader()
     users_df = loader.load_user_profiles()
@@ -166,12 +171,23 @@ if __name__ == '__main__':
     print(book_reviews_df.head())
 
     # 示例：合并所有交互数据
-    all_interactions = pd.concat([
-        user_behavior_logs_df[['user_id', 'item_id', 'timestamp', 'interaction_value']],
-        book_favorites_df[['user_id', 'book_id', 'timestamp', 'interaction_value']].rename(columns={'book_id': 'item_id'}),
-        book_likes_df[['user_id', 'book_id', 'timestamp', 'interaction_value']].rename(columns={'book_id': 'item_id'}),
-        book_reviews_df[['user_id', 'book_id', 'timestamp', 'interaction_value']].rename(columns={'book_id': 'item_id'})
-    ], ignore_index=True)
+    all_interactions = pd.concat(
+        [
+            user_behavior_logs_df[
+                ["user_id", "item_id", "timestamp", "interaction_value"]
+            ],
+            book_favorites_df[
+                ["user_id", "book_id", "timestamp", "interaction_value"]
+            ].rename(columns={"book_id": "item_id"}),
+            book_likes_df[
+                ["user_id", "book_id", "timestamp", "interaction_value"]
+            ].rename(columns={"book_id": "item_id"}),
+            book_reviews_df[
+                ["user_id", "book_id", "timestamp", "interaction_value"]
+            ].rename(columns={"book_id": "item_id"}),
+        ],
+        ignore_index=True,
+    )
 
     print("\nAll Interactions Head (Combined):")
     print(all_interactions.head())
