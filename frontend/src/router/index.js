@@ -6,6 +6,8 @@ import BookList from '../views/BookList.vue'
 import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
 import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
+import save from '../views/save.vue'; // 假设这是保存用户信息的组件
+import Skim from '../views/Skim.vue'; // 假设这是 Skim 组件
 
 const routes = [
   {
@@ -32,13 +34,18 @@ const routes = [
   {
     path: '/auth', // <-- Add auth route
     name: 'auth',
-    component: AuthView
+    component: AuthView,
   },
   {
     path: '/userview',
     name: 'UserView',
-    component: UserView,
+    component: save,
     meta: { requiresAuth: true } // 添加元信息，表示此路由需要认证
+  },
+  {
+    path: '/skim', // <-- Add auth route
+    name: 'skim',
+    component: Skim
   },
 ];
 

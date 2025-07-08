@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from models import db, bcrypt, User, Admin # 确保 User 和 Admin 在 models.py 中定义
+from model import db, bcrypt, User, UserModel # 确保 User 和 Admin 在 models.py 中定义
 from config import Config
 import os # 用于文件路径操作
 import uuid # 用于生成唯一文件名
@@ -217,14 +217,16 @@ def get_favorite_books(user_id):
             "title": "Python编程从入门到实践",
             "author": "Eric Matthes",
             "cover_img": "https://via.placeholder.com/100x150?text=Python",
-            "add_time": "2024-01-15T10:00:00Z"
+            "add_time": "2024-01-15T10:00:00Z",
+            "rating" : 5
         },
         {
             "book_id": 2,
             "title": "深入理解JavaScript",
             "author": "Kyle Simpson",
             "cover_img": "https://via.placeholder.com/100x150?text=JS",
-            "add_time": "2024-02-20T14:30:00Z"
+            "add_time": "2024-02-20T14:30:00Z",
+            "rating" : 4
         }
     ]
     return jsonify(mock_books), 200
@@ -248,7 +250,9 @@ def get_favorite_reviews(user_id):
     mock_reviews = [
         {
             "review_id": 101,
+            "book_auther": "Eric Matthes",
             "book_title": "Python编程从入门到实践",
+            "title": "非常实用的Python入门书籍",
             "content": "这本书深入浅出，非常适合初学者，跟着例子一步步做很有成就感。",
             "rating": 5,
             "like_count": 25,
@@ -257,6 +261,8 @@ def get_favorite_reviews(user_id):
         {
             "review_id": 102,
             "book_title": "深入理解JavaScript",
+            "book_auther": "Kyle Simpson",
+            "title": "JavaScript的深度解析",
             "content": "对于JavaScript的高级概念讲解得很透彻，需要反复阅读。",
             "rating": 4,
             "like_count": 12,
@@ -308,6 +314,124 @@ def remove_favorite_review(user_id, review_id):
     print(f"DEBUG: Attempting to remove review {review_id} for user {user_id}")
     # 模拟删除成功
     return jsonify({'message': 'Review removed from favorites (simulated)'}), 200
+
+# --- 用户管理接口（整合自 user_routes.py） ---
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    """获取所有用户，支持搜索和分页"""
+    try:
+        search_keyword = request.args.get('search', '').strip()
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        per_page = min(per_page, 100)
+
+        result, error = UserModel.get_all_users(
+            search_keyword=search_keyword if search_keyword else None,
+            page=page,
+            per_page=per_page
+        )
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to retrieve users: {str(e)}"}), 500
+    
+@app.route('/api/users/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    """获取单个用户信息"""
+    try:
+        user, error = UserModel.get_user_by_id(user_id)
+        if error:
+            if error == "User not found":
+                return jsonify({"error": error}), 404
+            return jsonify({"error": error}), 500
+        
+        return jsonify(user)
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to retrieve user: {str(e)}"}), 500
+
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    """更新用户信息"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        forbidden_fields = ['id', 'password_hash']
+        update_data = {
+            k: v for k, v in data.items()
+            if v is not None and v != '' and k not in forbidden_fields
+        }
+
+        if not update_data:
+            return jsonify({"error": "No valid fields to update"}), 400
+
+        updated_user, error = UserModel.update_user(user_id, update_data)
+        if error:
+            if error == "User not found":
+                return jsonify({"error": error}), 404
+            if "already exists" in error:
+                return jsonify({"error": error}), 409
+            return jsonify({"error": error}), 500
+
+        return jsonify(updated_user)
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    """删除用户"""
+    try:
+        success, error = UserModel.delete_user(user_id)
+        if error:
+            if error == "User not found":
+                return jsonify({"error": error}), 404
+            return jsonify({"error": error}), 500
+
+        return jsonify({"message": "User deleted successfully", "userId": user_id})
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+
+
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    """创建新用户"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        required_fields = ['username', 'email', 'password']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({"error": f"{field} is required"}), 400
+
+        user, error = UserModel.create_user(
+            username=data['username'],
+            email=data['email'],
+            password=data['password']
+        )
+
+        if error:
+            if "already exists" in error:
+                return jsonify({"error": error}), 409
+            return jsonify({"error": error}), 500
+
+        return jsonify(user), 201
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to create user: {str(e)}"}), 500
+
 
 
 if __name__ == '__main__':
