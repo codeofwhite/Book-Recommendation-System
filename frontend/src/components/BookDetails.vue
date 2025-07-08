@@ -439,6 +439,8 @@ export default {
         this.isLiked = response.data.isLiked;
         this.likeCount = response.data.likeCount;
         console.log(`Book ${this.isLiked ? 'liked' : 'unliked'}! Current likes: ${this.likeCount}`);
+        // 【新增】点赞/取消点赞后刷新实时推荐
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling book like status:', error);
         alert('Failed to update book like status. Please try again.');
@@ -460,6 +462,8 @@ export default {
         const response = await axios.post(endpoint, { userId });
         this.isCollected = response.data.isFavorited;
         console.log(`Book ${this.isCollected ? 'collected' : 'uncollected'}!`);
+        // 【新增】收藏/取消收藏后刷新实时推荐
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling book collect status:', error);
         alert('Failed to update book collection status. Please try again.');
@@ -558,6 +562,8 @@ export default {
         this.newReviewContent = '';
         this.newReviewRating = 0;
         this.fetchBookReviews();
+        // 【新增】收藏/取消收藏后刷新实时推荐
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error submitting review:', error);
         alert('提交评论失败，请重试。');
@@ -601,6 +607,8 @@ export default {
         const response = await axios.post(endpoint, { userId });
         review.isLikedByCurrentUser = response.data.isLiked;
         review.likeCount = response.data.likeCount;
+        // 【新增】收藏/取消收藏后刷新实时推荐
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling review like status:', error);
         alert('更新评论点赞状态失败，请重试。');
@@ -618,6 +626,8 @@ export default {
         const response = await axios.post(endpoint, { userId });
         review.isCollectedByCurrentUser = response.data.isFavorited;
         review.collectCount = response.data.favoriteCount;
+        // 【新增】收藏/取消收藏后刷新实时推荐
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling review collect status:', error);
         alert('更新评论收藏状态失败，请重试。');

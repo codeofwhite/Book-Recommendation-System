@@ -74,7 +74,8 @@
             </div>
             <div class="tome-inscriptions">
               <!-- 新增：@click 事件来触发日志记录 -->
-              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"  @click="handleBookClick(book)">
+              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"
+                @click="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
               <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>
@@ -345,6 +346,14 @@ export default {
     },
   },
   methods: {
+    handleBookClick(book) {
+      // 调用埋点函数，发送用户点击事件
+      trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
+      console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId})`);
+
+      // 【新增】在点击后主动刷新实时推荐
+      this.fetchRealtimeRecommendationsForList();
+    },
     async fetchUserData() {
       const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
 
