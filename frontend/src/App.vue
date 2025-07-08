@@ -5,7 +5,7 @@
       <router-link to="/books" class="nav-item">The Catalogue</router-link>
       <router-link to="/about" class="nav-item">About Our Establishment</router-link>
 
-      <template v-if="isLoggedIn">
+      <template v-if="userStore.isLoggedIn">
         <router-link to="/userview" class="nav-item user-dashboard-button">My Scriptorium</router-link>
         <a href="#" @click.prevent="logout" class="nav-item logout-button">Depart the Archives</a>
       </template>
@@ -25,9 +25,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+// 1. 导入 useUserStore
+import { useUserStore } from './stores/userStore';
 
+// 2. 获取 store 和 router 实例
+const userStore = useUserStore();
 const router = useRouter();
 const isLoggedIn = ref(false);
 

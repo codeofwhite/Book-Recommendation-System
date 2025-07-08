@@ -73,7 +73,8 @@
               <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
             </div>
             <div class="tome-inscriptions">
-              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link">
+              <!-- 新增：@click 事件来触发日志记录 -->
+              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"  @click="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
               <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>

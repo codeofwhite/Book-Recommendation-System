@@ -234,6 +234,8 @@ const getParsedUserData = () => {
   return null;
 };
 
+
+
 export default {
   name: 'BookDetails',
   data() {
@@ -312,6 +314,10 @@ export default {
     await this.loadBookData();
     await this.fetchBookDetails();
     if (this.book && this.book.bookId) {
+      // 新增：在获取到书籍详情后，记录浏览事件
+      console.log("在获取到书籍详情后，记录浏览事件")
+      trackBookView(this.book.bookId);
+
       await this.fetchBookReviews();
       await this.fetchUserEngagementStatus();
       // 【新增】获取实时推荐

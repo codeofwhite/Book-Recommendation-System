@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua
 # 明确复制 Flask 应用主文件
 # 由于 Dockerfile 在 book_manage/ 目录下，app.py 也在 book_manage/ 目录下
 # 所以 app.py 相对于 Dockerfile 的路径就是 app.py
-COPY app.py .
+COPY . .
 
 # --- 关键修改点：调整 COPY 源路径 ---
 # 因为 Dockerfile 位于 book_manage/ 目录下，而 books.csv 位于 data/books.csv
