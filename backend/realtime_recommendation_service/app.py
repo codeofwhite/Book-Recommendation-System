@@ -121,7 +121,7 @@ def get_user_recent_views(user_id):
 def get_all_realtime_updated_recommendations():
     """
     从 Redis 中获取所有用户由 Flink 实时更新后的推荐列表。
-    这些数据由 Flink Job 写入，键以 'realtime_updated_recommendations:user:' 开头。
+    这些数据由 Flink Job 写入，键以 'realtime_recs:user:' 开头。
     """
     if not r:
         return jsonify({"error": "Redis 未初始化或连接失败"}), 500

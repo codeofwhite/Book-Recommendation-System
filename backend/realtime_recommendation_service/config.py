@@ -9,5 +9,5 @@ class Config:
 
     # 实时修正相关配置
     RECENT_VIEWS_WEIGHT = 0.8 # 实时浏览过的图书的相似图书的提升权重 (0-1)
-    MAX_RECENT_VIEWS_TO_CONSIDER = 5 # 考虑最近浏览的图书数量
+    MAX_RECENT_VIEWS_TO_CONSIDER = 10 # 考虑最近浏览的图书数量
     EXCLUDE_RECENTLY_VIEWED = True # 是否在实时推荐中排除用户最近浏览过的图书

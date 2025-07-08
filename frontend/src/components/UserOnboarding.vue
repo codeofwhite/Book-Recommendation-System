@@ -124,7 +124,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/${this.user_id}`);
+        const response = await axios.get(`/service-a/api/users/${this.user_id}`);
         const userDataFromBackend = response.data; // 从后端获取的最新资料
 
         // 将获取到的数据填充到 profile
@@ -170,7 +170,7 @@ export default {
       try {
         this.profile.preferred_book_types = this.preferredBookTypesArray.join(',');
 
-        const response = await axios.put(`http://localhost:5000/api/users/${this.user_id}/profile`, this.profile);
+        const response = await axios.put(`/service-a/api/users/${this.user_id}/profile`, this.profile);
 
         this.success = response.data.message;
 

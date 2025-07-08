@@ -182,10 +182,31 @@ const getParsedUserData = () => {
   return null;
 };
 
+/**
+ * 使用 Fisher-Yates (aka Knuth) 算法随机打乱数组。
+ * @param {Array} array - 需要被打乱的原始数组。
+ * @returns {Array} - 一个新的、顺序被打乱的数组。
+ */
+const shuffleArray = (array) => {
+  // 1. 创建数组的副本，避免修改原始数组
+  const newArray = [...array];
+  // 2. 从最后一个元素开始向前遍历
+  for (let i = newArray.length - 1; i > 0; i--) {
+    // 3. 生成一个从 0 到 i (包含 i) 的随机索引
+    const j = Math.floor(Math.random() * (i + 1));
+    // 4. 交换当前元素 newArray[i] 和随机选中的元素 newArray[j]
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 const fetchData = async () => {
   loading.value = true;
+  // 定义一个 ref 来标识是否是后备推荐 (可选，但推荐)
+  const isFallbackRecommendation = ref(false);
+
   try {
-    // 获取所有热门书籍（不再限制数量，为模态框准备完整数据）
+    // 获取所有热门书籍
     const popularRes = await axios.get(`${API_BASE_URL}/books/popular`);
     popularBooks.value = popularRes.data.map(book => ({
       id: book.id || book.bookId,
@@ -195,25 +216,30 @@ const fetchData = async () => {
       coverImg: book.coverImg
     }));
 
-    // 获取所有个性化推荐书籍 (为模态框准备完整数据)
+    // 获取所有个性化推荐书籍
     const loggedInUser = getParsedUserData();
     const userId = loggedInUser ? loggedInUser.user_id : null;
 
     if (userId) {
       try {
-        const offlineRecommendationApiUrl = `/service-g/recommend/user/${userId}`;
+        const offlineRecommendationApiUrl = `/service-g/recommend/offline/user/${userId}`;
         console.log(`尝试获取用户 ${userId} 的离线推荐：${offlineRecommendationApiUrl}`);
         const personalizedRes = await axios.get(offlineRecommendationApiUrl);
 
-        personalizedBooks.value = personalizedRes.data.recommendations.map(book => ({
-          id: book.bookId,
-          title: book.title,
-          author: book.author,
-          coverImg: book.coverImg,
-          genres: book.genres || ['未知分类']
-        }));
-        console.log("离线个性化推荐数据:", personalizedBooks.value);
-
+        if (personalizedRes.data && personalizedRes.data.recommendations && personalizedRes.data.recommendations.length > 0) {
+          personalizedBooks.value = personalizedRes.data.recommendations.map(book => ({
+            id: book.bookId,
+            title: book.title,
+            author: book.author,
+            coverImg: book.coverImg,
+            genres: book.genres || ['未知分类']
+          }));
+          console.log("离线个性化推荐数据:", personalizedBooks.value);
+        } else {
+          // 接口成功返回，但推荐列表为空
+          personalizedBooks.value = [];
+          console.log("当前用户有离线推荐记录，但推荐列表为空。");
+        }
       } catch (error) {
         console.error('Error fetching personalized (offline) recommendations:', error);
         personalizedBooks.value = [];
@@ -224,6 +250,20 @@ const fetchData = async () => {
     } else {
       console.log("用户未登录，无法获取个性化（离线）推荐。");
       personalizedBooks.value = [];
+    }
+
+    // --- 核心冷启动处理逻辑 (已更新) ---
+    if (personalizedBooks.value.length === 0 && popularBooks.value.length > 0) {
+      console.log("冷启动：个性化推荐为空，使用随机打乱的热门书籍作为后备推荐。");
+      isFallbackRecommendation.value = true;
+
+      // 1. 先调用 shuffleArray 函数打乱热门书籍数组
+      const shuffledPopularBooks = shuffleArray(popularBooks.value);
+
+      // 2. 然后从打乱后的数组中截取一部分作为后备推荐
+      personalizedBooks.value = shuffledPopularBooks.slice(0, 12);
+    } else {
+      isFallbackRecommendation.value = false;
     }
 
 
@@ -264,6 +304,12 @@ const fetchData = async () => {
 
   } catch (error) {
     console.error('Error fetching data (main sections):', error);
+    // 即使主要请求失败，也应该考虑填充一些东西，或者显示错误信息
+    // 在这里也可以触发冷启动逻辑，以防 `popularBooks` 请求也失败了但其他成功了
+    if (personalizedBooks.value.length === 0 && popularBooks.value.length > 0) {
+      personalizedBooks.value = popularBooks.value.slice(0, 12);
+      isFallbackRecommendation.value = true;
+    }
   } finally {
     loading.value = false;
   }

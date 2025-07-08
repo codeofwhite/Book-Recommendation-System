@@ -73,72 +73,79 @@ def run_offline_training_job():
 # Ensure this matches your Docker Compose service name (e.g., 'book_manage')
 SERVICE_B_BASE_URL = "http://book_manage:5001" 
 
-@app.route('/recommend/user/<int:user_id>', methods=['GET'])
-def get_user_recommendations(user_id):
+@app.route('/recommend/offline/user/<int:user_id>', methods=['GET'])
+def get_offline_user_recommendations(user_id):
     """
-    获取指定用户的推荐图书列表，并补充图书详情。
+    【新接口】获取指定用户的离线训练生成的 Top-N 推荐图书列表。
+    此接口用于验证离线推荐结果，会返回 Config.TOP_N_RECOMMENDATIONS 数量的推荐。
     """
-    # Assuming redis_client.get_user_recommendations(user_id) returns a list of dicts like:
-    # [{"book_id": "...", "score": ...}, ...]
-    raw_recommendations = redis_client.get_user_recommendations(user_id) # This comes from your Redis client wrapper
+    print(f"收到请求：获取用户 {user_id} 的离线推荐。")
+    raw_recommendations = redis_client.get_user_recommendations(str(user_id)) # user_id 转换为字符串
 
     if not raw_recommendations:
         return jsonify({
             "user_id": user_id,
             "recommendations": [],
-            "message": "No recommendations found for this user, or offline job not yet run."
+            "message": "未找到该用户的离线推荐，或离线任务尚未运行/数据为空。"
         }), 404
 
     detailed_recommendations = []
     for rec_item in raw_recommendations:
         book_id = rec_item.get('book_id')
         if not book_id:
-            continue # Skip if book_id is missing
+            continue
 
         try:
-            # Call Service B to get book details
             book_details_url = f"{SERVICE_B_BASE_URL}/api/books/{book_id}"
-            print(f"Attempting to fetch details for offline recommendation: {book_details_url}") # Debug print
             response = requests.get(book_details_url)
 
             if response.status_code == 200:
                 book_data = response.json()
-                print(f"Successfully fetched book data for {book_id} (offline): {book_data}") # Debug print
                 
-                # Combine recommendation score with detailed book info
                 detailed_rec = {
-                    "bookId": book_data.get("bookId"), # Ensure it's 'bookId' for frontend
+                    "bookId": book_data.get("bookId"),
                     "title": book_data.get("title"),
                     "author": book_data.get("author"),
                     "coverImg": book_data.get("coverImg"),
-                    "score": rec_item.get("score") # Keep the recommendation score
+                    "score": rec_item.get("score"),           # 离线推荐的最终混合分数
+                    "raw_cf_score": rec_item.get("raw_cf_score"), # 原始协同过滤分数
+                    "raw_popularity_score": rec_item.get("raw_popularity_score"), # 原始流行度分数
+                    "rating": book_data.get("rating"),        # 图书的公开平均分
+                    "genres": book_data.get("genres", [])     # 图书分类
                 }
                 detailed_recommendations.append(detailed_rec)
             else:
-                print(f"Failed to fetch details for book_id {book_id} (offline): Status {response.status_code}, Response: {response.text}")
-                # Fallback if details fetching fails
+                print(f"警告: 无法获取图书 {book_id} 的详情。状态码: {response.status_code}, 响应: {response.text}")
                 detailed_recommendations.append({
                     "bookId": book_id,
-                    "title": rec_item.get('title', '未知标题'),
+                    "title": "未知标题",
                     "author": "未知作者",
-                    "coverImg": "https://via.placeholder.com/150",
-                    "score": rec_item.get("score")
+                    "coverImg": "[https://via.placeholder.com/150](https://via.placeholder.com/150)",
+                    "score": rec_item.get("score"),
+                    "raw_cf_score": rec_item.get("raw_cf_score"),
+                    "raw_popularity_score": rec_item.get("raw_popularity_score"),
+                    "rating": 0,
+                    "genres": []
                 })
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching details for book_id {book_id} (offline): {e}")
-            # Fallback if connection fails
+            print(f"错误: 请求图书 {book_id} 详情失败: {e}")
             detailed_recommendations.append({
                 "bookId": book_id,
-                "title": rec_item.get('title', '未知标题'),
+                "title": "未知标题",
                 "author": "未知作者",
-                "coverImg": "https://via.placeholder.com/150",
-                "score": rec_item.get("score")
+                "coverImg": "[https://via.placeholder.com/150](https://via.placeholder.com/150)",
+                "score": rec_item.get("score"),
+                "raw_cf_score": rec_item.get("raw_cf_score"),
+                "raw_popularity_score": rec_item.get("raw_popularity_score"),
+                "rating": 0,
+                "genres": []
             })
 
     return jsonify({
         "user_id": user_id,
+        "recommendations_count": len(detailed_recommendations),
         "recommendations": detailed_recommendations,
-        "message": "Recommendations retrieved successfully."
+        "message": "成功获取离线推荐数据。"
     }), 200
 
 @app.route('/recommend/trigger_offline_job', methods=['POST'])

@@ -23,6 +23,8 @@ RUN pip3 install apache-flink==1.17.1 -i https://pypi.tuna.tsinghua.edu.cn/simpl
 # 安装其他 PyFlink Job 可能需要的 Python 库
 RUN pip3 install redis -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
+RUN pip install numpy==1.23.5 --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple/
+
 # 设置 PyFlink 相关环境变量
 ENV FLINK_PYTHON_FN_EXECUTION_MODE="PROCESS"
 ENV PYFLINK_PYTHON_ENV="/usr/bin/python3"
