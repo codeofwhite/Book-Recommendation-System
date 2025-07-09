@@ -6,8 +6,9 @@ import BookList from '../views/BookList.vue'
 import AboutView from '../views/AboutView.vue'
 import BookDetails from '../components/BookDetails.vue';
 import UserView from '../views/UserView.vue'; // 新创建的用户主页组件
-import UserOnboarding from '../components/UserOnboarding.vue'; // 问卷页面组件
 import BookOfTheDay from "../views/BookOfTheDay.vue";
+import EpubReader from "../components/EpubReader.vue";
+import UserOnboarding from '../components/UserOnboarding.vue'; // 问卷页面组件
 
 const routes = [
   {
@@ -24,6 +25,11 @@ const routes = [
     path: "/about",
     name: "about",
     component: AboutView,
+  },
+  {
+    path: "/book_of_the_day",
+    name: "book_of_the_day",
+    component: BookOfTheDay,
   },
   {
     path: '/books/:bookId',
@@ -54,11 +60,22 @@ const routes = [
     component: BookOfTheDay,
     props: true
   },
+  {
+    path: '/read/:bookId',
+    name: 'EpubReader',
+    component: EpubReader
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (to.path.startsWith('/read/')) {
+      return { top: 110 }; // 匹配 /read/xxx 的所有路径
+    }
+    return savedPosition || { top: 0 }; // 其他情况保持默认
+  },
 });
 
 // 全局导航守卫：检查用户是否登录以及是否完成问卷

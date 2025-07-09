@@ -210,4 +210,7 @@ onUnmounted(() => {
   /* A subtle top shadow */
   letter-spacing: 0.5px;
 }
+body{
+  margin: 0;
+}
 </style>

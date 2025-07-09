@@ -25,6 +25,9 @@
             <button @click="toggleCollect" :class="{ 'action-button': true, 'collected': isCollected }">
               <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
             </button>
+              <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
+                <span class="icon">📖</span> Read Online
+              </button>
           </div>
           <div class="tome-provenance-details-grid">
             <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
@@ -362,6 +365,15 @@ export default {
         const bookId = this.$route.params.bookId;
         const response = await axios.get(`/service-b/api/books/${bookId}`);
         this.book = response.data;
+
+        // ======================== 前端测试代码块 (开始) ========================
+        // 为了在没有后端支持的情况下测试，为特定 ID 的书籍手动添加 epubUrl
+        if (bookId === "41865.Twilight") {
+          console.warn("--- 前端测试 ---: 正在为书籍 " + bookId + " 注入模拟的 EPUB 链接。");
+          // this.$set 是一个 Vue 方法，确保向响应式对象添加新属性时，视图也能更新
+          this.book.epubUrl = '/TestEpub/Twilight.epub'; 
+
+        }
       } catch (error) {
         console.error('Error fetching book details:', error);
         this.book = null;
@@ -369,6 +381,13 @@ export default {
         this.loading = false;
       }
     },
+
+    // 线上阅读功能
+    readOnline() {
+      if (!this.book || !this.book.bookId) return;
+      this.$router.push({ name: 'EpubReader', params: { bookId: this.book.bookId } });
+    },
+
     async fetchUserEngagementStatus() {
       const userId = this.currentUserId;
       const bookId = this.book.bookId;
