@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from model import db, bcrypt, User, UserModel # 确保 User 和 Admin 在 models.py 中定义
+from model import db, bcrypt, User, Admin, UserModel # 确保 User 和 Admin 在 models.py 中定义
 from config import Config
 import os # 用于文件路径操作
 import uuid # 用于生成唯一文件名
