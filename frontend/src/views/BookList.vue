@@ -60,9 +60,7 @@
         </div>
       </div>
 
-      <div class="reset-controls-wrapper">
-        <button @click="resetFilters" class="reset-filters-button">Clear All Astrolabe Settings</button>
-      </div>
+      <button @click="resetFilters" class="reset-filters-button-inline">Clear All Astrolabe Settings</button>
     </div>
 
     <div class="parchment-scroll-wrapper">
@@ -531,13 +529,6 @@ export default {
 </script>
 
 <style scoped>
-/* MODIFICATION: Added universal box-sizing for predictable layout calculations */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 /* A Font of Ages: Evoking the Scribe's Hand */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
 
@@ -642,9 +633,9 @@ export default {
 .astrolabe-filters-horizontal {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem 1.5rem;
+  gap: 1.5rem;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: center;
   padding-top: 1.5rem;
   border-top: 1px dashed #d4c7b2;
 }
@@ -653,14 +644,12 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  flex: 1 1 220px;
-  /* MODIFICATION: Added min-width: 0 to prevent content from overflowing the flex item */
-  min-width: 0;
-}
-
-.genre-filter-section {
-  flex: 2 1 300px;
-  min-width: 300px;
+  flex-basis: auto;
+  /* Allow items to size naturally */
+  flex-grow: 1;
+  /* Allow growth */
+  min-width: 180px;
+  /* Minimum width for filter sections */
 }
 
 .filter-title-inline {
@@ -671,22 +660,6 @@ export default {
   margin-bottom: 0.8rem;
   white-space: nowrap;
 }
-
-/* MODIFICATION START: Added rules to remove arrows from number inputs */
-/* For Chrome, Safari, Edge, Opera */
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* For Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
-
-/* MODIFICATION END */
-
 
 .filter-select-inline,
 .filter-input-inline {
@@ -699,10 +672,6 @@ input[type=number] {
   font-size: 0.95rem;
   color: #3b2f2f;
   transition: all 0.2s ease;
-}
-
-/* Specific styles for select to keep dropdown arrow */
-.filter-select-inline {
   appearance: none;
   background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%235a4b41%22%20d%3D%22M287%2C197.3L159.2%2C69.5c-7.8-7.8-20.5-7.8-28.3%2C0L5.4%2C197.3c-7.8%2C7.8-7.8%2C20.5%2C0%2C28.3l14.2%2C14.2c7.8%2C7.8%2C20.5%2C7.8%2C28.3%2C0l102.2-102.2l102.2%2C102.2c7.8%2C7.8%2C20.5%2C7.8%2C28.3%2C0l14.2-14.2C294.8%2C217.8%2C294.8%2C205.1%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
   background-repeat: no-repeat;
@@ -717,14 +686,14 @@ input[type=number] {
   box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3);
 }
 
-.price-input-wrapper {
-  display: flex;
+.price-filter-group {
+  flex-direction: row;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
+  min-width: 200px;
 }
 
-.price-input-wrapper .filter-input-inline {
+.price-filter-group .filter-input-inline {
   flex-grow: 1;
 }
 
@@ -759,12 +728,17 @@ input[type=number] {
   flex-wrap: wrap;
   gap: 0.5rem;
   max-height: 120px;
+  /* Limit height for overflow */
   overflow-y: auto;
   padding-right: 5px;
+  /* For scrollbar */
   scrollbar-width: thin;
+  /* Firefox */
   scrollbar-color: #8d6e63 #f0ebe0;
+  /* Firefox */
 }
 
+/* Scrollbar styles for Webkit (Chrome, Safari) */
 .genre-pill-container::-webkit-scrollbar {
   width: 8px;
 }
@@ -780,6 +754,7 @@ input[type=number] {
   border: 2px solid #f0ebe0;
 }
 
+
 .genre-filter-pill {
   background-color: #e0d4c0;
   color: #5a4b41;
@@ -791,6 +766,7 @@ input[type=number] {
   transition: all 0.2s ease;
   border: 1px solid #d4c7b2;
   flex-shrink: 0;
+  /* Prevent shrinking */
 }
 
 .genre-filter-pill:hover {
@@ -824,16 +800,7 @@ input[type=number] {
   background: #8c7f73;
 }
 
-.reset-controls-wrapper {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  margin-top: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px dashed #d4c7b2;
-}
-
-.reset-filters-button {
+.reset-filters-button-inline {
   padding: 0.8rem 1.5rem;
   background: #6d5448;
   color: #fdfaf3;
@@ -845,23 +812,28 @@ input[type=number] {
   border: none;
   cursor: pointer;
   letter-spacing: 0.03em;
+  align-self: center;
+  /* Center horizontally */
+  margin-top: 1.5rem;
+  /* Space from filters above */
   white-space: nowrap;
 }
 
-.reset-filters-button:hover {
+.reset-filters-button-inline:hover {
   background: #5a4b41;
   transform: translateY(-1px);
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
 }
 
+
 /* --- Main Content Area (Book Catalogue & Recommendations) --- */
-/* ... The rest of your styles are unchanged and correct ... */
 .parchment-scroll-wrapper {
   display: flex;
   gap: 2.5rem;
   flex-wrap: wrap;
   justify-content: center;
 }
+
 /* The Grand Library's Catalogue (Main Content Area) */
 .catalogue-of-works {
   flex: 3;
@@ -1280,19 +1252,13 @@ input[type=number] {
 
   .astrolabe-filters-horizontal {
     flex-direction: column;
-    align-items: stretch;
-    /* Modified from flex-start to stretch */
+    align-items: flex-start;
     gap: 1.5rem;
   }
 
   .filter-section-inline {
     width: 100%;
     min-width: auto;
-  }
-
-  .genre-filter-section {
-    min-width: unset;
-    /* Unset min-width on small screens */
   }
 
   .price-filter-group {
@@ -1377,7 +1343,7 @@ input[type=number] {
     /* Adjust max height for smaller screens */
   }
 
-  .reset-filters-button {
+  .reset-filters-button-inline {
     width: 100%;
   }
 }

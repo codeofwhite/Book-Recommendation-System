@@ -25,9 +25,9 @@
             <button @click="toggleCollect" :class="{ 'action-button': true, 'collected': isCollected }">
               <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
             </button>
-              <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
-                <span class="icon">📖</span> Read Online
-              </button>
+            <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
+              <span class="icon">📖</span> Read Online
+            </button>
           </div>
           <div class="tome-provenance-details-grid">
             <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
@@ -237,8 +237,6 @@ const getParsedUserData = () => {
   return null;
 };
 
-
-
 export default {
   name: 'BookDetails',
   data() {
@@ -317,10 +315,6 @@ export default {
     await this.loadBookData();
     await this.fetchBookDetails();
     if (this.book && this.book.bookId) {
-      // 新增：在获取到书籍详情后，记录浏览事件
-      console.log("在获取到书籍详情后，记录浏览事件")
-      trackBookView(this.book.bookId);
-
       await this.fetchBookReviews();
       await this.fetchUserEngagementStatus();
       // 【新增】获取实时推荐
@@ -365,15 +359,6 @@ export default {
         const bookId = this.$route.params.bookId;
         const response = await axios.get(`/service-b/api/books/${bookId}`);
         this.book = response.data;
-
-        // ======================== 前端测试代码块 (开始) ========================
-        // 为了在没有后端支持的情况下测试，为特定 ID 的书籍手动添加 epubUrl
-        if (bookId === "41865.Twilight") {
-          console.warn("--- 前端测试 ---: 正在为书籍 " + bookId + " 注入模拟的 EPUB 链接。");
-          // this.$set 是一个 Vue 方法，确保向响应式对象添加新属性时，视图也能更新
-          this.book.epubUrl = '/TestEpub/Twilight.epub'; 
-
-        }
       } catch (error) {
         console.error('Error fetching book details:', error);
         this.book = null;
@@ -382,10 +367,26 @@ export default {
       }
     },
 
-    // 线上阅读功能
+    // 修改后
     readOnline() {
-      if (!this.book || !this.book.bookId) return;
-      this.$router.push({ name: 'EpubReader', params: { bookId: this.book.bookId } });
+      // 确保书籍数据和 epubUrl 存在
+      if (!this.book || !this.book.epubUrl) {
+        console.error("EPUB URL is not available for reading online.");
+        // 可以弹出一个提示给用户
+        alert("该书籍暂无在线阅读资源。");
+        return;
+      }
+
+      // 通过路由的 params 传递 epubUrl
+      // 注意：URL 参数长度有限制，并且如果 URL 包含特殊字符可能需要编码
+      // 对于非常长的 URL 或复杂场景，推荐使用 Vuex 或 props
+      this.$router.push({
+        name: 'EpubReader',
+        params: {
+          bookId: this.book.bookId, // bookId 仍然可以用于识别
+          epubUrl: encodeURIComponent(this.book.epubUrl) // 对 URL 进行编码，防止特殊字符问题
+        }
+      });
     },
 
     async fetchUserEngagementStatus() {

@@ -8,13 +8,44 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
 import requests
 from bs4 import BeautifulSoup
-import random # 新增导入 random 模块
+import random
+from minio import Minio # 新增导入 Minio 客户端
+from minio.error import S3Error # 新增导入 S3Error
 
 # 从config中导入配置
 from config import Config
 
 class BookModel:
     _books_collection = None # 私有类变量来存储MongoDB集合对象
+    _minio_client = None # 新增私有类变量来存储 MinIO 客户端
+
+    @classmethod
+    def get_minio_client(cls):
+        """
+        获取 MinIO 客户端实例。
+        并确保 bucket 存在。
+        """
+        if cls._minio_client is None:
+            try:
+                cls._minio_client = Minio(
+                    Config.MINIO_ENDPOINT,
+                    access_key=Config.MINIO_ACCESS_KEY,
+                    secret_key=Config.MINIO_SECRET_KEY,
+                    secure=Config.MINIO_SECURE # 根据你的 MinIO 配置设置 HTTPS
+                )
+                # 检查 bucket 是否存在，如果不存在则创建
+                if not cls._minio_client.bucket_exists(Config.MINIO_BUCKET_NAME):
+                    cls._minio_client.make_bucket(Config.MINIO_BUCKET_NAME)
+                    print(f"{datetime.now()} MinIO bucket '{Config.MINIO_BUCKET_NAME}' created successfully.")
+                else:
+                    print(f"{datetime.now()} MinIO bucket '{Config.MINIO_BUCKET_NAME}' already exists.")
+            except S3Error as e:
+                print(f"{datetime.now()} Error connecting to MinIO or creating bucket: {e}")
+                cls._minio_client = None
+            except Exception as e:
+                print(f"{datetime.now()} Unexpected error initializing MinIO client: {e}")
+                cls._minio_client = None
+        return cls._minio_client
 
     @classmethod
     def get_collection(cls):
@@ -90,7 +121,6 @@ class BookModel:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
                 try:
-                    # 转换字符串表示的列表为实际列表，并处理可能的数值类型
                     row['genres'] = eval(row['genres']) if row['genres'] else []
                     row['characters'] = eval(row['characters']) if row['characters'] else []
                     row['awards'] = eval(row['awards']) if row['awards'] else []
@@ -103,8 +133,9 @@ class BookModel:
                     row['bbeScore'] = int(row['bbeScore']) if row.get('bbeScore') else None
                     row['bbeVotes'] = int(row['bbeVotes']) if row.get('bbeVotes') else None
                     row['price'] = float(row['price']) if row.get('price') else None
-                    # bookId保持为字符串
                     row['bookId'] = str(row['bookId']) if row.get('bookId') else None
+                    row['epubUrl'] = row.get('epubUrl', '') # 确保 epubUrl 字段在导入时存在，即使为空
+
                 except Exception as e:
                     print(f"{datetime.now()} Warning: Could not parse row data for bookId {row.get('bookId')}: {e}. Skipping row.")
                     continue
@@ -141,7 +172,6 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
-            # bookId作为字符串处理
             book_id = str(book_id)
             book = collection.find_one({"bookId": book_id}, {'_id': 0})
             return book, None
@@ -155,7 +185,6 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 确保所有ID都是字符串
             book_ids = [str(bid) for bid in book_ids]
             books = list(collection.find({"bookId": {"$in": book_ids}}, {'_id': 0}))
             return books, None
@@ -193,37 +222,30 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 生成下一个bookId（字符串格式）
-            # 先尝试找到最大的数字ID，然后+1
             try:
-                # 获取所有bookId，尝试转换为数字并找到最大值
                 all_books = list(collection.find({}, {"bookId": 1, "_id": 0}))
                 numeric_ids = []
                 for book in all_books:
                     try:
                         numeric_ids.append(int(book["bookId"]))
                     except (ValueError, TypeError):
-                        # 如果bookId不是数字，跳过
                         continue
-                
+
                 if numeric_ids:
                     next_id = str(max(numeric_ids) + 1)
                 else:
                     next_id = "1"
             except Exception:
-                # 如果出错，使用时间戳作为ID
                 next_id = str(int(datetime.now().timestamp()))
-            
-            # 准备书籍数据
+
             book_data["bookId"] = next_id
             book_data["rating"] = book_data.get("rating", 0.0)
             book_data["numRatings"] = book_data.get("numRatings", 0)
             book_data["createdAt"] = datetime.now().isoformat()
-            
-            # 插入新书籍
+            book_data["epubUrl"] = book_data.get("epubUrl", "") # 确保 create_book 时包含 epubUrl，默认为空
+
             result = collection.insert_one(book_data)
             if result.inserted_id:
-                # 返回创建的书籍
                 created_book = collection.find_one({"bookId": next_id}, {'_id': 0})
                 return created_book, None
             else:
@@ -239,22 +261,18 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
-            # bookId作为字符串处理
             book_id = str(book_id)
-            
-            # 添加更新时间
+
             update_data["updatedAt"] = datetime.now().isoformat()
-            
-            # 更新书籍
+
             result = collection.update_one(
-                {"bookId": book_id}, 
+                {"bookId": book_id},
                 {"$set": update_data}
             )
-            
+
             if result.matched_count == 0:
                 return None, "Book not found"
-            
-            # 返回更新后的书籍
+
             updated_book = collection.find_one({"bookId": book_id}, {'_id': 0})
             return updated_book, None
         except Exception as e:
@@ -267,14 +285,36 @@ class BookModel:
         collection = cls.get_collection()
         if collection is None:
             return False, "Database connection failed"
+        minio_client = cls.get_minio_client()
+        if minio_client is None:
+            print(f"{datetime.now()} MinIO client not available, cannot delete associated EPUB file.")
+            # return False, "MinIO connection failed, cannot delete associated file" # 生产环境可能需要更严格的错误处理
+
         try:
-            # bookId作为字符串处理
             book_id = str(book_id)
-            
+
+            # 在删除数据库记录之前，先获取书籍信息以删除关联的EPUB文件
+            book_to_delete, error_fetch = cls.get_book_by_id(book_id)
+            if error_fetch:
+                # 如果找不到书，返回错误，不尝试删除 MinIO 文件
+                return False, error_fetch
+
             result = collection.delete_one({"bookId": book_id})
             if result.deleted_count == 0:
                 return False, "Book not found"
-            
+
+            # 如果数据库记录删除成功，尝试删除关联的EPUB文件
+            if book_to_delete and book_to_delete.get('epubUrl') and minio_client:
+                # 从 MinIO URL 中解析出对象名称 (filename)
+                # 例如：http://minio-endpoint:9000/bucket-name/bookId.epub
+                object_name = book_to_delete['epubUrl'].split('/')[-1]
+                try:
+                    minio_client.remove_object(Config.MINIO_BUCKET_NAME, object_name)
+                    print(f"Deleted EPUB file from MinIO: {Config.MINIO_BUCKET_NAME}/{object_name}")
+                except S3Error as minio_error:
+                    print(f"Error deleting EPUB file from MinIO {Config.MINIO_BUCKET_NAME}/{object_name}: {minio_error}")
+                    # 这里可以选择返回错误，或者仅仅记录日志，因为数据库记录已删除
+
             return True, None
         except Exception as e:
             print(f"Error deleting book from MongoDB: {e}")
@@ -287,31 +327,28 @@ class BookModel:
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 获取总书籍数
             total_books = collection.count_documents({})
-            
-            # 计算平均评分
+
             pipeline = [
                 {"$match": {"rating": {"$ne": None, "$gt": 0}}},
                 {"$group": {"_id": None, "avgRating": {"$avg": "$rating"}}}
             ]
             avg_result = list(collection.aggregate(pipeline))
             avg_rating = round(avg_result[0]["avgRating"], 1) if avg_result else 0.0
-            
-            # 获取最近添加的书籍
+
             recent_books = list(collection.find(
-                {"createdAt": {"$exists": True}}, 
+                {"createdAt": {"$exists": True}},
                 {'_id': 0, 'title': 1, 'createdAt': 1, 'bookId': 1}
             ).sort("createdAt", -1).limit(5))
-            
+
             stats = {
                 "totalBooks": total_books,
                 "averageRating": avg_rating,
-                "totalUsers": 156,  # Mock data
-                "totalReviews": 423,  # Mock data
+                "totalUsers": 156,
+                "totalReviews": 423,
                 "recentBooks": recent_books
             }
-            
+
             return stats, None
         except Exception as e:
             print(f"Error getting dashboard stats: {e}")
@@ -319,6 +356,7 @@ class BookModel:
 
     @staticmethod
     def search_douban_books(keyword):
+        # ... (此方法保持不变)
         search_url = f"https://search.douban.com/book/subject_search?search_text={keyword}&cat=1001"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -365,15 +403,17 @@ class BookModel:
                 books_results.append({'title': title, 'link': link})
         return books_results
 
+
     @classmethod
     def initialize_db_and_data(cls):
         """
-        初始化 MongoDB 连接并导入数据
+        初始化 MongoDB 连接和 MinIO 客户端，并导入数据。
         """
-        print(f"{datetime.now()} Attempting to initialize MongoDB connection and import data...")
+        print(f"{datetime.now()} Attempting to initialize MongoDB connection, MinIO client and import data...")
         collection = cls.get_collection()
-        if collection is not None:
-            print(f"{datetime.now()} MongoDB connection established. Checking for data...")
+        minio_client = cls.get_minio_client() # 初始化 MinIO 客户端
+        if collection is not None and minio_client is not None:
+            print(f"{datetime.now()} MongoDB and MinIO connections established. Checking for data...")
             try:
                 if collection.count_documents({}) == 0:
                     print(f"{datetime.now()} Importing data from CSV...")
@@ -385,26 +425,22 @@ class BookModel:
                 print(f"{datetime.now()} Error checking collection: {e}")
                 return False
         else:
-            print(f"{datetime.now()} MongoDB connection failed at startup. Data import skipped.")
+            print(f"{datetime.now()} MongoDB or MinIO connection failed at startup. Data import skipped.")
             return False
-
-    # --- 新增用于首页推荐和榜单的方法 ---
 
     @classmethod
     def get_popular_books(cls, limit=4):
+        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 热门书籍：基于 'rating' 和 'numRatings' 综合排序，且有封面图
-            # 聚合管道实现更复杂的排序，例如 (rating * numRatings) 作为一个指标
-            # 或者简单地按 numRatings 降序，rating 降序
             books = list(collection.find(
                 {"coverImg": {"$ne": None}, "rating": {"$ne": None}, "numRatings": {"$ne": None}},
                 {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'rating': 1, 'numRatings': 1}
             ).sort([
-                ('numRatings', -1), # 首先按评分人数降序
-                ('rating', -1)      # 然后按平均评分降序
+                ('numRatings', -1),
+                ('rating', -1)
             ]).limit(limit))
             return books, None
         except Exception as e:
@@ -413,18 +449,16 @@ class BookModel:
 
     @classmethod
     def get_new_books(cls, limit=5):
+        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 新书榜：基于 'publishDate' 降序，且有封面图
-            # 需要处理 publishDate 字段的格式，如果存储为字符串，需要排序时注意
-            # 最佳实践是将其存储为 ISODate 类型
             books = list(collection.find(
                 {"coverImg": {"$ne": None}, "publishDate": {"$ne": None}},
                 {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'publishDate': 1}
             ).sort([
-                ('publishDate', -1) # 按出版日期降序
+                ('publishDate', -1)
             ]).limit(limit))
             return books, None
         except Exception as e:
@@ -433,17 +467,16 @@ class BookModel:
 
     @classmethod
     def get_top_rated_books(cls, limit=5):
+        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 高分榜：基于 'rating' 降序，且有封面图和足够的评分人数
-            # 可以设置一个最低评分人数门槛，避免只有少数人高评导致不准确
             books = list(collection.find(
-                {"coverImg": {"$ne": None}, "rating": {"$ne": None}, "numRatings": {"$gte": 500}}, # 假设至少有500人评分
+                {"coverImg": {"$ne": None}, "rating": {"$ne": None}, "numRatings": {"$gte": 500}},
                 {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'rating': 1, 'numRatings': 1}
             ).sort([
-                ('rating', -1) # 按平均评分降序
+                ('rating', -1)
             ]).limit(limit))
             return books, None
         except Exception as e:
@@ -452,39 +485,32 @@ class BookModel:
 
     @classmethod
     def get_personalized_books(cls, user_id=None, limit=4):
+        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 这是一个简单的个性化推荐占位符
-            # 在没有用户行为数据的情况下，可以随机选择一些非热门书籍
-            # 或者根据用户喜爱的 genres 进行简单的筛选
-            
-            # 首先获取一些热门书籍的ID，以便排除它们，让个性化推荐看起来“不同”
-            popular_books, _ = cls.get_popular_books(limit=limit * 2) # 获取多一点，确保随机选择时有足够选择
-            popular_book_ids = [book.get('id') for book in popular_books if book.get('id')]
+            popular_books, _ = cls.get_popular_books(limit=limit * 2)
+            popular_book_ids = [book.get('bookId') for book in popular_books if book.get('bookId')]
 
-            # 随机从所有有封面且ID不在热门列表中的书籍中选择
-            # 实际应用中，这里应该加入用户偏好、历史阅读等复杂逻辑
             query = {"coverImg": {"$ne": None}}
             if popular_book_ids:
-                query["id"] = {"$nin": popular_book_ids} # 排除热门书籍
+                query["bookId"] = {"$nin": popular_book_ids}
 
-            # 使用 aggregate 管道进行随机采样，更适合大数据量
             pipeline = [
                 {"$match": query},
-                {"$sample": {"size": limit}}, # 随机采样指定数量
+                {"$sample": {"size": limit}},
                 {"$project": {
-                    '_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1,
+                    '_id': 0, 'bookId': 1, 'title': 1, 'author': 1,
                     'genres': 1, 'coverImg': 1, 'rating': 1
                 }}
             ]
-            
+
             books = list(collection.aggregate(pipeline))
-            
-            if not books and popular_books: # 如果排除热门后没找到，就从热门里随机选
+
+            if not books and popular_books:
                 books = random.sample(popular_books, min(limit, len(popular_books)))
-                
+
             return books, None
         except Exception as e:
             print(f"Error fetching personalized books from MongoDB: {e}")
@@ -492,19 +518,17 @@ class BookModel:
 
     @classmethod
     def get_daily_book(cls):
+        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
         try:
-            # 每日一书：可以每天随机选择一本，或者实现更复杂的逻辑
-            # 使用日期作为随机种子，确保一天内多次请求返回同一本书
             today = datetime.now().day
-            
-            # 确保书籍有封面图
-            books_with_cover = list(collection.find({"coverImg": {"$ne": None}}, {'_id': 0, 'id': 1, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'description': 1, 'rating':1}))
-            
+
+            books_with_cover = list(collection.find({"coverImg": {"$ne": None}}, {'_id': 0, 'bookId': 1, 'title': 1, 'author': 1, 'genres': 1, 'coverImg': 1, 'description': 1, 'rating':1}))
+
             if books_with_cover:
-                random.seed(today) # 使用当天的日期作为随机种子
+                random.seed(today)
                 selected_book = random.choice(books_with_cover)
                 return selected_book, None
             else:
@@ -512,3 +536,83 @@ class BookModel:
         except Exception as e:
             print(f"Error fetching daily book from MongoDB: {e}")
             return None, "Failed to retrieve daily book"
+
+    # --- MinIO 文件处理方法 (替换之前的 save_epub_file) ---
+    @classmethod
+    def upload_epub_to_minio(cls, file, book_id):
+        """
+        上传 EPUB 文件到 MinIO 并返回公开访问链接。
+        参数:
+            file (werkzeug.datastructures.FileStorage): 上传的文件对象。
+            book_id (str): 书籍的唯一ID，用于命名 MinIO 中的对象。
+        返回:
+            tuple: (public_url, error_message)
+        """
+        minio_client = cls.get_minio_client()
+        if minio_client is None:
+            return None, "MinIO client not initialized. Cannot upload file."
+
+        # 使用 book_id 作为 MinIO 中的对象名称，确保唯一性
+        # 如果文件类型不是 .epub，确保添加正确的扩展名
+        object_name = f"{book_id}.epub"
+
+        # Flask 的 FileStorage 对象可以直接传递给 MinIO 的 put_object
+        try:
+            # MinIO 的 put_object 需要文件大小，file.seek(0, os.SEEK_END) 获取大小
+            # file.seek(0) 重置文件指针到开头
+            file.seek(0, os.SEEK_END)
+            file_size = file.tell()
+            file.seek(0) # 重置文件指针到开头
+
+            minio_client.put_object(
+                Config.MINIO_BUCKET_NAME,
+                object_name,
+                file,
+                file_size, # 必须提供文件大小
+                content_type="application/epub+zip" # 明确指定 MIME 类型
+            )
+            print(f"{datetime.now()} Successfully uploaded {object_name} to MinIO bucket {Config.MINIO_BUCKET_NAME}")
+
+            # 生成 MinIO 的公开访问 URL
+            # 对于 MinIO，通常是 http://<MinIO_ENDPOINT>/<bucket_name>/<object_name>
+            # 在 Docker Compose 环境中，MinIO_ENDPOINT 是 `minio:9000`
+            # 但前端需要通过 Docker 宿主机的 IP 或配置好的域名来访问
+            # 这里我们返回的 URL 应该是前端可直接访问的，所以用 host:port
+            # 如果是本地开发，MinIO 通常在 localhost:9000
+            # 如果在部署到服务器后，minio 服务会暴露在宿主机的 9000 端口
+            # 那么前端访问地址会是 http://your_server_ip:9000/epub-books/bookId.epub
+            # 更好的做法是在配置中定义一个 PUBLIC_MINIO_ENDPOINT
+            public_minio_endpoint = os.getenv('PUBLIC_MINIO_ENDPOINT', f"http://{Config.MINIO_ENDPOINT}")
+            # 如果 Config.MINIO_SECURE 为 True，则应为 https
+            if Config.MINIO_SECURE:
+                 public_minio_endpoint = public_minio_endpoint.replace("http://", "https://")
+
+            # 确保端口正确暴露在宿主机上，例如 9000 端口
+            # 假设你希望前端通过宿主机的 9000 端口访问 MinIO
+            minio_host_port = Config.MINIO_ENDPOINT.split(':')[0] + ":" + str(9002) # 假设MinIO的外部端口总是9000
+            
+            # 使用 PUBLIC_MINIO_ENDPOINT 来构造前端可访问的链接
+            # 注意：这里需要根据实际部署环境来决定 MinIO 的可访问地址
+            # 如果你的前端和后端都在同一个 Docker 网络中，那么前端直接用 http://minio:9000 就行
+            # 但通常前端是浏览器，它需要访问宿主机暴露出来的端口
+            # 最简单的处理是：后端返回一个相对路径或者一个简化的路径，前端自己拼接 MinIO 基础 URL
+            # 或者后端直接返回一个带有 MinIO 宿主机端口的完整 URL
+
+            # 为了简化，我们假设前端可以直接访问 MinIO 的公开端口 (9000)
+            # 在 docker-compose 中，MinIO 端口映射为 "9000:9000"，所以外部访问也是 9000
+            minio_base_url = f"{'https' if Config.MINIO_SECURE else 'http'}://{Config.MONGO_HOST if Config.MONGO_HOST != 'mongodb' else 'localhost'}:9002" # 适配本地和 docker-compose
+            # 实际部署时，你可能需要用服务器的公共 IP 或域名替换 localhost
+            public_url = f"{minio_base_url}/{Config.MINIO_BUCKET_NAME}/{object_name}"
+
+
+            # 更好的方案：在Config中增加一个 PUBLIC_MINIO_BASE_URL
+            # public_url = f"{Config.PUBLIC_MINIO_BASE_URL}/{Config.MINIO_BUCKET_NAME}/{object_name}"
+            # 然后在 .env 或 Config 中设置 PUBLIC_MINIO_BASE_URL=http://localhost:9000 (本地) 或 http://your_domain:9000 (生产)
+
+            return public_url, None
+        except S3Error as e:
+            print(f"{datetime.now()} MinIO S3Error during upload for {object_name}: {e}")
+            return None, f"MinIO S3 error: {str(e)}"
+        except Exception as e:
+            print(f"{datetime.now()} Error during MinIO upload for {object_name}: {e}")
+            return None, f"Failed to upload EPUB to MinIO: {str(e)}"

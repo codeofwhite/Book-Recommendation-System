@@ -8,11 +8,11 @@
       <p><small>{{ error }}</small></p>
       <button @click="goBack">‹‹</button>
     </div>
-    
+
     <div v-if="!isLoading && !error" class="reader-header">
       <button @click="goBack" class="back-button">‹‹</button>
     </div>
-    
+
     <div id="epub-viewer-area" v-show="!isLoading && !error" :class="{ 'eye-protect-mode': isEyeProtectMode }"></div>
 
     <div v-if="!isLoading && !error" class="epub-reader-controls">
@@ -20,14 +20,8 @@
 
       <div class="center-controls">
         <div class="page-jump-controls">
-          <input
-            type="number"
-            v-model.number="targetLocation"
-            @keyup.enter="jumpToLocation"
-            class="page-input"
-            :min="1"
-            :max="totalPages"
-          />
+          <input type="number" v-model.number="targetLocation" @keyup.enter="jumpToLocation" class="page-input" :min="1"
+            :max="totalPages" />
           <button @click="jumpToLocation" class="jump-button">Jump to</button>
           <span v-if="totalPages > 0" class="page-display">/ {{ totalPages }} page</span>
         </div>
@@ -78,6 +72,7 @@ const prevPage = () => rendition.value?.prev();
 
 const jumpToLocation = () => {
   if (!book.value || !targetLocation.value) return;
+  // cfiFromLocation 接收基于 0 的索引，所以 targetLocation - 1
   const cfi = book.value.locations.cfiFromLocation(targetLocation.value - 1);
   rendition.value.display(cfi);
 };
@@ -88,6 +83,7 @@ const setFontSize = (size) => {
 };
 
 const onRelocated = (location) => {
+  // location.start.location 是基于 0 的索引，所以 +1
   targetLocation.value = location.start.location + 1;
 };
 
@@ -106,34 +102,43 @@ const handleKeyPress = (event) => {
 
 /**
  * 加载 EPUB 文件
+ * @param {string} epubFileUrl - 要加载的 EPUB 文件的完整 URL (来自 MinIO)
  */
-const loadEpub = async (bookId) => {
+const loadEpub = async (epubFileUrl) => { // <-- **这里改变：现在接收 epubFileUrl**
   isLoading.value = true;
   error.value = null;
 
+  if (!epubFileUrl) { // <-- **添加检查，确保 URL 存在**
+    error.value = '未提供EPUB文件链接。';
+    isLoading.value = false;
+    return;
+  }
+
   try {
-    const epubFileName = 'Twilight.epub';
-    const epubFileUrl = `/TestEpub/${epubFileName}`;
-    
-    book.value = ePub(epubFileUrl);
+    // const epubFileName = 'Twilight.epub'; // <-- **移除此行，不再硬编码文件名**
+    // const epubFileUrl = `/TestEpub/${epubFileName}`; // <-- **移除此行，直接使用传入的 epubFileUrl**
+
+    book.value = ePub(epubFileUrl); // <-- **使用传入的 epubFileUrl**
     await book.value.ready;
 
-    await book.value.locations.generate(1024);
+    // 生成位置通常在 EPUB 内容完全加载并渲染后进行
+    // 增加一个延时或者等待渲染完成的机制，可能有助于更准确地获取总页数
+    await book.value.locations.generate(1024); // 1024 是一个粒度参数，表示每隔多少字符生成一个位置
     totalPages.value = book.value.locations.length();
 
     rendition.value = book.value.renderTo('epub-viewer-area', {
       width: '100%',
       height: '100%',
-      spread: 'auto',
-      allowScriptedContent: true,
+      spread: 'auto', // 或 'always', 'none'
+      allowScriptedContent: true, // 如果 EPUB 包含 JavaScript, 可能需要
     });
-    
+
     rendition.value.on('relocated', onRelocated);
     rendition.value.themes.fontSize(currentFontSize.value);
     await rendition.value.display();
 
-    targetLocation.value = 1;
-    jumpToLocation();
+    targetLocation.value = 1; // 初始显示第一页
+    // jumpToLocation(); // display() 已经会显示第一页，这里可以不强制跳转
   } catch (err) {
     console.error('EPUB加载错误:', err);
     error.value = `加载失败: ${err.message}.`;
@@ -146,10 +151,14 @@ const goBack = () => router.back();
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyPress);
-  const bookId = route.params.bookId;
-  if (bookId) loadEpub(bookId);
-  else {
-    error.value = '未提供书籍ID。';
+  // 从路由参数中获取 epubUrl
+  // 注意：如果你之前在路由跳转时对 epubUrl 进行了编码 (encodeURIComponent)，这里需要解码
+  const epubUrl = route.params.epubUrl ? decodeURIComponent(route.params.epubUrl) : null;
+
+  if (epubUrl) { // <-- **检查 epubUrl 是否存在**
+    loadEpub(epubUrl); // <-- **调用 loadEpub 并传入 epubUrl**
+  } else {
+    error.value = '未提供EPUB文件链接。';
     isLoading.value = false;
   }
 });
@@ -185,7 +194,8 @@ onBeforeUnmount(() => {
 
 .back-button {
   position: absolute;
-  top: 1rem; left: 0.2rem;
+  top: 1rem;
+  left: 0.2rem;
   background-color: transparent;
   color: black;
   border: none;
@@ -201,7 +211,7 @@ onBeforeUnmount(() => {
 
 .back-button:hover {
   background-color: #8d6e63;
-  color:white
+  color: white
 }
 
 #epub-viewer-area {
@@ -209,7 +219,7 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 1200px;
   height: 90vh;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   background-color: #ffffff;
   transition: background-color 0.3s ease;
 }
@@ -251,11 +261,13 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .pagination-button:hover {
   background-color: #6b5346;
 }
 
-.page-jump-controls, .font-size-controls {
+.page-jump-controls,
+.font-size-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -268,11 +280,13 @@ onBeforeUnmount(() => {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
 .page-input::-webkit-outer-spin-button,
 .page-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 .page-input[type=number] {
   -moz-appearance: textfield;
 }
@@ -331,6 +345,7 @@ onBeforeUnmount(() => {
   text-align: center;
   padding: 20px;
 }
+
 .status-message.error {
   color: #D8000C;
 }
