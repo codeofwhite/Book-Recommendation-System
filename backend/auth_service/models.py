@@ -65,3 +65,127 @@ class Admin(db.Model):
 
     def __repr__(self):
         return f'<Admin {self.admin_id}>'
+    
+class UserModel:
+    """用户管理的业务逻辑类"""
+
+    @staticmethod
+    def get_all_users(search_keyword=None, page=1, per_page=10):
+        """获取所有用户，支持搜索和分页"""
+        try:
+            query = User.query
+
+            if search_keyword:
+                search_pattern = f"%{search_keyword}%"
+                query = query.filter(
+                    db.or_(
+                        User.username.like(search_pattern),
+                        User.email.like(search_pattern),
+                    )
+                )
+
+            # 分页
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+            users = [user.to_dict() for user in pagination.items]
+
+            return {
+                "users": users,
+                "total": pagination.total,
+                "pages": pagination.pages,
+                "current_page": page,
+                "per_page": per_page,
+                "has_next": pagination.has_next,
+                "has_prev": pagination.has_prev,
+            }, None
+
+        except Exception as e:
+            print(f"Error fetching users: {e}")
+            return None, str(e)
+
+    @staticmethod
+    def get_user_by_id(user_id):
+        """根据ID获取用户"""
+        try:
+            user = User.query.get(user_id)
+            if user:
+                return user.to_dict(), None
+            return None, "User not found"
+        except Exception as e:
+            print(f"Error fetching user by ID: {e}")
+            return None, str(e)
+
+    @staticmethod
+    def create_user(username, email, password):
+        """创建新用户"""
+        try:
+            # 检查用户名和邮箱是否已存在
+            if User.query.filter_by(username=username).first():
+                return None, "Username already exists"
+
+            if User.query.filter_by(email=email).first():
+                return None, "Email already exists"
+
+            # 创建新用户
+            user = User(username=username, email=email, password=password)
+
+            db.session.add(user)
+            db.session.commit()
+
+            return user.to_dict(), None
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating user: {e}")
+            return None, str(e)
+
+    @staticmethod
+    def update_user(user_id, update_data):
+        """更新用户信息"""
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                return None, "User not found"
+
+            # 更新允许的字段
+            allowed_fields = ["username", "email", "avatar_url"]
+
+            for field, value in update_data.items():
+                if field in allowed_fields and hasattr(user, field):
+                    # 检查用户名和邮箱的唯一性
+                    if field == "username" and value != user.username:
+                        if User.query.filter_by(username=value).first():
+                            return None, "Username already exists"
+
+                    if field == "email" and value != user.email:
+                        if User.query.filter_by(email=value).first():
+                            return None, "Email already exists"
+
+                    setattr(user, field, value)
+
+            db.session.commit()
+
+            return user.to_dict(), None
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating user: {e}")
+            return None, str(e)
+
+    @staticmethod
+    def delete_user(user_id):
+        """删除用户"""
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                return False, "User not found"
+
+            db.session.delete(user)
+            db.session.commit()
+
+            return True, None
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting user: {e}")
+            return False, str(e)
