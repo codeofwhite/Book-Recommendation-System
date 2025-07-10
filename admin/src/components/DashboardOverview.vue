@@ -171,7 +171,7 @@ const fetchTotalReviews = async () => {
   error.value = null
 
   try {
-    const response = await axios.get('/service-c/api/reviews?page=1&per_page=1');
+    const response = await axios.get('/service-c/api/admin/reviews?page=1&per_page=1');
 
     if (response.data && typeof response.data.total !== 'undefined') {
       totalReviews.value = response.data.total;
