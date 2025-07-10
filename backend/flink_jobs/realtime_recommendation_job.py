@@ -245,7 +245,6 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
             return 0.0
         return dot_product / (norm_a * norm_b)
 
-
     def process_element(self, value: Row, ctx: 'KeyedProcessFunction.Context'):
         if self.redis_client is None:
             logger.error(f"Redis client is not initialized for user {value.userId}. Cannot process element: {value}")
