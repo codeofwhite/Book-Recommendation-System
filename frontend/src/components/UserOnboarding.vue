@@ -1,73 +1,116 @@
 <template>
   <div class="onboarding-container">
-    <h2>完善您的个人资料</h2>
-    <p>为了给您提供更精准的图书推荐，请填写以下信息。</p>
-
-    <form @submit.prevent="submitProfile">
-      <div class="form-group">
-        <label for="age">年龄:</label>
-        <input type="number" id="age" v-model.number="profile.age" min="0" max="120" placeholder="您的年龄" />
-      </div>
-
-      <div class="form-group">
-        <label for="gender">性别:</label>
-        <select id="gender" v-model="profile.gender">
-          <option value="">请选择</option>
-          <option value="male">男</option>
-          <option value="female">女</option>
-          <option value="other">其他</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="location">所在地区:</label>
-        <input type="text" id="location" v-model="profile.location" placeholder="例如：台北市" />
-      </div>
-
-      <div class="form-group">
-        <label for="occupation">职业:</label>
-        <input type="text" id="occupation" v-model="profile.occupation" placeholder="例如：学生、工程师" />
-      </div>
-
-      <div class="form-group">
-        <label for="interest_tags">兴趣标签 (逗号分隔):</label>
-        <input type="text" id="interest_tags" v-model="profile.interest_tags" placeholder="例如：历史,科幻,编程" />
-      </div>
-
-      <div class="form-group">
-        <label>偏好图书类型:</label>
-        <div>
-          <label><input type="checkbox" value="fiction" v-model="preferredBookTypesArray"> 小说</label>
-          <label><input type="checkbox" value="non-fiction" v-model="preferredBookTypesArray"> 非小说</label>
-          <label><input type="checkbox" value="biography" v-model="preferredBookTypesArray"> 传记</label>
+    <div class="form-wrapper">
+      <header class="header">
+        <div class="title-container">
+          <span class="icon" aria-hidden="true">📖</span>
+          <h1>BookHug</h1>
         </div>
-      </div>
+        <h2>西方经典文学阅读档案</h2>
+        <p class="subtitle">让我们了解您的阅读偏好，为您推荐最契合心灵的经典名著</p>
+      </header>
 
-      <div class="form-group">
-        <label for="preferred_authors">偏好作者 (逗号分隔):</label>
-        <input type="text" id="preferred_authors" v-model="profile.preferred_authors" placeholder="例如：鲁迅,村上春树" />
-      </div>
+      <form @submit.prevent="submitProfile">
+        <section class="form-section" aria-labelledby="basic-info-title">
+          <h3 class="section-title" id="basic-info-title"><span>基本信息</span></h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="age">年龄</label>
+              <input type="number" id="age" v-model.number="profile.age" min="0" max="120" placeholder="请输入您的年龄" />
+            </div>
+            <div class="form-group">
+              <label for="gender">性别</label>
+              <select id="gender" v-model="profile.gender" required>
+                <option disabled value="">请选择</option>
+                <option value="male">男</option>
+                <option value="female">女</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+          </div>
+        </section>
 
-      <div class="form-group">
-        <label for="preferred_genres">偏好题材 (逗号分隔):</label>
-        <input type="text" id="preferred_genres" v-model="profile.preferred_genres" placeholder="例如：推理,奇幻,悬疑" />
-      </div>
+        <section class="form-section" aria-labelledby="background-info-title">
+          <h3 class="section-title" id="background-info-title"><span>背景信息</span></h3>
+          <div class="form-group full-width">
+            <label for="occupation">职业/身份</label>
+            <input type="text" id="occupation" v-model="profile.occupation" placeholder="例如：文学系学生、教师、研究员" />
+          </div>
+          <div class="form-group full-width">
+            <label for="location">所在地区</label>
+            <input type="text" id="location" v-model="profile.location" placeholder="例如：北京、上海、纽约" />
+          </div>
+        </section>
 
-      <div class="form-group">
-        <label>偏好阅读时长:</label>
-        <div>
-          <label><input type="radio" value="short" v-model="profile.preferred_reading_duration"> 短 (1小时内)</label>
-          <label><input type="radio" value="medium" v-model="profile.preferred_reading_duration"> 中 (1-3小时)</label>
-          <label><input type="radio" value="long" v-model="profile.preferred_reading_duration"> 长 (3小时以上)</label>
+        <section class="form-section" aria-labelledby="reading-preference-title">
+          <h3 class="section-title" id="reading-preference-title"><span>阅读偏好</span></h3>
+          <div class="form-group full-width">
+            <label>偏好的文学类型</label>
+            <div class="checkbox-group" role="group" aria-labelledby="reading-preference-title">
+              <label class="elegant-checkbox">
+                <input type="checkbox" value="fiction" v-model="preferredBookTypesArray"> <span>小说</span>
+              </label>
+              <label class="elegant-checkbox">
+                <input type="checkbox" value="non-fiction" v-model="preferredBookTypesArray"> <span>非小说</span>
+              </label>
+              <label class="elegant-checkbox">
+                <input type="checkbox" value="biography" v-model="preferredBookTypesArray"> <span>传记</span>
+              </label>
+              <label class="elegant-checkbox">
+                <input type="checkbox" value="poetry" v-model="preferredBookTypesArray"> <span>诗歌</span>
+              </label>
+              <label class="elegant-checkbox">
+                <input type="checkbox" value="drama" v-model="preferredBookTypesArray"> <span>戏剧</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="preferred_authors">喜爱的作家</label>
+            <input type="text" id="preferred_authors" v-model="profile.preferred_authors"
+              placeholder="例如：莎士比亚、简·奥斯汀、托尔斯泰" />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="preferred_genres">偏好的文学流派</label>
+            <input type="text" id="preferred_genres" v-model="profile.preferred_genres"
+              placeholder="例如：浪漫主义、现实主义、哥特小说" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>通常的阅读时长</label>
+            <div class="radio-group" role="radiogroup" aria-label="通常的阅读时长">
+              <label class="elegant-radio">
+                <input type="radio" value="short" v-model="profile.preferred_reading_duration"> <span>短篇 (1小时内)</span>
+              </label>
+              <label class="elegant-radio">
+                <input type="radio" value="medium" v-model="profile.preferred_reading_duration"> <span>中篇 (1-3小时)</span>
+              </label>
+              <label class="elegant-radio">
+                <input type="radio" value="long" v-model="profile.preferred_reading_duration"> <span>长篇 (3小时以上)</span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section" aria-labelledby="interests-title">
+          <h3 class="section-title" id="interests-title"><span>兴趣与目标</span></h3>
+          <div class="form-group full-width">
+            <label for="interest_tags">感兴趣的文学主题</label>
+            <input type="text" id="interest_tags" v-model="profile.interest_tags" placeholder="例如：人性探索、社会批判、爱情、成长" />
+          </div>
+        </section>
+
+        <div class="form-footer">
+          <button type="submit" :disabled="loading" class="submit-btn">
+            {{ loading ? '正在提交...' : '完成我的阅读档案' }}
+            <span v-if="!loading" style="margin-left: 8px; font-size: 1.2em; line-height: 1;">📖</span>
+          </button>
+          <p v-if="error" class="message error">{{ error }}</p>
+          <p v-if="success" class="message success">{{ success }}</p>
         </div>
-      </div>
-
-      <button type="submit" :disabled="loading">
-        {{ loading ? '提交中...' : '提交问卷' }}
-      </button>
-      <p v-if="error" class="error-message">{{ error }}</p>
-      <p v-if="success" class="success-message">{{ success }}</p>
-    </form>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -202,84 +245,392 @@ export default {
 </script>
 
 <style scoped>
-/* 你的样式代码保持不变 */
+/* Copied and adapted from the final HTML version */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
 .onboarding-container {
-  max-width: 600px;
-  margin: 50px auto;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 15px;
+  min-height: 100vh;
+  background: #f8f4ec;
+  font-family: 'Lora', 'Georgia', serif;
+}
+
+.form-wrapper {
+  max-width: 800px;
+  width: 100%;
+  background: linear-gradient(145deg, #ede6d1, #d9ceb4);
+  border-radius: 12px;
+  padding: 40px 45px 50px;
+  box-sizing: border-box;
+  box-shadow:
+    inset 0 0 40px #c5b88c88,
+    0 15px 30px rgba(149, 134, 110, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes glowMove {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.header {
   text-align: center;
+  margin-bottom: 40px;
+  border-bottom: 1px solid #d3cfa5;
+  padding-bottom: 30px;
 }
 
-.onboarding-container h2 {
-  color: #333;
-  margin-bottom: 20px;
+.title-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 15px;
 }
 
-.onboarding-container p {
-  color: #666;
-  margin-bottom: 30px;
+.title-container .icon {
+  font-size: 3.3rem;
+  color: #bfae50;
+  text-shadow: 0 0 8px #d6ca73cc;
+  filter: none;
+  user-select: none;
+  line-height: 1;
+}
+
+.title-container h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: linear-gradient(270deg, #9c8a48, #b9a95e, #9c8a48);
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glowMove 8s ease-in-out infinite;
+  margin: 0;
+  user-select: none;
+  text-shadow:
+    0 0 4px rgba(120, 100, 30, 0.5),
+    0 0 15px rgba(160, 145, 60, 0.4);
+  line-height: 1;
+}
+
+.header h2 {
+  font-size: 1.8rem;
+  color: #8c7f54;
+  font-weight: 500;
+  margin: 0 0 10px 0;
+  text-shadow: 0 0 6px #a4986d55;
+}
+
+.header p.subtitle {
+  font-style: italic;
+  color: #a89f82;
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 1.2px;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #7a6f46;
+  text-align: center;
+  margin: 45px 0 30px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.section-title::before,
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background-image: linear-gradient(to right, transparent, #b5ab7e88, transparent);
+  filter: drop-shadow(0 0 1.2px #a99f6fac);
+}
+
+.section-title span {
+  margin: 0 30px;
+  text-shadow: 0 0 3px #c1b996cc;
+}
+
+.form-row {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
 }
 
 .form-group {
-  margin-bottom: 20px;
-  text-align: left;
+  flex: 1 1 45%;
+  margin-bottom: 28px;
+}
+
+.form-group.full-width {
+  flex-basis: 100%;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: bold;
-  color: #555;
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-sizing: border-box;
-  /* 确保内边距和边框包含在宽度内 */
-}
-
-.form-group div label {
-  display: inline-block;
-  margin-right: 15px;
-  font-weight: normal;
-}
-
-button {
-  width: 100%;
-  padding: 12px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  color: #7a6e4fdd;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-shadow: 0 0 1.8px #7b714a99;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  user-select: none;
 }
 
-button:hover:not(:disabled) {
-  background-color: #0056b3;
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  padding: 15px 22px;
+  border: 2px solid #b3a574cc;
+  border-radius: 8px;
+  background-color: #fef9f1;
+  font-family: 'Lora', serif;
+  font-size: 1.1rem;
+  color: #6b5e3b;
+  box-shadow:
+    inset 0 2px 6px #c9be8b88;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+  box-sizing: border-box;
 }
 
-button:disabled {
-  background-color: #cccccc;
+input::placeholder {
+  color: #b1a978bb;
+  font-style: italic;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #f6e588;
+  box-shadow:
+    0 0 12px 3px #f6e588bb,
+    inset 0 2px 12px 1px #f8f4b8cc;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a09244' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 18px center;
+  background-size: 1.3em;
+  cursor: pointer;
+}
+
+.checkbox-group,
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 30px;
+  padding-top: 6px;
+}
+
+.elegant-checkbox,
+.elegant-radio {
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  cursor: pointer;
+  color: #6b5e3b;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.elegant-checkbox:hover,
+.elegant-radio:hover {
+  color: #4a3d2f;
+}
+
+.elegant-checkbox input,
+.elegant-radio input {
+  margin-right: 12px;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #acaa76;
+  border-radius: 5px;
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  background-color: #fdf9e6;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 3px #cdc98f;
+  flex-shrink: 0;
+}
+
+.elegant-radio input {
+  border-radius: 50%;
+}
+
+.elegant-checkbox input:checked,
+.elegant-radio input:checked {
+  background: radial-gradient(circle at center, #fff9a9, #d1ca76);
+  border-color: #e8dd7d;
+  transform: scale(1.1);
+  box-shadow:
+    0 0 8px 1.2px #e8dd7daa,
+    inset 0 0 6px 1px #fffca0cc;
+}
+
+.elegant-checkbox input:checked+span::after {
+  content: '✔';
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  /* Adjust to center inside the box */
+  transform: translate(-50%, -50%);
+  color: #6b602a;
+  font-size: 18px;
+  text-shadow: 0 0 3px #c0b352;
+  user-select: none;
+  pointer-events: none;
+  /* Make sure it doesn't block clicks */
+}
+
+.elegant-radio input:checked+span::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6b602a;
+  top: 50%;
+  left: 11px;
+  /* Adjust to center */
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px 1px #c0b352cc;
+  pointer-events: none;
+}
+
+.elegant-checkbox span,
+.elegant-radio span {
+  position: relative;
+  padding-left: 1.8em;
+  /* Space for the custom checkbox/radio */
+}
+
+/* We must override the native checkmark/dot */
+.elegant-checkbox input:checked::after,
+.elegant-radio input:checked::after {
+  content: none;
+}
+
+
+.form-footer {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #dfd486, #b29e45);
+  color: #433916;
+  border: none;
+  padding: 17px 55px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  font-family: 'Lora', serif;
+  box-shadow: 0 0 12px 0 #d7ce87aa;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-btn::after {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle at center, #faf7cfa0 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.submit-btn:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f0eea9, #bdb34e);
+  box-shadow: 0 0 22px 4px #dfd97fbb;
+  transform: translateY(-3px);
+}
+
+.submit-btn:disabled {
+  background: #c1bc88;
   cursor: not-allowed;
+  box-shadow: none;
+  color: #7b7833;
+  transform: none;
 }
 
-.error-message {
-  color: #dc3545;
-  margin-top: 10px;
+.message {
+  margin-top: 28px;
+  font-size: 1.15rem;
+  font-style: italic;
+  text-align: center;
+  user-select: none;
+  min-height: 1.5em;
+  line-height: 1.4em;
+  filter: drop-shadow(0 0 1px #9c955f);
 }
 
-.success-message {
-  color: #28a745;
-  margin-top: 10px;
+.message.error {
+  color: #c76060;
+  text-shadow: 0 0 4px #ad4b4b;
+}
+
+.message.success {
+  color: #7e9d4a;
+  text-shadow: 0 0 6px #91a657;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-group {
+    flex-basis: 100%;
+    margin-bottom: 25px;
+  }
+
+  .onboarding-container {
+    padding: 20px 10px;
+  }
+
+  .form-wrapper {
+    padding: 30px 25px 40px;
+  }
 }
 </style>

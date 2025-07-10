@@ -8,7 +8,11 @@
           <div class="user-info" v-if="currentUser">
             <div class="user-avatar">{{ currentUser.username.charAt(0).toUpperCase() }}</div>
             <span class="user-name">{{ currentUser.username }}</span>
+            <button @click="handleLogout" class="logout-button">
+              🚪 Logout
+            </button>
           </div>
+
         </div>
         <nav class="sidebar-nav">
           <ul>
@@ -39,11 +43,6 @@
             </li>
           </ul>
         </nav>
-        <div class="sidebar-footer">
-          <button @click="handleLogout" class="logout-button">
-            🚪 Logout
-          </button>
-        </div>
       </aside>
 
       <main class="main-content">
@@ -231,14 +230,8 @@ onUnmounted(() => {
   transform: translateX(4px);
 }
 
-.sidebar-footer {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #34495e;
-}
-
 .logout-button {
-  width: 100%;
+  width: 40%;
   padding: 12px 16px;
   background-color: #e74c3c;
   color: white;
@@ -300,15 +293,15 @@ onUnmounted(() => {
   .sidebar {
     width: 240px;
   }
-  
+
   .main-header {
     padding: 16px 20px;
   }
-  
+
   .main-header h1 {
     font-size: 1.4em;
   }
-  
+
   .content-area {
     padding: 20px;
   }

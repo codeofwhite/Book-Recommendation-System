@@ -22,6 +22,16 @@
             <span class="nav-text">Critiques & Reflections</span>
             <span class="nav-decoration">〰</span>
           </li>
+          <li @click="activeSection = 'my-reviews'" :class="{ active: activeSection === 'my-reviews' }">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">My Reviews</span>
+            <span class="nav-decoration">〰</span>
+          </li>
+          <li @click="activeSection = 'my-comments'" :class="{ active: activeSection === 'my-comments' }">
+            <span class="nav-icon">💬</span>
+            <span class="nav-text">My Comments</span>
+            <span class="nav-decoration">〰</span>
+          </li>
         </ul>
         <div class="nav-footer">
           <p class="chinese-proverb">"The path to learning is arduous, but diligence is the way."</p>
@@ -49,17 +59,6 @@
             <div class="avatar-frame">
               <img :src="user.avatar_url || 'https://via.placeholder.com/150'" alt="User Effigy" class="user-avatar" />
               <div class="frame-decoration"></div>
-            </div>
-            <div class="avatar-controls">
-              <label class="elegant-file-input">
-                <span class="file-input-icon">🖼️</span>
-                <span>Select Effigy</span>
-                <input type="file" @change="handleAvatarChange" accept="image/*" hidden />
-              </label>
-              <button @click="uploadAvatar" class="elegant-button">
-                <span class="button-icon">⬆️</span>
-                <span>Upload Effigy</span>
-              </button>
             </div>
           </div>
 
@@ -166,6 +165,111 @@
             </div>
           </div>
         </section>
+
+        <section v-show="activeSection === 'my-reviews'" class="chapter-section">
+          <div class="section-header">
+            <h2 class="chapter-title">
+              <span class="title-icon">📝</span>
+              <span>My Published Reviews ({{ myReviews.length }} Entries)</span>
+            </h2>
+            <div class="section-divider"></div>
+          </div>
+
+          <div v-if="myReviews.length === 0" class="empty-state">
+            <div class="empty-icon">🤷‍♀️</div>
+            <p class="empty-text">You have not yet inscribed any reviews.</p>
+          </div>
+
+          <div v-else class="review-container">
+            <div v-for="review in myReviews" :key="review.id" @click="goToBookDetails(review.bookId)"
+              class="review-card">
+              <div class="review-header">
+                <div class="reviewer-avatar-wrapper">
+                  <img :src="user.avatar_url || 'https://via.placeholder.com/50'" alt="Your Likeness"
+                    class="reviewer-avatar" />
+                </div>
+                <div class="reviewer-info">
+                  <span class="reviewer-nickname">Authored by: {{ user.nickname || 'You' }}</span>
+                  <div class="review-meta">
+                    <span class="review-rating">
+                      <span v-for="i in 5" :key="i" class="star" :class="{ filled: i <= review.rating }">★</span>
+                    </span>
+                    <span class="review-time">{{ formatDate(review.postTime) }}</span>
+                    <span class="review-status" :class="review.status">{{ review.status }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="review-content">
+                <p class="review-text">{{ truncateContent(review.content) }}</p>
+              </div>
+              <div class="review-footer">
+                <span class="review-action">
+                  <span class="action-icon">👍</span>
+                  <span class="action-count">{{ review.likeCount || 0 }}</span>
+                </span>
+              </div>
+              <div class="review-corner"></div>
+            </div>
+          </div>
+          <div v-if="myReviewsPagination.pages > 1" class="pagination-controls">
+            <button @click="fetchMyReviews(myReviewsPagination.current_page - 1)"
+              :disabled="!myReviewsPagination.has_prev" class="elegant-button">Previous</button>
+            <span>Page {{ myReviewsPagination.current_page }} of {{ myReviewsPagination.pages }}</span>
+            <button @click="fetchMyReviews(myReviewsPagination.current_page + 1)"
+              :disabled="!myReviewsPagination.has_next" class="elegant-button">Next</button>
+          </div>
+        </section>
+        <section v-show="activeSection === 'my-comments'" class="chapter-section">
+          <div class="section-header">
+            <h2 class="chapter-title">
+              <span class="title-icon">💬</span>
+              <span>My Published Comments ({{ myComments.length }} Entries)</span>
+            </h2>
+            <div class="section-divider"></div>
+          </div>
+
+          <div v-if="myComments.length === 0" class="empty-state">
+            <div class="empty-icon">🤷‍♂️</div>
+            <p class="empty-text">You have not yet penned any comments.</p>
+          </div>
+
+          <div v-else class="comment-container">
+            <div v-for="comment in myComments" :key="comment.id" class="comment-card">
+              <div class="comment-header">
+                <div class="commenter-avatar-wrapper">
+                  <img :src="user.avatar_url || 'https://via.placeholder.com/50'" alt="Your Likeness"
+                    class="commenter-avatar" />
+                </div>
+                <div class="commenter-info">
+                  <span class="commenter-nickname">Comment by: {{ user.nickname || 'You' }}</span>
+                  <div class="comment-meta">
+                    <span class="comment-time">{{ formatDate(comment.commentTime) }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="comment-content">
+                <p class="comment-text">{{ truncateContent(comment.content) }}</p>
+              </div>
+              <div class="comment-footer">
+                <span class="comment-action">
+                  <span class="action-icon">👍</span>
+                  <span class="action-count">{{ comment.likeCount || 0 }}</span>
+                </span>
+                <span class="comment-link" @click="goToBookDetails(comment.bookId)">
+                  <span class="action-icon">📖</span> View Related Book
+                </span>
+              </div>
+              <div class="comment-corner"></div>
+            </div>
+          </div>
+          <div v-if="myCommentsPagination.pages > 1" class="pagination-controls">
+            <button @click="fetchMyComments(myCommentsPagination.current_page - 1)"
+              :disabled="!myCommentsPagination.has_prev" class="elegant-button">Previous</button>
+            <span>Page {{ myCommentsPagination.current_page }} of {{ myCommentsPagination.pages }}</span>
+            <button @click="fetchMyComments(myCommentsPagination.current_page + 1)"
+              :disabled="!myCommentsPagination.has_next" class="elegant-button">Next</button>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -193,7 +297,7 @@ export default {
   name: 'UserDashboard',
   data() {
     return {
-      activeSection: 'user-info', // 添加这一行，初始化当前活动区域
+      activeSection: 'user-info', // Initialize active section
       user: {
         user_id: '',
         nickname: '',
@@ -203,6 +307,25 @@ export default {
       },
       favoriteBooks: [],
       favoriteReviews: [],
+      // New data properties for user's own reviews and comments
+      myReviews: [],
+      myReviewsPagination: {
+        total: 0,
+        pages: 1,
+        current_page: 1,
+        per_page: 10,
+        has_next: false,
+        has_prev: false,
+      },
+      myComments: [],
+      myCommentsPagination: {
+        total: 0,
+        pages: 1,
+        current_page: 1,
+        per_page: 10,
+        has_next: false,
+        has_prev: false,
+      },
       isEditingNickname: false,
       editableNickname: '',
       selectedAvatarFile: null,
@@ -212,10 +335,27 @@ export default {
     const router = useRouter();
     return { router };
   },
+  watch: {
+    // Watch for changes in activeSection to fetch data only when the section becomes active
+    activeSection(newSection, oldSection) {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
+      if (!userId) return; // Don't fetch if no user ID
+
+      if (newSection === 'my-reviews' && this.myReviews.length === 0) {
+        this.fetchMyReviews(this.myReviewsPagination.current_page);
+      } else if (newSection === 'my-comments' && this.myComments.length === 0) {
+        this.fetchMyComments(this.myCommentsPagination.current_page);
+      }
+    },
+  },
   created() {
     this.fetchUserData();
     this.fetchFavoriteBooks();
     this.fetchFavoriteReviews();
+
+    this.fetchMyReviews(1);
+    this.fetchMyComments(1);
   },
   methods: {
     async fetchUserData() {
@@ -303,6 +443,90 @@ export default {
       } catch (error) { console.error('UserView: Error fetching favorite reviews:', error); this.favoriteReviews = []; }
     },
 
+    // --- New Method: Fetch User's Own Reviews with Pagination ---
+    async fetchMyReviews(page = 1) {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
+      if (!userId) {
+        console.warn('UserView: User ID not available for fetching my reviews.');
+        this.myReviews = [];
+        return;
+      }
+      try {
+        // 确保请求的页码不小于1
+        const targetPage = Math.max(1, page);
+        const response = await axios.get(`/service-c/api/reviews/user/${userId}`, {
+          params: { page: targetPage, per_page: this.myReviewsPagination.per_page }
+        });
+        this.myReviews = response.data.reviews;
+        this.myReviewsPagination = {
+          total: response.data.total,
+          pages: response.data.pages,
+          current_page: response.data.current_page,
+          per_page: response.data.per_page,
+          has_next: response.data.has_next,
+          has_prev: response.data.has_prev,
+        };
+        console.log("UserView: My Reviews:", this.myReviews, "Pagination:", this.myReviewsPagination);
+      } catch (error) {
+        console.error('UserView: Error fetching my reviews:', error);
+        this.myReviews = [];
+        // 在错误发生时重置分页信息
+        this.myReviewsPagination = { total: 0, pages: 1, current_page: 1, per_page: 10, has_next: false, has_prev: false };
+      }
+    },
+
+    // --- New Method: Fetch User's Own Comments with Pagination ---
+    async fetchMyComments(page = 1) {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
+      if (!userId) {
+        console.warn('UserView: User ID not available for fetching my comments.');
+        this.myComments = [];
+        return;
+      }
+      try {
+        // 确保请求的页码不小于1
+        const targetPage = Math.max(1, page);
+        // Assuming your comment API endpoint for user's comments is /comments/user/<user_id>
+        const response = await axios.get(`/service-c/api/comments/user/${userId}`, {
+          params: { page: targetPage, per_page: this.myCommentsPagination.per_page }
+        });
+        this.myComments = response.data.comments;
+        this.myCommentsPagination = {
+          total: response.data.total,
+          pages: response.data.pages,
+          current_page: response.data.current_page,
+          per_page: response.data.per_page,
+          has_next: response.data.has_next,
+          has_prev: response.data.has_prev,
+        };
+
+        // 对于评论，您可能希望获取相关的图书详细信息，如果 `comment.bookId` 没有直接返回的话。
+        // 我将添加一个占位符，以使 `goToBookDetails` 能够正常工作。
+        this.myComments = await Promise.all(this.myComments.map(async comment => {
+          let bookId = null;
+          if (comment.reviewId) { // 假设评论与书评关联，并且可以通过书评找到图书ID
+            try {
+              const reviewResponse = await axios.get(`/service-c/api/reviews/${comment.reviewId}`);
+              bookId = reviewResponse.data.bookId; // 假设书评对象中包含 bookId
+            } catch (error) {
+              console.warn(`Could not fetch review for comment ${comment.id}:`, error);
+            }
+          }
+          return { ...comment, bookId }; // 添加 bookId 以便导航
+        }));
+
+        console.log("UserView: My Comments:", this.myComments, "Pagination:", this.myCommentsPagination);
+      } catch (error) {
+        console.error('UserView: Error fetching my comments:', error);
+        this.myComments = [];
+        // 在错误发生时重置分页信息
+        this.myCommentsPagination = { total: 0, pages: 1, current_page: 1, per_page: 10, has_next: false, has_prev: false };
+      }
+    },
+
+
     toggleEditNickname() {
       if (this.isEditingNickname) { this.updateNickname(); }
       this.isEditingNickname = !this.isEditingNickname;
@@ -382,6 +606,219 @@ export default {
 </script>
 
 <style scoped>
+/* Container for all comment cards */
+.comment-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* Space between each comment card */
+  padding: 0 10px;
+  /* Add some horizontal padding */
+}
+
+/* Individual comment card styling */
+.comment-card {
+  background-color: #fff;
+  /* White background for the card */
+  border-radius: 8px;
+  /* Slightly rounded corners */
+  padding: 20px;
+  /* Inner spacing */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* Softer, more elegant shadow */
+  transition: all 0.3s ease;
+  /* Smooth transition for hover effects */
+  position: relative;
+  border: 1px solid #e0d8cc;
+  /* Subtle border to define the card */
+}
+
+.comment-card:hover {
+  transform: translateY(-3px);
+  /* Slight lift effect on hover */
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  /* Enhanced shadow on hover */
+}
+
+/* Header section within the comment card (avatar and info) */
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  /* Space between header and content */
+}
+
+/* Avatar wrapper for comments */
+.commenter-avatar-wrapper {
+  /* Changed from .comment-avatar-wrapper for consistency with review styling */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 15px;
+  border: 2px solid #f5ebe0;
+  /* Matches your existing theme */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  /* Prevent shrinking if space is tight */
+}
+
+/* Actual avatar image */
+.commenter-avatar {
+  /* Changed from .comment-avatar */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Info section (nickname, time) within the header */
+.commenter-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  /* Allows info to take available space */
+}
+
+.commenter-nickname {
+  font-weight: bold;
+  color: #333;
+  font-size: 1.1em;
+  margin-bottom: 3px;
+}
+
+.comment-meta {
+  font-size: 0.85em;
+  color: #777;
+}
+
+.comment-time {
+  /* No additional styling needed if it's already part of .comment-meta */
+}
+
+/* Comment content area */
+.comment-content {
+  margin-bottom: 15px;
+  /* Space below content */
+}
+
+.comment-text {
+  font-size: 0.95em;
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+  /* Preserves whitespace and wraps text */
+  word-wrap: break-word;
+  /* Breaks long words if necessary */
+}
+
+/* Footer for actions like likes and links */
+.comment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  /* Align actions to the right */
+  padding-top: 10px;
+  /* Space from content above */
+  border-top: 1px dashed #eee;
+  /* Subtle separator */
+}
+
+.comment-action {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 15px;
+  /* Space between actions */
+  color: #666;
+  font-size: 0.9em;
+}
+
+.comment-action .action-icon {
+  margin-right: 5px;
+  color: #888;
+  /* Slightly darker icon color */
+}
+
+/* Styling for the "View Related Book" link specifically */
+.comment-link {
+  cursor: pointer;
+  color: #007bff;
+  /* Standard link blue */
+  text-decoration: none;
+  /* No underline by default */
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.comment-link:hover {
+  color: #0056b3;
+  /* Darker blue on hover */
+  text-decoration: underline;
+  /* Underline on hover */
+}
+
+.review-status {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.review-status.approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.review-status.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.review-status.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 15px;
+  /* Spacing between elements */
+}
+
+.pagination-controls .elegant-button {
+  padding: 8px 15px;
+  border: 1px solid #ccc;
+  background-color: #f9f9e0;
+  /* Match your theme */
+  color: #333;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-controls .elegant-button:hover:not(:disabled) {
+  background-color: #e0e0c0;
+}
+
+.pagination-controls .elegant-button:disabled {
+  background-color: #eee;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  font-family: 'STSong', serif;
+  /* Or your preferred elegant font */
+  font-size: 1em;
+  color: #555;
+}
+
 /* --- 基础容器样式 --- */
 .establishment-container {
   max-width: 1200px;

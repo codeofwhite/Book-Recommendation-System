@@ -7,7 +7,7 @@ from models import db  # 从 models.py 导入 db 实例
 from routes.book_engagement import book_engagement_bp  # 导入书籍互动蓝图
 from routes.review_engagement import review_engagement_bp  # 导入书评互动蓝图
 from routes.review_content import review_content_bp  # **新增：导入书评内容蓝图**
-from routes.review_routes import review_bp  # 如果有书评提交的蓝图
+from routes.review_admin_routes import review_bp  # 如果有书评提交的蓝图
 
 # from routes.review_submission import review_submission_bp # 如果有书评提交的蓝图
 

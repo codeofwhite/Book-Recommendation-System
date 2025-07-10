@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, request
 from models import ReviewModel, CommentModel
 
-review_bp = Blueprint("reviews", __name__, url_prefix="/api")
+review_bp = Blueprint("reviews", __name__, url_prefix="/api/admin")
 
 
 # 书评相关路由
@@ -160,23 +160,7 @@ def get_review_stats():
         return jsonify({"error": f"Failed to retrieve review stats: {str(e)}"}), 500
 
 
-# 评论相关路由
-@review_bp.route("/reviews/<review_id>/comments", methods=["GET"])
-def get_comments_by_review(review_id):
-    """根据书评ID获取评论"""
-    try:
-        page = request.args.get("page", 1, type=int)
-        per_page = request.args.get("per_page", 10, type=int)
-        per_page = min(per_page, 100)
-
-        result, error = CommentModel.get_comments_by_review(review_id, page, per_page)
-        if error:
-            return jsonify({"error": error}), 500
-
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({"error": f"Failed to retrieve comments: {str(e)}"}), 500
+# 书评
 
 
 @review_bp.route("/reviews/<review_id>/comments", methods=["POST"])

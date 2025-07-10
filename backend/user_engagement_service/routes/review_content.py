@@ -3,8 +3,10 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
 from models import (
+    CommentModel,
     ReviewFavorite,
     ReviewLike,
+    ReviewModel,
     db,
     Review,
     Comment,
@@ -113,18 +115,63 @@ def delete_review(review_id):
         return jsonify({"error": str(e)}), 500
 
 
+@review_content_bp.route("/api/reviews/user/<string:user_id>", methods=["GET"])
+def get_reviews_for_user(user_id):
+    """
+    根据用户ID获取该用户发布的所有书评。
+    ---
+    responses:
+      200:
+        description: 成功获取用户书评列表
+      400:
+        description: 请求参数错误
+      500:
+        description: 服务器内部错误
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+
+    reviews_data, error = ReviewModel.get_reviews_by_user(user_id, page, per_page)
+
+    if error:
+        return jsonify({"message": "Error fetching reviews", "error": error}), 500
+    if not reviews_data["reviews"] and reviews_data["total"] == 0:
+        return (
+            jsonify({"message": "No reviews found for this user", "reviews": []}),
+            200,
+        )  # Or 404 if you prefer for no results
+
+    return jsonify(reviews_data), 200
+
+
 # --- 评论相关 API (对书评的评论) ---
 
 
 # Endpoint: GET /api/reviews/<review_id>/comments - 获取某条书评的评论列表
 @review_content_bp.route("/api/reviews/<string:review_id>/comments", methods=["GET"])
 def get_review_comments(review_id):
-    comments = (
-        Comment.query.filter_by(review_id=review_id)
-        .order_by(Comment.comment_time.asc())
-        .all()
-    )
-    return jsonify([comment.to_dict() for comment in comments])
+    """根据书评ID获取评论，使用 CommentModel 分页逻辑"""
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 10, type=int)
+        per_page = min(per_page, 100)  # 限制每页数量
+
+        # 调用 CommentModel 的方法来获取数据
+        result, error = CommentModel.get_comments_by_review(review_id, page, per_page)
+
+        if error:
+            print(f"Error fetching comments from CommentModel: {error}")  # 调试日志
+            return jsonify({"error": error}), 500
+
+        # CommentModel 已经返回了前端期望的 {'comments': [...], 'total': ...} 结构
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Exception in get_review_comments route: {e}")  # 调试日志
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to retrieve comments: {str(e)}"}), 500
 
 
 # Endpoint: POST /api/reviews/<review_id>/comments - 提交新评论
@@ -182,3 +229,32 @@ def delete_comment(comment_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+@review_content_bp.route("/api/comments/user/<string:user_id>", methods=["GET"])
+def get_comments_for_user(user_id):
+    """
+    根据用户ID获取该用户发布的所有评论。
+    ---
+    responses:
+      200:
+        description: 成功获取用户评论列表
+      400:
+        description: 请求参数错误
+      500:
+        description: 服务器内部错误
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+
+    comments_data, error = CommentModel.get_comments_by_user(user_id, page, per_page)
+
+    if error:
+        return jsonify({"message": "Error fetching comments", "error": error}), 500
+    if not comments_data["comments"] and comments_data["total"] == 0:
+        return (
+            jsonify({"message": "No comments found for this user", "comments": []}),
+            200,
+        )  # Or 404
+
+    return jsonify(comments_data), 200

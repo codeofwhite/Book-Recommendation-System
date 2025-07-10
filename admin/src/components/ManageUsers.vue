@@ -33,7 +33,7 @@
           <div class="user-info">
             <div class="user-avatar">
               <img v-if="user.avatar_url" :src="user.avatar_url" :alt="user.username" />
-              <span v-else>{{ user.username.charAt(0).toUpperCase() }}</span>
+              <span v-else>{{ user.nickname.charAt(0).toUpperCase() }}</span>
             </div>
             <div class="user-details">
               <h4>{{ user.username }}</h4>
@@ -206,19 +206,19 @@ let searchTimeout = null
 const fetchUsers = async (page = 1) => {
   loading.value = true
   error.value = null
-
+  
   try {
     const params = {
       page: page,
       per_page: perPage.value
     }
-
+    
     if (searchKeyword.value.trim()) {
       params.search = searchKeyword.value.trim()
     }
-
+    
     const response = await axios.get(`/service-a/api/users`, { params })
-
+    
     users.value = response.data.users || []
     pagination.value = {
       total: response.data.total,
@@ -228,9 +228,9 @@ const fetchUsers = async (page = 1) => {
       has_next: response.data.has_next,
       has_prev: response.data.has_prev
     }
-
+    
     currentPage.value = page
-
+    
   } catch (err) {
     console.error('Error fetching users:', err)
     error.value = err.response?.data?.error || 'Failed to fetch users'
@@ -238,6 +238,7 @@ const fetchUsers = async (page = 1) => {
     loading.value = false
   }
 }
+
 
 // Create new user
 const createUser = async () => {

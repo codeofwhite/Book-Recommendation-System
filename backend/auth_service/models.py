@@ -46,6 +46,29 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+    # --- 添加 to_dict 方法 ---
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            # 'password_hash': self.password_hash, # 通常不应该将哈希密码返回到前端
+            'avatar_url': self.avatar_url,
+            'registration_date': self.registration_date.isoformat() if self.registration_date else None,
+            'last_login_date': self.last_login_date.isoformat() if self.last_login_date else None,
+            'age': self.age,
+            'gender': self.gender,
+            'location': self.location,
+            'occupation': self.occupation,
+            'interest_tags': self.interest_tags,
+            'preferred_book_types': self.preferred_book_types,
+            'preferred_authors': self.preferred_authors,
+            'preferred_genres': self.preferred_genres,
+            'preferred_reading_duration': self.preferred_reading_duration,
+            'is_profile_complete': self.is_profile_complete
+        }
+    # --- to_dict 方法结束 ---
+
 # --- 添加 ADMIN 模型 ---
 class Admin(db.Model):
     __tablename__ = 'ADMIN' # 确保表名与你的SQL创建语句一致
@@ -100,6 +123,7 @@ class UserModel:
             }, None
 
         except Exception as e:
+            # 这里的 print 语句只打印到控制台，如果需要写入文件或更持久的日志，请使用 logging 模块
             print(f"Error fetching users: {e}")
             return None, str(e)
 

@@ -10,23 +10,11 @@
       <form v-if="isLogin" @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
           <label for="email">📧 Name</label>
-          <input 
-            type="text" 
-            id="email" 
-            v-model="loginForm.email" 
-            required 
-            placeholder="Enter your name"
-          >
+          <input type="text" id="email" v-model="loginForm.email" required placeholder="Enter your name">
         </div>
         <div class="form-group">
           <label for="password">🔒 Password</label>
-          <input 
-            type="password" 
-            id="password" 
-            v-model="loginForm.password" 
-            required 
-            placeholder="Enter your password"
-          >
+          <input type="password" id="password" v-model="loginForm.password" required placeholder="Enter your password">
         </div>
         <button type="submit" class="auth-button" :disabled="loading">
           {{ loading ? 'Signing in...' : '🚀 Sign In' }}
@@ -67,11 +55,11 @@ const loginForm = ref({
 // Handle login
 const handleLogin = async () => {
   if (loading.value) return
-  
+
   error.value = ''
   success.value = ''
   loading.value = true
-  
+
   try {
     // For demo purposes, using mock authentication
     // Replace with your actual API endpoint
@@ -79,21 +67,24 @@ const handleLogin = async () => {
       email: loginForm.value.email,
       password: loginForm.value.password
     })
-    
+
     // Store auth token
     localStorage.setItem('adminToken', response.data.token)
     localStorage.setItem('adminUser', JSON.stringify(response.data.user))
-    
+
     success.value = 'Login successful! Redirecting...'
-    
+
     // Redirect to dashboard
     setTimeout(() => {
-      router.push('/dashboard')
-    }, 1000)
-    
+      router.push('/dashboard');
+      // 强制刷新页面
+      window.location.reload();
+    }, 1000);
+
+
   } catch (err) {
     console.error('Login error:', err)
-    
+
     // For demo purposes, allow login with demo credentials
     if (loginForm.value.email === 'root' && loginForm.value.password === 'root123') {
       const mockUser = {
@@ -102,15 +93,18 @@ const handleLogin = async () => {
         username: 'root',
         role: 'admin'
       }
-      
+
       localStorage.setItem('adminToken', 'demo-token-123')
       localStorage.setItem('adminUser', JSON.stringify(mockUser))
-      
+
       success.value = 'Login successful! Redirecting...'
-      
+
       setTimeout(() => {
-        router.push('/dashboard')
-      }, 1000)
+        router.push('/dashboard');
+        // 强制刷新页面
+        window.location.reload();
+      }, 1000);
+
     } else {
       error.value = err.response?.data?.message || 'Login failed. Please check your credentials.'
     }
@@ -158,6 +152,7 @@ const handleLogin = async () => {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -293,12 +288,12 @@ const handleLogin = async () => {
   .auth-container {
     padding: 16px;
   }
-  
+
   .auth-card {
     padding: 30px 20px;
     max-width: 100%;
   }
-  
+
   .auth-header h2 {
     font-size: 1.5em;
   }
@@ -308,15 +303,15 @@ const handleLogin = async () => {
   .auth-container {
     padding: 12px;
   }
-  
+
   .auth-card {
     padding: 24px 16px;
   }
-  
+
   .form-group input {
     padding: 10px 12px;
   }
-  
+
   .auth-button {
     padding: 12px 16px;
   }

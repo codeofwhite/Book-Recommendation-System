@@ -72,7 +72,7 @@
             ❌ Reject
           </button>
           <button @click="deleteReview(review.id)" class="action-btn delete-btn" :disabled="deleting">
-            🗑️ Delete
+            ❌ Reject
           </button>
           <button @click="viewDetails(review)" class="action-btn details-btn">
             👁️ Details
@@ -209,7 +209,7 @@ const deleting = ref(false)
 let searchTimeout = null
 
 // API Base URL
-const API_BASE = '/service-c/api'
+const API_BASE = '/service-c/api/admin'
 
 // Fetch reviews from API
 const fetchReviews = async (page = 1) => {

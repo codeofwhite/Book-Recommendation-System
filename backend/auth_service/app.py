@@ -473,22 +473,6 @@ def get_users():
         return jsonify({"error": f"Failed to retrieve users: {str(e)}"}), 500
 
 
-@app.route("/api/users/<int:user_id>", methods=["GET"])
-def get_user(user_id):
-    """获取单个用户信息"""
-    try:
-        user, error = UserModel.get_user_by_id(user_id)
-        if error:
-            if error == "User not found":
-                return jsonify({"error": error}), 404
-            return jsonify({"error": error}), 500
-
-        return jsonify(user)
-
-    except Exception as e:
-        return jsonify({"error": f"Failed to retrieve user: {str(e)}"}), 500
-
-
 @app.route("/api/users/<int:user_id>", methods=["PUT"])
 def update_user(user_id):
     """更新用户信息"""
