@@ -1,10 +1,16 @@
 <template>
   <div class="home-view">
     <header class="hero-section">
+      <div class="hero-bg-anim-container">
+        <div class="hero-bg-sparkle"></div>
+        <div class="hero-bg-glow"></div>
+      </div>
+
       <div class="hero-content">
         <h1 class="hero-title">The Grand Tapestry of Knowledge: Charting Paths to Enlightenment</h1>
-        <p class="hero-subtitle">A Conclave for Artisans, a Repository for Luminary Works. Discover, Delve, and
-          Disentangle.</p>
+        <p class="hero-subtitle">
+          <span class="typewriter-text" ref="heroSubtitleText"></span><span class="blink-cursor">|</span>
+        </p>
         <button class="explore-button" @click="scrollToSection('popular-books')">Embark on the Quest</button>
       </div>
     </header>
@@ -23,7 +29,7 @@
                 Peruse the Archives &gt;
               </a>
             </div>
-            <div class="book-grid">
+            <transition-group name="book-card-fade" tag="div" class="book-grid">
               <div v-for="book in popularBooks.slice(0, 4)" :key="book.id" class="book-card">
                 <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
@@ -33,7 +39,7 @@
                   <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
                 </div>
               </div>
-            </div>
+            </transition-group>
           </section>
 
           <hr class="section-divider" />
@@ -45,7 +51,7 @@
                 More Selections Befitting Your Taste &gt;
               </a>
             </div>
-            <div class="book-grid">
+            <transition-group name="book-card-fade" tag="div" class="book-grid">
               <div v-for="book in personalizedBooks.slice(0, 4)" :key="book.id" class="book-card">
                 <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
@@ -55,7 +61,7 @@
                   <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
                 </div>
               </div>
-            </div>
+            </transition-group>
           </section>
 
           <hr class="section-divider" />
@@ -66,7 +72,7 @@
                 <h2 class="section-title-small">The Pantheon of Literary Distinction</h2>
                 <router-link to="/rankings" class="more-link-small">Behold the Full Register &gt;</router-link>
               </div>
-              <div class="ranking-grid-compact">
+              <transition-group name="ranking-item-fade" tag="div" class="ranking-grid-compact">
                 <div v-for="(rankList, index) in bookRankings" :key="index" class="ranking-card-compact">
                   <h3>{{ rankList.title }}</h3>
                   <ul>
@@ -77,7 +83,7 @@
                     </li>
                   </ul>
                 </div>
-              </div>
+              </transition-group>
             </div>
 
             <div class="activity-section-wrapper" id="activities">
@@ -85,16 +91,17 @@
                 <h2 class="section-title-small">Forthcoming Convocations & Salons</h2>
                 <router-link to="/activities" class="more-link-small">Discover More Gatherings &gt;</router-link>
               </div>
-              <div class="activity-list-compact">
+              <transition-group name="activity-item-fade" tag="div" class="activity-list-compact">
                 <div v-for="activity in activities.slice(0, 3)" :key="activity.id" class="activity-item-compact">
                   <img :src="activity.image" :alt="activity.title" class="activity-image-small" />
                   <div class="activity-info-compact">
                     <h4>{{ activity.title }}</h4>
                     <p>{{ activity.date }}</p>
-                    <button class="join-button-small">Graciously Attend</button>
+                    <button class="join-button-small" @click="viewActivityDetails(activity.id)">Graciously
+                      Attend</button>
                   </div>
                 </div>
-              </div>
+              </transition-group>
             </div>
           </section>
         </div>
@@ -112,6 +119,7 @@
       <button :class="['sidebar-toggle-button', { 'is-open': isSidebarOpen }]" @click="toggleSidebar">
         <span v-if="!isSidebarOpen">每日一书</span>
         <span v-else>&#x2715;</span>
+        <span class="ripple-effect"></span>
       </button>
 
       <div class="sidebar-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="toggleSidebar"></div>
@@ -133,11 +141,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'; // 移除 computed
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import BookOfTheDay from '../views/BookOfTheDay.vue';
-import BookListModal from '../components/BookListModal.vue'; // 【新增】导入 BookListModal 组件
+import BookListModal from '../components/BookListModal.vue';
 
 const router = useRouter();
 const loading = ref(true);
@@ -148,27 +156,50 @@ const popularBooks = ref([]);
 const personalizedBooks = ref([]);
 const bookRankings = ref([]);
 const activities = ref([
-  { id: 'a1', title: '夏日读书挑战赛：奇幻文学专题', date: '2025.07.01 - 2025.08.31', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: 'a2', title: '线上读书分享会：哲学思辨之夜', date: '2025.07.15 19:00', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: 'a3', title: '线下作家见面会：历史长河探秘', date: '2025.07.20 14:00', image: 'https://th.bing.com/th/id/OIP.CyDI-M6iaUlGY7yOyQeM8wHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: 'a4', title: '编程技术沙龙：Vue3新特性', date: '2025.07.25 10:00', image: 'https://th.bing.com/th/id/OIP.21XL-cVbf89_FE_pAvvX4gHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
+  {
+    id: 'a1',
+    title: '夏日读书挑战赛：奇幻文学专题',
+    date: '2025.07.01 - 2025.08.31',
+    image: 'https://th.bing.com/th/id/OIP.z8K89wSx6Od2ctAjgdEE5gHaEM?w=310&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '深入奇幻文学的瑰丽世界，挑战阅读极限，赢取丰厚奖励。'
+  },
+  {
+    id: 'a2',
+    title: '线上读书分享会：哲学思辨之夜',
+    date: '2025.07.15 19:00',
+    image: 'https://th.bing.com/th/id/OIP.ac8a6uFFGWNUWltXnKib4AHaQY?w=158&h=349&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '邀请知名哲学家，共同探讨人生、宇宙与存在的意义。'
+  },
+  {
+    id: 'a3',
+    title: '线下作家见面会：历史长河探秘',
+    date: '2025.07.20 14:00',
+    image: 'https://th.bing.com/th/id/OIP.j2QL_B60LLgWU7x-xH6b6gHaHa?w=192&h=193&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '与畅销历史作家面对面，分享创作故事和历史发现的乐趣。'
+  },
+  {
+    id: 'a4',
+    title: '青年创作者工作坊：故事构建技巧',
+    date: '2025.08.05 19:30 (CST)',
+    image: 'https://th.bing.com/th/id/OIP.w4PWaTPnW8Z79qSTqPk0xwHaC9?w=322&h=139&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '针对青年作家，提升故事构思、人物塑造和情节发展能力。',
+  },
 ]);
+
+const viewActivityDetails = (activityId) => {
+  router.push(`/activities/${activityId}`);
+  isSidebarOpen.value = false;
+  hideTooltip();
+};
 
 const dailyBook = ref(null);
 
-// 【移除】showAllPopular 和 showAllPersonalized
-
-// 【移除】displayedPopularBooks 和 displayedPersonalizedBooks 计算属性
-
-// 【新增】模态框相关状态
 const isModalVisible = ref(false);
 const modalTitle = ref('');
 const modalBooks = ref([]);
 
-// 提取API基路径
 const API_BASE_URL = '/service-b/api';
 
-// Helper function to get user data from localStorage
 const getParsedUserData = () => {
   const storedUserData = localStorage.getItem('user_data');
   if (storedUserData) {
@@ -182,19 +213,10 @@ const getParsedUserData = () => {
   return null;
 };
 
-/**
- * 使用 Fisher-Yates (aka Knuth) 算法随机打乱数组。
- * @param {Array} array - 需要被打乱的原始数组。
- * @returns {Array} - 一个新的、顺序被打乱的数组。
- */
 const shuffleArray = (array) => {
-  // 1. 创建数组的副本，避免修改原始数组
   const newArray = [...array];
-  // 2. 从最后一个元素开始向前遍历
   for (let i = newArray.length - 1; i > 0; i--) {
-    // 3. 生成一个从 0 到 i (包含 i) 的随机索引
     const j = Math.floor(Math.random() * (i + 1));
-    // 4. 交换当前元素 newArray[i] 和随机选中的元素 newArray[j]
     [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
   }
   return newArray;
@@ -202,11 +224,9 @@ const shuffleArray = (array) => {
 
 const fetchData = async () => {
   loading.value = true;
-  // 定义一个 ref 来标识是否是后备推荐 (可选，但推荐)
   const isFallbackRecommendation = ref(false);
 
   try {
-    // 获取所有热门书籍
     const popularRes = await axios.get(`${API_BASE_URL}/books/popular`);
     popularBooks.value = popularRes.data.map(book => ({
       id: book.id || book.bookId,
@@ -216,7 +236,6 @@ const fetchData = async () => {
       coverImg: book.coverImg
     }));
 
-    // 获取所有个性化推荐书籍
     const loggedInUser = getParsedUserData();
     const userId = loggedInUser ? loggedInUser.user_id : null;
 
@@ -236,7 +255,6 @@ const fetchData = async () => {
           }));
           console.log("离线个性化推荐数据:", personalizedBooks.value);
         } else {
-          // 接口成功返回，但推荐列表为空
           personalizedBooks.value = [];
           console.log("当前用户有离线推荐记录，但推荐列表为空。");
         }
@@ -252,22 +270,15 @@ const fetchData = async () => {
       personalizedBooks.value = [];
     }
 
-    // --- 核心冷启动处理逻辑 (已更新) ---
     if (personalizedBooks.value.length === 0 && popularBooks.value.length > 0) {
       console.log("冷启动：个性化推荐为空，使用随机打乱的热门书籍作为后备推荐。");
       isFallbackRecommendation.value = true;
-
-      // 1. 先调用 shuffleArray 函数打乱热门书籍数组
       const shuffledPopularBooks = shuffleArray(popularBooks.value);
-
-      // 2. 然后从打乱后的数组中截取一部分作为后备推荐
       personalizedBooks.value = shuffledPopularBooks.slice(0, 12);
     } else {
       isFallbackRecommendation.value = false;
     }
 
-
-    // 获取榜单数据 (保持不变)
     const bestsellingRes = await axios.get(`${API_BASE_URL}/books/rankings/bestselling?limit=7`);
     const newReleasesRes = await axios.get(`${API_BASE_URL}/books/rankings/new_releases?limit=7`);
 
@@ -290,7 +301,6 @@ const fetchData = async () => {
       }
     ];
 
-    // 获取每日一书 (保持不变)
     const dailyBookRes = await axios.get(`${API_BASE_URL}/books/daily`);
     if (dailyBookRes.data) {
       dailyBook.value = {
@@ -304,8 +314,6 @@ const fetchData = async () => {
 
   } catch (error) {
     console.error('Error fetching data (main sections):', error);
-    // 即使主要请求失败，也应该考虑填充一些东西，或者显示错误信息
-    // 在这里也可以触发冷启动逻辑，以防 `popularBooks` 请求也失败了但其他成功了
     if (personalizedBooks.value.length === 0 && popularBooks.value.length > 0) {
       personalizedBooks.value = popularBooks.value.slice(0, 12);
       isFallbackRecommendation.value = true;
@@ -317,18 +325,70 @@ const fetchData = async () => {
 
 let tooltipTimer = null;
 
-onMounted(() => {
-  fetchData();
+// --- 打字机效果相关变量和函数 (已更新) ---
+const heroSubtitleText = ref(null); // 用于引用模板中的副标题 span 元素
+const heroSubtitleTexts = [ // 多条标语
+  "A Conclave for Artisans, a Repository for Luminary Works.",
+  "Discover, Delve, and Disentangle.",
+  "Your Gateway to Infinite Stories.",
+  "Where Knowledge Finds Its Home."
+];
+const currentSubtitleIndex = ref(0); // 当前显示的标语索引
+const typewriterIndex = ref(0); // 打字机效果的当前字符索引
+let typewriterInterval = null; // 打字定时器
+let nextTextDelayTimer = null; // 切换下一条标语的延时定时器
+
+const startTypewriterEffect = () => {
+  if (!heroSubtitleText.value) return; // 确保元素存在
+
+  // 清除所有现有定时器，以防重复调用或状态混乱
+  if (typewriterInterval) clearInterval(typewriterInterval);
+  if (nextTextDelayTimer) clearTimeout(nextTextDelayTimer);
+
+  const fullText = heroSubtitleTexts[currentSubtitleIndex.value];
+  typewriterIndex.value = 0;
+  heroSubtitleText.value.textContent = ''; // 清空文本，重新开始打字
+
+  const type = () => {
+    if (typewriterIndex.value < fullText.length) {
+      heroSubtitleText.value.textContent += fullText.charAt(typewriterIndex.value);
+      typewriterIndex.value++;
+    } else {
+      clearInterval(typewriterInterval); // 当前文本打完，停止打字
+      // 等待一段时间后，切换到下一条标语
+      nextTextDelayTimer = setTimeout(() => {
+        currentSubtitleIndex.value = (currentSubtitleIndex.value + 1) % heroSubtitleTexts.length; // 循环到下一条
+        startTypewriterEffect(); // 开始打下一条标语
+      }, 2000); // 每条标语显示2秒后切换
+    }
+  };
+
+  typewriterInterval = setInterval(type, 70); // 打字速度，毫秒
+};
+
+onMounted(async () => {
+  await fetchData();
+  // 在 DOM 更新后（即页面加载完成且数据填充后）启动打字机效果
+  await nextTick(); // 等待 DOM 更新
+  startTypewriterEffect();
+
   tooltipTimer = setTimeout(() => {
-    if (!isSidebarOpen.value) {
+    const loggedInUser = getParsedUserData();
+    if (loggedInUser && !isSidebarOpen.value) {
       showTooltip.value = true;
     }
-  }, 3000);
+  }, 3000); // 3秒后显示提示
 });
 
 onUnmounted(() => {
   if (tooltipTimer) {
     clearTimeout(tooltipTimer);
+  }
+  if (typewriterInterval) { // 组件卸载时清除打字机定时器
+    clearInterval(typewriterInterval);
+  }
+  if (nextTextDelayTimer) { // 组件卸载时清除下一条文本延时定时器
+    clearTimeout(nextTextDelayTimer);
   }
 });
 
@@ -354,7 +414,6 @@ const hideTooltip = () => {
   showTooltip.value = false;
 };
 
-// 【新增】打开书籍列表模态框
 const openBookModal = (type) => {
   if (type === 'popular') {
     modalTitle.value = '全部热门图书';
@@ -366,14 +425,11 @@ const openBookModal = (type) => {
   isModalVisible.value = true;
 };
 
-// 【新增】关闭书籍列表模态框
 const closeBookModal = () => {
   isModalVisible.value = false;
   modalTitle.value = '';
   modalBooks.value = [];
 };
-
-// 【移除】togglePopularBooks 和 togglePersonalizedBooks 方法
 </script>
 
 <style scoped>

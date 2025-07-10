@@ -46,42 +46,71 @@
           <div class="header-ornament">✒︎</div>
         </div>
 
-        <section v-show="activeSection === 'user-info'" class="chapter-section">
-          <div class="section-header">
+        <section v-show="activeSection === 'user-info'" class="profile-chapter">
+          <div class="chapter-header">
             <h2 class="chapter-title">
-              <span class="title-icon">🖋</span>
+              <i class="fas fa-user-circle title-icon"></i>
               <span>Personal Particulars</span>
             </h2>
-            <div class="section-divider"></div>
+            <div class="header-decoration"></div>
           </div>
 
-          <div class="avatar-section">
-            <div class="avatar-frame">
-              <img :src="user.avatar_url || 'https://via.placeholder.com/150'" alt="User Effigy" class="user-avatar" />
-              <div class="frame-decoration"></div>
-            </div>
-          </div>
-
-          <div class="info-section">
-            <div class="info-item">
-              <span class="info-label">Appellation:</span>
-              <span v-if="!isEditingNickname" class="info-value">{{ user.nickname }}</span>
-              <input v-else type="text" v-model="editableNickname" class="elegant-input" />
-              <button @click="toggleEditNickname" class="elegant-button small">
-                {{ isEditingNickname ? 'Preserve' : 'Amend' }}
-              </button>
+          <div class="profile-card">
+            <div class="avatar-display">
+              <div class="avatar-wrapper">
+                <img :src="user.avatar_url || 'https://via.placeholder.com/150/d7ccc8/5d4037?text=User'"
+                  alt="User Effigy" class="user-avatar" />
+                <div class="avatar-overlay">
+                  <i class="fas fa-camera-retro change-avatar-icon"></i>
+                </div>
+              </div>
             </div>
 
-            <div class="info-item">
-              <span class="info-label">Electronic Mail:</span>
-              <span class="info-value">{{ user.email }}</span>
-            </div>
-          </div>
+            <div class="info-grid">
+              <div class="info-entry">
+                <label for="nickname-input" class="info-label"><i class="fas fa-signature info-icon"></i>
+                  Appellation:</label>
+                <div class="info-value-group">
+                  <span v-if="!isEditingNickname" class="info-text">{{ user.nickname || 'Not Set' }}</span>
+                  <input v-else id="nickname-input" type="text" v-model="editableNickname" class="styled-input"
+                    @keyup.enter="saveNickname" @blur="saveNickname" aria-label="Edit Nickname" />
+                  <button @click="toggleEditNickname" class="action-button small-button"
+                    :class="{ 'button-saving': isSavingNickname }">
+                    <span v-if="!isSavingNickname">{{ isEditingNickname ? 'Preserve' : 'Amend' }}</span>
+                    <span v-else><i class="fas fa-spinner fa-spin"></i> Saving...</span>
+                  </button>
+                </div>
+              </div>
 
-          <div v-if="!user.is_profile_complete" class="profile-incomplete-warning">
-            <span class="warning-icon">⚠️</span>
-            <span>Your Chronicle Awaits Completion. Kindly proceed to <router-link to="/user-onboarding">Fulfill Your
-                Details</router-link>.</span>
+              <div class="info-entry">
+                <span class="info-label"><i class="fas fa-envelope info-icon"></i> Electronic Mail:</span>
+                <span class="info-text">{{ user.email || 'N/A' }}</span>
+              </div>
+
+              <div class="info-entry">
+                <span class="info-label"><i class="fas fa-calendar-alt info-icon"></i> Membership Since:</span>
+                <span class="info-text">{{ formatDate(user.registration_date) || 'Undetermined' }}</span>
+              </div>
+
+              <div class="info-entry">
+                <span class="info-label"><i class="fas fa-book-reader info-icon"></i> Preferred Genres:</span>
+                <span class="info-text">
+                  <template v-if="user.preferred_genres && user.preferred_genres.length">
+                    {{ user.preferred_genres.join(', ') }}
+                  </template>
+                  <template v-else>
+                    None Specified
+                  </template>
+                </span>
+              </div>
+            </div>
+
+            <div v-if="!user.is_profile_complete" class="profile-incomplete-banner">
+              <i class="fas fa-exclamation-triangle warning-icon"></i>
+              <span>Your Chronicle Awaits Completion. Kindly proceed to
+                <router-link to="/user-onboarding" class="banner-link">Fulfill Your Details</router-link>.
+              </span>
+            </div>
           </div>
         </section>
 
@@ -300,10 +329,13 @@ export default {
       activeSection: 'user-info', // Initialize active section
       user: {
         user_id: '',
-        nickname: '',
-        email: '',
-        avatar_url: '',
-        is_profile_complete: false,
+        nickname: 'Scholar X', // 默认昵称
+        email: 'scholar.x@library.com', // 默认邮箱
+        avatar_url: '', // 用户头像 URL
+        is_profile_complete: false, // 标记资料是否完整
+        member_since: '', // 修改为从 registration_date 获取，这里先设为空
+        preferred_genres: [], // 确保这里初始化为空数组
+        registration_date: '', // **新增：用于存储注册日期**
       },
       favoriteBooks: [],
       favoriteReviews: [],
@@ -359,7 +391,7 @@ export default {
   },
   methods: {
     async fetchUserData() {
-      const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
+      const currentStoredUserData = getParsedUserData();
 
       if (!currentStoredUserData || !currentStoredUserData.user_id) {
         console.error('UserView: User data not found in localStorage. Redirecting to login.');
@@ -368,30 +400,44 @@ export default {
       }
 
       this.user.user_id = currentStoredUserData.user_id;
-      // 优先从 localStorage 获取，减少 API 调用
       this.user.nickname = currentStoredUserData.nickname || '';
       this.user.email = currentStoredUserData.email || '';
       this.user.avatar_url = currentStoredUserData.avatar_url || '';
       this.user.is_profile_complete = currentStoredUserData.is_profile_complete || false;
+      this.user.preferred_genres = Array.isArray(currentStoredUserData.preferred_genres)
+        ? currentStoredUserData.preferred_genres
+        : [];
+      // **从 localStorage 加载 registration_date**
+      this.user.registration_date = currentStoredUserData.registration_date || '';
       this.editableNickname = this.user.nickname;
 
       try {
         const response = await axios.get(`/service-a/api/users/${this.user.user_id}`);
-        const userDataFromBackend = response.data; // 从后端获取的最新资料
+        const userDataFromBackend = response.data;
 
-        // **核心修改：更新 localStorage 中的 user_data，但保留 auth_token**
-        // 合并后端返回的资料，并保留 auth_token
         const updatedUserData = {
-          ...currentStoredUserData, // 保留所有现有字段，包括 auth_token
-          ...userDataFromBackend,   // 合并后端返回的最新资料
-          // 确保 is_profile_complete 字段也被正确更新
-          is_profile_complete: userDataFromBackend.is_profile_complete !== undefined ? userDataFromBackend.is_profile_complete : currentStoredUserData.is_profile_complete
+          ...currentStoredUserData,
+          ...userDataFromBackend,
+          is_profile_complete: userDataFromBackend.is_profile_complete !== undefined
+            ? userDataFromBackend.is_profile_complete
+            : currentStoredUserData.is_profile_complete,
+          preferred_genres: Array.isArray(userDataFromBackend.preferred_genres)
+            ? userDataFromBackend.preferred_genres
+            : (userDataFromBackend.preferred_genres
+              ? [userDataFromBackend.preferred_genres]
+              : (Array.isArray(currentStoredUserData.preferred_genres)
+                ? currentStoredUserData.preferred_genres
+                : [])
+            ),
+          // **关键修改：更新 registration_date**
+          registration_date: userDataFromBackend.registration_date || currentStoredUserData.registration_date || '',
         };
+
         localStorage.setItem('user_data', JSON.stringify(updatedUserData));
         console.log('UserView: fetchUserData updated localStorage with:', updatedUserData);
 
-        // 更新组件的 user data
-        this.user = updatedUserData; // 直接使用合并后的数据更新组件状态
+        // 使用 Object.assign 更新响应式对象
+        Object.assign(this.user, updatedUserData);
         this.editableNickname = this.user.nickname;
 
       } catch (error) {
@@ -399,12 +445,11 @@ export default {
         if (error.response && error.response.status === 401) {
           alert('会话已过期，请重新登录。');
           this.router.push({ name: 'auth' });
-        } else if (!currentStoredUserData) {
+        } else if (!currentStoredUserData.user_id) { // 再次检查 user_id
           this.router.push({ name: 'auth' });
         }
       }
     },
-
     async fetchFavoriteBooks() {
       const loggedInUser = getParsedUserData();
       const userId = loggedInUser ? loggedInUser.user_id : null;
@@ -1042,47 +1087,391 @@ export default {
   margin-top: 15px;
 }
 
-/* --- 头像区域 --- */
-.avatar-section {
-  display: flex;
-  align-items: center;
-  margin-bottom: 30px;
-  gap: 30px;
+/* --- General Section Styling --- */
+.profile-chapter {
+  padding: 40px;
+  background-color: var(--background-light);
+  font-family: 'Lora', serif;
+  color: var(--text-dark);
+  max-width: 900px;
+  margin: 40px auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
-.avatar-frame {
+.chapter-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.chapter-title {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5em;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.title-icon {
+  font-size: 0.9em;
+  /* 使 Font Awesome 图标大小合适 */
+  color: var(--accent-color);
+}
+
+.header-decoration {
+  width: 80px;
+  height: 4px;
+  background-color: var(--accent-color);
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+/* --- Profile Card Styling --- */
+.profile-card {
+  background-color: var(--background-card);
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  /* 默认垂直堆叠 */
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .profile-card {
+    flex-direction: row;
+    /* 在大屏幕上横向布局 */
+    align-items: flex-start;
+    /* 顶部对齐 */
+    gap: 40px;
+    /* 增加头像和信息之间的间距 */
+  }
+}
+
+/* --- Avatar Section --- */
+.avatar-display {
+  margin-bottom: 30px;
+  /* 手机视图下，头像下方留白 */
   position: relative;
-  width: 150px;
-  height: 150px;
+}
+
+@media (min-width: 768px) {
+  .avatar-display {
+    margin-bottom: 0;
+    /* 桌面视图下，取消下方留白 */
+    flex-shrink: 0;
+    /* 防止头像被压缩 */
+  }
+}
+
+.avatar-wrapper {
+  width: 160px;
+  /* 略大的头像 */
+  height: 160px;
+  border-radius: 50%;
+  border: 4px solid var(--secondary-color);
+  /* 边框 */
+  box-shadow: 0 0 0 6px rgba(161, 136, 127, 0.3);
+  /* 外发光效果 */
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.3s ease-in-out;
+}
+
+.avatar-wrapper:hover {
+  transform: scale(1.05);
 }
 
 .user-avatar {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
-  border: 5px solid #f5ebe0;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1;
+  display: block;
 }
 
-.frame-decoration {
+.avatar-overlay {
   position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8d6e63, #d7ccc8);
-  z-index: 0;
-  opacity: 0.3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
 }
 
-.avatar-controls {
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.change-avatar-icon {
+  color: white;
+  font-size: 2em;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* --- Info Section --- */
+.info-grid {
+  flex-grow: 1;
+  /* 占据剩余空间 */
+  width: 100%;
+  /* 确保在小屏幕上占满宽度 */
+}
+
+.info-entry {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  /* 默认垂直布局标签和值 */
+  margin-bottom: 25px;
+  /* 信息项之间的间距 */
+  padding-bottom: 15px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.info-entry:last-child {
+  border-bottom: none;
+  /* 最后一个不显示下边框 */
+  margin-bottom: 0;
+}
+
+@media (min-width: 576px) {
+  .info-entry {
+    flex-direction: row;
+    /* 在较大屏幕上横向布局 */
+    align-items: center;
+    justify-content: space-between;
+    /* 标签和值两端对齐 */
+  }
+}
+
+.info-label {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--text-medium);
+  font-size: 1.1em;
+  margin-bottom: 8px;
+  /* 手机视图下标签和值之间间距 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 150px;
+  /* 确保标签有最小宽度，避免值与标签重叠 */
+}
+
+@media (min-width: 576px) {
+  .info-label {
+    margin-bottom: 0;
+  }
+}
+
+.info-icon {
+  color: var(--secondary-color);
+  font-size: 0.9em;
+}
+
+.info-value-group {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  /* 占据剩余空间 */
+  gap: 10px;
+  flex-wrap: wrap;
+  /* 允许在空间不足时换行 */
+}
+
+.info-text {
+  font-size: 1.05em;
+  color: var(--text-dark);
+  word-break: break-word;
+  margin-left: 5%;
+  /* 防止长单词溢出 */
+}
+
+.styled-input {
+  flex-grow: 1;
+  /* 输入框占据更多空间 */
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1em;
+  font-family: 'Lora', serif;
+  color: var(--text-dark);
+  background-color: #ffffff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  min-width: 150px;
+  /* 防止输入框过小 */
+}
+
+.styled-input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(255, 171, 64, 0.2);
+  outline: none;
+}
+
+/* --- Buttons --- */
+.action-button {
+  background-color: var(--secondary-color);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  /* 防止按钮文字换行 */
+}
+
+.action-button:hover {
+  background-color: #8d6e63;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.action-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.small-button {
+  padding: 8px 15px;
+  font-size: 0.85em;
+}
+
+.button-saving {
+  background-color: #6a6a6a;
+  /* 保存中状态的颜色 */
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* --- Profile Incomplete Banner --- */
+.profile-incomplete-banner {
+  background-color: rgba(255, 152, 0, 0.1);
+  /* 警告背景色 */
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-top: 30px;
+  text-align: center;
+  font-size: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 2px 10px rgba(255, 152, 0, 0.1);
+}
+
+.warning-icon {
+  font-size: 1.2em;
+}
+
+.banner-link {
+  color: var(--warning-color);
+  font-weight: bold;
+  text-decoration: none;
+  transition: text-decoration 0.3s ease;
+}
+
+.banner-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 767px) {
+  .profile-chapter {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .chapter-title {
+    font-size: 2em;
+    gap: 10px;
+  }
+
+  .profile-card {
+    padding: 20px;
+  }
+
+  .avatar-wrapper {
+    width: 120px;
+    height: 120px;
+    border-width: 3px;
+    box-shadow: 0 0 0 5px rgba(161, 136, 127, 0.2);
+  }
+
+  .change-avatar-icon {
+    font-size: 1.5em;
+  }
+
+  .info-entry {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .info-value-group {
+    width: 100%;
+    margin-top: 5px;
+    flex-direction: column;
+    /* 小屏幕下输入框和按钮垂直堆叠 */
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .styled-input,
+  .action-button {
+    width: 100%;
+    /* 输入框和按钮占满宽度 */
+    box-sizing: border-box;
+    /* 包含内边距和边框在宽度内 */
+  }
+
+  .profile-incomplete-banner {
+    flex-direction: column;
+    padding: 10px 15px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chapter-title {
+    font-size: 1.8em;
+  }
+
+  .profile-card {
+    padding: 15px;
+  }
+
+  .avatar-wrapper {
+    width: 100px;
+    height: 100px;
+  }
+
+  .info-label {
+    font-size: 1em;
+  }
+
+  .info-text,
+  .styled-input,
+  .action-button {
+    font-size: 0.9em;
+  }
 }
 
 /* --- 按钮和输入框 --- */

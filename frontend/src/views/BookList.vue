@@ -1,4 +1,3 @@
-<!-- 书籍展示页面 -->
 <template>
   <div class="ancient-tome-container">
     <div class="top-folio-controls">
@@ -7,6 +6,9 @@
           @keyup.enter="handleSearch" class="quill-input" />
         <button @click="handleSearch" class="seek-button">
           Seek & Discover
+          <div class="info-bubble bottom-right" v-if="showSearchTip">
+            Press Enter or click 'Seek' to begin your literary journey!
+          </div>
         </button>
       </div>
 
@@ -19,6 +21,9 @@
               <span v-for="genre in filteredAvailableGenres" :key="genre" class="genre-filter-pill"
                 :class="{ 'is-selected': selectedGenres.includes(genre) }" @click="toggleGenre(genre)">
                 {{ genre }}
+                <div class="info-bubble top-center" v-if="showGenreTip && genre === 'Fiction'">
+                  Click on genres to filter your results!
+                </div>
               </span>
               <span v-if="filteredAvailableGenres.length === 0 && availableGenres.length > 0"
                 class="no-options-message">No matching genres.</span>
@@ -74,7 +79,6 @@
               <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
             </div>
             <div class="tome-inscriptions">
-              <!-- 新增：@click 事件来触发日志记录 -->
               <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"
                 @click="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
@@ -94,7 +98,7 @@
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                }}</span>
+                  }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>
@@ -128,6 +132,9 @@
           </p>
           <p v-else-if="realtimeRecommendations.length === 0" class="no-recommendations-message">
             尚无实时推荐。探索更多书籍以生成个性化推荐！
+          <div class="info-bubble bottom-left" v-if="showRecommendationTip">
+            Click on books to refine your "Whispers"!
+          </div>
           </p>
           <transition-group name="recommendation-slide" tag="div" v-else>
             <div v-for="(rec, index) in realtimeRecommendations" :key="rec.bookId || index" class="oracle-insight">
@@ -187,8 +194,6 @@ export default {
       inputSearchKeyword: '',
       initialSearchKeyword: '',
       allBooks: [], // This will hold ALL fetched books
-      // recommendations: [],
-      // 【新增】实时推荐数据
       realtimeRecommendations: [],
       loadingRecommendations: false, // 新增：实时推荐的加载状态
       loading: true, // 这是主列表的加载状态
@@ -214,6 +219,12 @@ export default {
 
       pageViewStartTime: 0,
       pageUrlOnMount: '', // 【新增】记录页面加载时的URL
+
+      // --- 气泡提示状态 ---
+      showSearchTip: false,
+      showGenreTip: false,
+      showRecommendationTip: false,
+      // --- 气泡提示状态结束 ---
     };
   },
   computed: {
@@ -320,8 +331,10 @@ export default {
     this.inputSearchKeyword = this.initialSearchKeyword;
     this.fetchBooks(); // Fetch all books initially
     this.fetchUserData();
-    // this.fetchRecommendations();
     this.fetchRealtimeRecommendationsForList(); // <--- 调用新的实时推荐方法
+
+    // 初始化时显示提示气泡
+    this.showTipsInitially();
   },
   //埋点
   mounted() {
@@ -347,6 +360,38 @@ export default {
     },
   },
   methods: {
+    // --- 气泡提示相关方法 ---
+    showTipsInitially() {
+      // 搜索框提示在页面加载后几秒显示，然后自动隐藏
+      setTimeout(() => {
+        this.showSearchTip = true;
+      }, 1500); // 1.5秒后显示
+      setTimeout(() => {
+        this.showSearchTip = false;
+      }, 6500); // 6.5秒后隐藏（显示5秒）
+
+      // 流派筛选提示在页面加载后稍晚显示，然后自动隐藏
+      setTimeout(() => {
+        this.showGenreTip = true;
+      }, 3000); // 3秒后显示
+      setTimeout(() => {
+        this.showGenreTip = false;
+      }, 8000); // 8秒后隐藏（显示5秒）
+
+      // 实时推荐提示在没有推荐时显示，然后自动隐藏
+      // 这将在 fetchRealtimeRecommendationsForList 结束后根据 realtimeRecommendations.length 判断
+      // 如果没有实时推荐，且用户在侧边栏，则显示
+      setTimeout(() => {
+        if (this.realtimeRecommendations.length === 0) {
+          this.showRecommendationTip = true;
+        }
+      }, 5000); // 5秒后检查并显示
+      setTimeout(() => {
+        this.showRecommendationTip = false;
+      }, 10000); // 10秒后隐藏（显示5秒）
+    },
+    // --- 气泡提示相关方法结束 ---
+
     handleBookClick(book) {
       // 调用埋点函数，发送用户点击事件
       trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
@@ -354,13 +399,15 @@ export default {
 
       // 【新增】在点击后主动刷新实时推荐
       this.fetchRealtimeRecommendationsForList();
+      // 用户点击书籍后，可以隐藏推荐气泡
+      this.showRecommendationTip = false;
     },
     async fetchUserData() {
       const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
 
       if (!currentStoredUserData || !currentStoredUserData.user_id) {
         console.error('UserView: User data not found in localStorage. Redirecting to login.');
-        this.router.push({ name: 'auth' });
+        this.$router.push({ name: 'auth' }); // 注意这里使用了 $router 而不是 this.router
         return;
       }
 
@@ -395,14 +442,16 @@ export default {
         console.error('UserView: Error fetching user data from API:', error);
         if (error.response && error.response.status === 401) {
           alert('会话已过期，请重新登录。');
-          this.router.push({ name: 'auth' });
+          this.$router.push({ name: 'auth' }); // 注意这里使用了 $router
         } else if (!currentStoredUserData) {
-          this.router.push({ name: 'auth' });
+          this.$router.push({ name: 'auth' }); // 注意这里使用了 $router
         }
       }
     },
     handleSearch() {
       this.applyFilters();
+      // 用户搜索后，可以隐藏搜索提示气泡
+      this.showSearchTip = false;
     },
     async fetchBooks() {
       this.loading = true;
@@ -427,6 +476,7 @@ export default {
       if (!userId) {
         console.log("用户未登录，无法获取实时推荐。");
         this.realtimeRecommendations = []; // 清空推荐
+        this.showRecommendationTip = true; // 用户未登录时显示推荐气泡
         return;
       }
 
@@ -434,30 +484,21 @@ export default {
       try {
         // 调用实时推荐的接口
         const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
-
-        // 后端返回的 recommendations 列表，应包含 bookId, title, author, coverImg, score
-        // 示例后端返回:
-        // {
-        //   "message": "成功获取用户 '2' 的实时更新推荐数据",
-        //   "recommendations": [
-        //     {
-        //       "author": "J.K. Rowling",
-        //       "bookId": "6.Harry_Potter_and_the_Goblet_of_Fire",
-        //       "coverImg": "http://example.com/cover1.jpg",
-        //       "score": 0.46,
-        //       "title": "Harry Potter and the Goblet of Fire"
-        //     },
-        //     // ...
-        //   ],
-        //   "user_id": "2"
-        // }
         this.realtimeRecommendations = response.data.recommendations || [];
         console.log("实时推荐数据 (BookList):", this.realtimeRecommendations);
+
+        // 如果没有实时推荐，显示提示气泡
+        if (this.realtimeRecommendations.length === 0) {
+          this.showRecommendationTip = true;
+        } else {
+          this.showRecommendationTip = false; // 有推荐时隐藏
+        }
 
       } catch (error) {
         console.error('Error fetching realtime recommendations for book list:', error);
         this.realtimeRecommendations = []; // 出错时清空推荐
-        // 如果错误消息是“Redis中没有实时更新的推荐数据”，可以给用户一个更友好的提示
+        this.showRecommendationTip = true; // 出错时也显示提示气泡
+
         if (error.response && error.response.data && error.response.data.message === "Redis 中没有实时更新的推荐数据。") {
           console.log("Redis 中当前没有该用户的实时推荐数据。");
         }
@@ -488,6 +529,8 @@ export default {
         this.selectedGenres.push(genre);
       }
       this.applyFilters();
+      // 用户点击流派后，可以隐藏流派提示气泡
+      this.showGenreTip = false;
     },
     applyFilters() {
       // Re-evaluates computed properties `filteredBooks` and `paginatedBooks`
@@ -531,6 +574,103 @@ export default {
 <style scoped>
 /* A Font of Ages: Evoking the Scribe's Hand */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+/* --- 新增：气泡提示样式 --- */
+.info-bubble {
+  position: absolute;
+  background-color: #795548; /* 深棕色背景 */
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  z-index: 999; /* 确保在其他内容之上 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none; /* 让气泡不阻碍下方的点击事件 */
+  opacity: 0; /* 默认隐藏 */
+  animation: fadeInOut 5s forwards; /* 动画持续5秒，结束后保持状态 */
+}
+
+/* 气泡箭头 */
+.info-bubble::after {
+  content: '';
+  position: absolute;
+  border-width: 6px;
+  border-style: solid;
+}
+
+/* 搜索按钮气泡位置 */
+.seek-button {
+  position: relative; /* 使气泡相对于按钮定位 */
+}
+
+.info-bubble.bottom-right {
+  top: 100%; /* 位于父元素底部 */
+  left: 50%;
+  transform: translate(-10%, 10px); /* 稍微偏右，并向下移动 */
+}
+
+.info-bubble.bottom-right::after {
+  top: -6px;
+  left: 20%;
+  border-color: transparent transparent #795548 transparent; /* 向上箭头 */
+}
+
+/* 流派筛选气泡位置 */
+.genre-filter-pill {
+  position: relative; /* 使气泡相对于 pill 定位 */
+}
+
+.info-bubble.top-center {
+  bottom: 100%; /* 位于父元素顶部 */
+  left: 50%;
+  transform: translate(-50%, -10px); /* 水平居中，并向上移动 */
+}
+
+.info-bubble.top-center::after {
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-color: #795548 transparent transparent transparent; /* 向下箭头 */
+}
+
+/* 实时推荐气泡位置 */
+.no-recommendations-message {
+    position: relative; /* 使气泡相对于消息定位 */
+    display: inline-block; /* 确保 position: relative 生效 */
+}
+
+.info-bubble.bottom-left {
+  top: 100%; /* 位于父元素底部 */
+  right: 0;
+  transform: translate(0, 10px); /* 与父元素右侧对齐，并向下移动 */
+}
+
+.info-bubble.bottom-left::after {
+  top: -6px;
+  right: 15px; /* 箭头位置 */
+  border-color: transparent transparent #795548 transparent; /* 向上箭头 */
+}
+
+
+/* 气泡动画 */
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; } /* 动画开始后很快完全显示 */
+  90% { opacity: 1; } /* 保持完全显示大部分时间 */
+  100% { opacity: 0; } /* 动画结束时完全隐藏 */
+}
+
+/* 确保现有样式兼容 */
+.top-folio-controls {
+  position: relative; /* 确保气泡可以在此范围内定位 */
+}
+.genre-filter-section {
+  position: relative; /* 确保气泡可以在此范围内定位 */
+}
+.oracle-sidebar {
+  position: relative; /* 确保气泡可以在此范围内定位 */
+}
 
 /* The Grand Container of Lore */
 .ancient-tome-container {
