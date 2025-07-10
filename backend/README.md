@@ -1,3 +1,23 @@
+文件目录
+auth_service
+backend
+book_manage
+clickhouse
+clickhouse-clickhouse-kafka-connect-v1.3.1
+datax_jobs
+datax_jobs
+datax_worker
+flink_jars
+flink_jobs
+flink_py_image
+log_service
+mongo_custom_image
+offline_recommendation_service
+realtime_recommendation_service
+recommendation_service
+spark_etl_processor
+user_engagement_service
+
 # 前提条件
 1. 方法一：安装 Windows Docker Desktop。安装 WSL，然后开发环境选择 Ubuntu。
 2. 方法二：安装 Windows Docker Desktop。直接在 Windows 上开发也无所谓。

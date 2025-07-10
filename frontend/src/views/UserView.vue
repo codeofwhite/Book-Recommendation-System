@@ -551,9 +551,11 @@ export default {
         // 我将添加一个占位符，以使 `goToBookDetails` 能够正常工作。
         this.myComments = await Promise.all(this.myComments.map(async comment => {
           let bookId = null;
+          console.log("获取reviewid")
           if (comment.reviewId) { // 假设评论与书评关联，并且可以通过书评找到图书ID
             try {
-              const reviewResponse = await axios.get(`/service-c/api/reviews/${comment.reviewId}`);
+              const reviewResponse = await axios.get(`/service-c/api/admin/reviews/${comment.reviewId}`);
+              console.log(reviewResponse)
               bookId = reviewResponse.data.bookId; // 假设书评对象中包含 bookId
             } catch (error) {
               console.warn(`Could not fetch review for comment ${comment.id}:`, error);
