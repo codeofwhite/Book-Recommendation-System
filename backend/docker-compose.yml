@@ -218,6 +218,12 @@ services:
       CONNECT_OFFSET_STORAGE_CLEANUP_POLICY: "compact"
       CONNECT_STATUS_STORAGE_CLEANUP_POLICY: "compact"
 
+      CONNECT_HEAP_OPTS: "-Xmx2G -Xms2G" # 例如，限制为2GB。根据您的实际可用内存调整
+      CONNECT_LINGER_MS: 50 # 生产者在发送批次前等待的时间，单位毫秒。适当增加可减少请求次数
+      CONNECT_BATCH_SIZE: 8192 # 生产者发送的批次大小，单位字节。适当增加可提高吞吐量
+      CONNECT_MAX_REQUEST_SIZE: 1048576 # 客户端可发送的最大请求字节数
+      CONNECT_MAX_PARTITION_FETCH_BYTES: 1048576 # 每个分区的最大字节数
+
       # 序列化器配置
       CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
@@ -319,7 +325,7 @@ services:
         condition: service_healthy
       clickhouse: # Spark ETL 可能会写入 ClickHouse
         condition: service_healthy
-    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/main.py
+    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --driver-memory 2G --executor-memory 2G --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/main.py
 
   # --- DataX Worker Service ---
   # datax_worker:
