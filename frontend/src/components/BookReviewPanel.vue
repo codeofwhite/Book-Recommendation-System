@@ -68,8 +68,10 @@ onMounted(() => {
 
 <style scoped>
 .review-panel-container {
-  background-color: rgba(245, 245, 245, 0.85); /* 半透明浅灰色背景 */
-  backdrop-filter: blur(10px); /* 毛玻璃效果 */
+  background-color: rgba(245, 245, 245, 0.85);
+  /* 半透明浅灰色背景 */
+  backdrop-filter: blur(10px);
+  /* 毛玻璃效果 */
   -webkit-backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px 35px;
@@ -81,7 +83,8 @@ onMounted(() => {
   color: #333;
   transition: opacity 0.5s ease;
   opacity: 0;
-  min-height: 320px; /* 确保加载时有最小高度 */
+  min-height: 320px;
+  /* 确保加载时有最小高度 */
   max-height: 720px;
   display: flex;
 }
@@ -114,7 +117,8 @@ onMounted(() => {
 .review-body {
   font-size: 1rem;
   line-height: 1.7;
-  flex-grow: 1; /* 让内容占据多余空间 */
+  flex-grow: 1;
+  /* 让内容占据多余空间 */
   margin: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;

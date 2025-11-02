@@ -21,21 +21,21 @@
 * **`App.vue`**: **根组件**。Vue 应用的入口组件，通常包含路由出口和全局布局。
 * **`main.js`**: **应用入口文件**。Vue 应用的初始化文件，负责创建 Vue 实例、注册插件和挂载根组件。
 * **`components/`**: **通用组件目录**。存放可在应用中多处复用的UI组件。
-    * `BookDetails.vue`: 图书详情展示组件。
-    * `BookListModal.vue`: 图书列表模态框组件。
-    * `BookReviewPanel.vue`: 图书评论面板组件。
-    * `EpubReader.vue`: EPUB电子书阅读器组件。
-    * `UserOnboarding.vue`: 用户引导流程组件。
+  * `BookDetails.vue`: 图书详情展示组件。
+  * `BookListModal.vue`: 图书列表模态框组件。
+  * `BookReviewPanel.vue`: 图书评论面板组件。
+  * `EpubReader.vue`: EPUB电子书阅读器组件。
+  * `UserOnboarding.vue`: 用户引导流程组件。
 * **`router/`**: **路由配置目录**。定义了应用的页面路由和导航逻辑。
 * **`services/`**: **服务层目录**。通常用于封装API请求和后端数据交互逻辑。
 * **`stores/`**: **状态管理目录**。如果使用 Pinia 或 Vuex，这里存放全局状态管理相关的模块。
 * **`test/`**: **测试目录**。存放单元测试或集成测试文件。
 * **`views/`**: **页面组件目录**。存放构成应用不同页面的顶级组件。
-    * `AboutView.vue`: 关于页面。
-    * `ActivitiesPage.vue`: 活动列表页面。
-    * `ActivityDetails.vue`: 活动详情页面。
-    * `AuthView.vue`: 用户认证（登录/注册）页面。
-    * `BookList.vue`: 图书列表展示页面。
-    * `BookOfTheDay.vue`: 每日推荐图书页面。
-    * `HomeView.vue`: 应用首页。
-    * `UserView.vue`: 用户个人中心页面。
+  * `AboutView.vue`: 关于页面。
+  * `ActivitiesPage.vue`: 活动列表页面。
+  * `ActivityDetails.vue`: 活动详情页面。
+  * `AuthView.vue`: 用户认证（登录/注册）页面。
+  * `BookList.vue`: 图书列表展示页面。
+  * `BookOfTheDay.vue`: 每日推荐图书页面。
+  * `HomeView.vue`: 应用首页。
+  * `UserView.vue`: 用户个人中心页面。

@@ -162,56 +162,38 @@ onUnmounted(() => {
 </script>
 
 <style>
-/* Global Styles for the Grand Scriptorium */
 #app {
-  /* Choosing a classic serif font for an authentic feel */
   font-family: 'Georgia', 'Times New Roman', Times, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #3e2723;
-  /* Deep, rich brown reminiscent of aged wood or leather */
   min-height: 100vh;
-  /* Ensures content fills the viewport height */
   display: flex;
   flex-direction: column;
-  /* Vertical layout to pin the footer to the bottom */
   background-color: #fcf8f0;
-  /* Soft parchment white for the overall background */
 }
 
 .main-nav {
   padding: 20px 30px;
-  /* More generous padding for a stately feel */
   background-color: #5d4037;
-  /* A deep, warm brown for the navigation bar */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  /* A subtle, elegant shadow */
   display: flex;
   justify-content: center;
-  /* Centering navigation items */
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  /* A delicate bottom border */
 }
 
 /* --- Project Title Styles --- */
 .project-title {
   font-family: 'Playfair Display', serif;
-  /* A more elegant font for the title */
   font-size: 2.2em;
-  /* Larger size for prominence */
   font-weight: bold;
   color: #ffcc80;
-  /* A warm, golden hue for the title */
   margin-right: auto;
-  /* Pushes other nav items to the right */
   padding-right: 40px;
-  /* Space between title and first nav item */
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-  /* Subtle text shadow */
   letter-spacing: 1.5px;
-  /* More prominent letter spacing */
 
   /* Animation for BookHug */
   animation: pulseGold 2s infinite alternate ease-in-out;
@@ -220,16 +202,13 @@ onUnmounted(() => {
 @keyframes pulseGold {
   from {
     color: #ffcc80;
-    /* Starting warm golden hue */
     transform: scale(1);
     opacity: 1;
   }
 
   to {
     color: #ffd54f;
-    /* Slightly brighter golden hue */
     transform: scale(1.02);
-    /* Subtle growth */
     opacity: 0.95;
   }
 }
@@ -237,94 +216,72 @@ onUnmounted(() => {
 .nav-item {
   font-weight: bold;
   color: #ede0d4;
-  /* A creamy, light beige for navigation text */
   text-decoration: none;
   margin: 0 25px;
-  /* Increased spacing between navigation items */
   padding: 8px 0;
-  /* Slightly more vertical padding */
   transition: color 0.3s ease, transform 0.2s ease;
-  /* Smooth transitions */
   letter-spacing: 0.5px;
-  /* Subtle letter spacing for readability */
 }
 
 .nav-item:hover {
   color: #bcaaa4;
-  /* A muted, antique silver on hover */
   transform: translateY(-2px);
-  /* A slight lift effect */
 }
 
 .nav-item.router-link-exact-active {
   color: #bcaaa4;
-  /* Muted silver for the active link */
   border-bottom: 2px solid #bcaaa4;
-  /* A distinguished underline for the active link */
 }
 
 /* Login Button Styles */
 .login-button {
   background-color: #8d6e63;
-  /* A refined medium brown for the button */
   color: white;
   padding: 10px 20px;
-  /* Ample padding for the button */
   border-radius: 5px;
-  /* Subtle rounded corners */
   margin-left: 40px;
-  /* More distance from other navigation items */
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  /* Smooth transitions */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  /* A gentle shadow */
   letter-spacing: 0.5px;
 }
 
 .login-button:hover {
   background-color: #795548;
-  /* Darker brown on hover */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  /* Enhanced shadow on hover */
 }
 
 .app-content {
   flex-grow: 1;
-  /* Ensures the main content area occupies all available space, pushing the footer to the bottom */
   padding: 40px;
-  /* More generous padding for content areas */
   background-color: #fffaf0;
-  /* A soft, warm off-white for the content background */
 }
 
 .main-footer {
   padding: 20px;
   background-color: #5d4037;
-  /* Matching the navigation bar's deep brown */
   color: #ede0d4;
-  /* Matching the navigation text color */
   font-size: 0.95em;
-  /* Slightly larger font size for readability */
   margin-top: auto;
-  /* Pushes the footer to the bottom */
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-  /* A subtle top shadow */
   letter-spacing: 0.5px;
-  display: flex; /* 让页脚内容可以水平排列 */
-  justify-content: center; /* 水平居中 */
-  align-items: center; /* 垂直居中 */
-  flex-wrap: wrap; /* 允许内容换行 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .footer-nav-item {
-  color: #ede0d4; /* 链接颜色与页脚文本一致 */
+  color: #ede0d4;
+  /* 链接颜色与页脚文本一致 */
   text-decoration: none;
-  margin-left: 20px; /* 与版权信息或其他页脚项的间距 */
+  margin-left: 20px;
+  /* 与版权信息或其他页脚项的间距 */
   transition: color 0.3s ease;
 }
 
 .footer-nav-item:hover {
-  color: #bcaaa4; /* 悬停效果与主导航链接一致 */
+  color: #bcaaa4;
+  /* 悬停效果与主导航链接一致 */
 }
 
 body {
@@ -401,6 +358,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -411,6 +369,7 @@ body {
     transform: translateY(-50px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;

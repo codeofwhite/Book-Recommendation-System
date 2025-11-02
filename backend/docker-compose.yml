@@ -51,7 +51,6 @@ services:
       - "27017:27017"
     volumes:
       - book_mongo_data:/data/db # 只保留数据持久化卷
-    # - ./mongodb_keyfile.txt:/etc/mongo/mongodb_keyfile.txt:ro # 这行必须删除！
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet", "-u", "book_user", "-p", "book_password", "--authenticationDatabase", "admin"]
       interval: 5s
@@ -116,7 +115,7 @@ services:
       - "3309:3306" # Map to a new host port
     volumes:
       - user_engagement_mysql_data:/var/lib/mysql
-      - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql # <--- 解除注释并添加这一行
+      - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql 
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -130,7 +129,6 @@ services:
       - "5003:5003" # Expose the Flask
     environment:
       DATABASE_URL: mysql+pymysql://engagement_user:engagement_password@user_engagement_db:3306/book_engagement
-    # Optionally, if you use separate env vars in your Flask app:
     # DB_HOST: user_engagement_db
     # DB_USER: engagement_user
     # DB_PASSWORD: engagement_password
@@ -138,7 +136,6 @@ services:
     depends_on:
       user_engagement_db:
         condition: service_healthy
-  # If this service needs to talk to Kafka later (e.g., to publish engagement events)
   # kafka:
   #   condition: service_healthy
 
@@ -152,7 +149,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    healthcheck: # <-- Add this healthcheck block
+    healthcheck: 
       test: ["CMD", "sh", "-c", "nc -z localhost 2181 || exit 1"] # Check if port 2181 is open
       interval: 10s
       timeout: 5s
@@ -160,7 +157,7 @@ services:
       start_period: 10s # Give Zookeeper some time to start up initially
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.3 # Or your specific Kafka image version
+    image: confluentinc/cp-kafka:7.5.3 
     hostname: kafka
     container_name: kafka
     ports:
@@ -174,6 +171,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
       # --- ADD THESE LINES TO INCREASE MESSAGE SIZE LIMIT ---
       KAFKA_MESSAGE_MAX_BYTES: 1572864000 # Set to 1.5GB (1.5 * 1024 * 1024 * 1024)
       KAFKA_REPLICA_FETCH_MAX_BYTES: 1572864000 # Should be >= KAFKA_MESSAGE_MAX_BYTES
@@ -181,15 +179,15 @@ services:
     depends_on:
       zookeeper:
         condition: service_healthy
-    healthcheck: # <-- Add this healthcheck block for Kafka
-      test: ["CMD", "sh", "-c", "kafka-topics --bootstrap-server kafka:29092 --list > /dev/null || exit 1"] # <-- CHANGED THIS LINE!
+    healthcheck: 
+      test: ["CMD", "sh", "-c", "kafka-topics --bootstrap-server kafka:29092 --list > /dev/null || exit 1"] 
       interval: 10s
-      timeout: 10s # Kafka can take a bit longer to respond initially
+      timeout: 10s 
       retries: 5
-      start_period: 30s # Give Kafka ample time to fully initialize and connect to Zookeeper
+      start_period: 30s 
 
   kafka_connect:
-    image: confluentinc/cp-kafka-connect:8.0.0 # 建议指定版本，与Kafka版本匹配
+    image: confluentinc/cp-kafka-connect:8.0.0 
     container_name: kafka_connect
     ports:
       - "8083:8083"
@@ -197,28 +195,28 @@ services:
       CONNECT_BOOTSTRAP_SERVERS: kafka:29092
       CONNECT_GROUP_ID: connect-cluster-group
       CONNECT_LISTENERS: http://0.0.0.0:8083
-      CONNECT_REST_ADVERTISED_HOST_NAME: kafka_connect # 或者删除此行让Docker处理
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka_connect 
       
-      # --- 内部主题配置 (关键) ---
+      # --- 内部主题配置 ---
       CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
       CONNECT_STATUS_STORAGE_TOPIC: connect-status
       
-      # 内部主题的副本因子 (开发环境通常设为1，生产环境根据 Kafka 集群大小配置)
+      # 内部主题的副本因子
       CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       
-      CONNECT_CONFIG_STORAGE_PARTITIONS: 1 # 通常为1
-      CONNECT_OFFSET_STORAGE_PARTITIONS: 25 # 默认值通常为25
-      CONNECT_STATUS_STORAGE_PARTITIONS: 5 # 默认值通常为5
+      CONNECT_CONFIG_STORAGE_PARTITIONS: 1 
+      CONNECT_OFFSET_STORAGE_PARTITIONS: 25 
+      CONNECT_STATUS_STORAGE_PARTITIONS: 5 
 
-      # 明确设置内部主题的清理策略 (解决 cleanup.policy 问题)
+      # 明确设置内部主题的清理策略
       CONNECT_CONFIG_STORAGE_CLEANUP_POLICY: "compact"
       CONNECT_OFFSET_STORAGE_CLEANUP_POLICY: "compact"
       CONNECT_STATUS_STORAGE_CLEANUP_POLICY: "compact"
 
-      CONNECT_HEAP_OPTS: "-Xmx2G -Xms2G" # 例如，限制为2GB。根据您的实际可用内存调整
+      CONNECT_HEAP_OPTS: "-Xmx2G -Xms2G" # 例如，限制为2GB。根据实际可用内存调整
       CONNECT_LINGER_MS: 50 # 生产者在发送批次前等待的时间，单位毫秒。适当增加可减少请求次数
       CONNECT_BATCH_SIZE: 8192 # 生产者发送的批次大小，单位字节。适当增加可提高吞吐量
       CONNECT_MAX_REQUEST_SIZE: 1048576 # 客户端可发送的最大请求字节数
@@ -229,13 +227,13 @@ services:
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "true"
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "true"
+
       # 内部转换器也需要设置，以确保 Connect 内部通信正常
       CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
 
       CONNECT_PLUGIN_PATH: "/usr/share/confluent-hub-components"
       CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
-    # ... 其他可能存在的配置 ...
     command:
       - bash
       - -c
@@ -243,37 +241,37 @@ services:
         # Wait for Kafka to be fully ready (optional, but can help stability)
         echo "Waiting for Kafka to be ready..."
         cub kafka-ready -b kafka:29092 1 20
+        echo "Kafka is ready. Installing clickhouse/kafka-connect-sink:1.3.1"
+        confluent-hub install --no-prompt clickhouse/clickhouse-kafka-connect:latest
         echo "Kafka is ready. Installing Debezium connectors..."
         confluent-hub install --no-prompt debezium/debezium-connector-mysql:3.1.2
         confluent-hub install --no-prompt debezium/debezium-connector-mongodb:3.1.2
-        echo "Kafka is ready. Installing clickhouse/kafka-connect-sink:1.3.1"
-        confluent-hub install --no-prompt clickhouse/kafka-connect-sink:1.3.1
         /etc/confluent/docker/run
     depends_on:
       kafka:
         condition: service_healthy
-      auth_db: # <--- ADD THIS: Kafka Connect also depends on the database it's connecting to
+      auth_db: 
         condition: service_healthy
-      book_db_mongo: # <--- ADD THIS: Kafka Connect also depends on the database it's connecting to
+      book_db_mongo: 
         condition: service_healthy
-      mongo_setup: # <--- ADD THIS: Ensure MongoDB replica set is initialized
+      mongo_setup: 
         condition: service_completed_successfully
-      clickhouse: # Kafka Connect 需要 ClickHouse 来作为 Sink
+      clickhouse: 
         condition: service_healthy
     networks:
       - default
 
   # --- Recommendation Service DB ---
   recommendation_db:
-    image: mysql:8.0 # 或者 postgres:latest
+    image: mysql:8.0 
     container_name: recommendation_mysql_db
     environment:
       MYSQL_ROOT_PASSWORD: your_rec_root_password
-      MYSQL_DATABASE: recommendation_db # 推荐服务的独立数据库
+      MYSQL_DATABASE: recommendation_db 
       MYSQL_USER: rec_user
       MYSQL_PASSWORD: rec_password
     ports:
-      - "3308:3306" # 映射到宿主机的 3308 端口
+      - "3308:3306" 
     volumes:
       - recommendation_mysql_data:/var/lib/mysql
       - ./init_recommendation_db.sql:/docker-entrypoint-initdb.d/init_recommendation_db.sql
@@ -282,23 +280,6 @@ services:
       timeout: 20s
       retries: 10
       interval: 10s
-
-  # --- Recommendation Service (Python/Flask) ---
-  # recommendation_service:
-  #   build: ./recommendation_service # 推荐服务 Dockerfile 目录
-  #   ports:
-  #     - "5002:5002" # 推荐服务暴露端口
-  #   environment:
-  #     REC_DB_HOST: recommendation_db # 连接到推荐服务自己的数据库
-  #     REC_DB_USER: rec_user
-  #     REC_DB_PASSWORD: rec_password
-  #     REC_DB_NAME: recommendation_db
-  #     KAFKA_BROKER_URL: kafka:29092 # Kafka Broker 地址
-  #   depends_on:
-  #     recommendation_db:
-  #       condition: service_healthy
-  #     kafka:
-  #       condition: service_healthy # 推荐服务可能需要连接 Kafka 进行实时推荐
 
   # --- ETL Spark Processor (作为消费者) ---
   spark_etl_processor:
@@ -326,47 +307,23 @@ services:
       clickhouse: # Spark ETL 可能会写入 ClickHouse
         condition: service_healthy
     command: /opt/bitnami/spark/bin/spark-submit --master local[*] --driver-memory 2G --executor-memory 2G --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/main.py
-
-  # --- DataX Worker Service ---
-  # datax_worker:
-  #   build:
-  #     context: ./datax_worker # 指向 DataX Dockerfile 所在的目录
-  #     dockerfile: Dockerfile
-  #   container_name: datax_sync_worker
-  #   volumes:
-  #     # 挂载一个卷用于存放 DataX 的任务配置文件和日志
-  #     - ./datax_jobs:/app/datax/job # DataX 任务配置文件通常放在 datax/job 目录下
-  #     - ./datax_logs:/app/datax/log # DataX 日志输出目录
-  #   # DataX 需要连接到源数据库（auth_db, user_engagement_db, book_db_mongo）
-  #   # 和目标数据库（recommendation_db 或你的离线数仓）
-  #   depends_on:
-  #     auth_db:
-  #       condition: service_healthy
-  #     book_db_mongo:
-  #       condition: service_healthy
-  #     user_engagement_db:
-  #       condition: service_healthy
-  #     recommendation_db: # 假设你的离线数据会同步到 recommendation_db
-  #       condition: service_healthy
-  #     clickhouse: # DataX 可能需要同步数据到 ClickHouse
-  #       condition: service_healthy
-  #   networks:
-  #     - default # 确保与所有数据库服务在同一网络
-  #   deploy: # 资源限制，根据你的数据量调整
-  #     resources:
-  #       limits:
-  #         cpus: '2.0'
-  #         memory: 4G # DataX 可能会消耗较多内存，特别是处理大文件时
-  #   command: ["tail", "-f", "/dev/null"] # 保持容器运行，以便手动或通过 cron 触发任务
+    deploy:
+      resources:
+        limits: # 硬限制（超限时服务会被杀死）
+        cpus: '2.0'  # 最多用 2 核 CPU
+        memory: 4G   # 最多用 4G 内存
+      reservations:  # 最小保障（启动时至少分配）
+        cpus: '1.0'
+        memory: 2G
 
   # --- ClickHouse Service ---
   clickhouse:
-    image: clickhouse/clickhouse-server:23.8 # 推荐使用最新的稳定版
+    image: clickhouse/clickhouse-server:23.8 
     container_name: clickhouse_db
     ports:
       - "8123:8123"   # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
       - "9000:9000"   # 原生 TCP 接口 (用于 clickhouse-client)
-      - "9009:9009"   # MySQL 兼容接口 (如果需要，默认不开启)
+      - "9009:9009"   # MySQL 兼容接口
     volumes:
       - clickhouse_data:/var/lib/clickhouse # 数据持久化
       - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
@@ -381,53 +338,9 @@ services:
       retries: 5
       start_period: 10s # 给予启动时间
 
-  # --- HDFS Services ---
-  # namenode:
-  #   image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
-  #   container_name: namenode
-  #   ports:
-  #     - "9870:9870" # HDFS Web UI
-  #     - "9900:9000" # HDFS Default Port
-  #   volumes:
-  #     - namenode_data:/hadoop/dfs/name # 持久化 NameNode 数据
-  #     - ./namenode-entrypoint.sh:/usr/local/bin/namenode-entrypoint.sh # 挂载你的启动脚本
-  #   environment:
-  #     # These typically come from Hadoop's core-site.xml, but can be set via env vars for Docker
-  #     HDFS_CONF_dfs_namenode_name_dir: file:///hadoop/dfs/name
-  #     HDFS_CONF_dfs_replication: 1 # For a single-node setup
-  #   env_file:
-  #     - ./hadoop.env # For HDFS specific configurations (explained below)
-  #   healthcheck:
-  #     test: ["CMD", "hdfs", "dfsadmin", "-report"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 60s # Give NameNode ample time to start and format
-  #   command: ["bash", "/usr/local/bin/namenode-entrypoint.sh"]
-
-  # datanode:
-  #   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
-  #   container_name: datanode
-  #   volumes:
-  #     - datanode_data:/hadoop/dfs/data # 持久化 DataNode 数据
-  #   environment:
-  #     HDFS_CONF_dfs_datanode_data_dir: file:///hadoop/dfs/data
-  #   env_file:
-  #     - ./hadoop.env # For HDFS specific configurations
-  #   depends_on:
-  #     namenode:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD", "hdfs", "dfsadmin", "-getServiceState", "hdfs://namenode:9000/"] # Check if connected to NameNode
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 30s
-
-  # Flink JobManager - NEW ADDITION
-  # Flink JobManager (using your custom PyFlink image)
+  # Flink JobManager
   flink-jobmanager:
-    build: ./flink_py_image # Path to your custom Flink Python image Dockerfile
+    build: ./flink_py_image 
     container_name: flink-jobmanager
     ports:
       - "8081:8081" # Flink Web UI
@@ -442,7 +355,7 @@ services:
         taskmanager.numberOfTaskSlots: 1
         python.executable: /usr/bin/python3
     volumes:
-      - ./flink_jobs:/opt/flink/usrlib # Mount your Flink Job Python script
+      - ./flink_jobs:/opt/flink/usrlib # Mount Flink Job Python script
     depends_on:
       kafka:
         condition: service_healthy
@@ -455,9 +368,9 @@ services:
       retries: 5
       start_period: 30s
 
-  # Flink TaskManager (using your custom PyFlink image)
+  # Flink TaskManager 
   flink-taskmanager:
-    build: ./flink_py_image # Path to your custom Flink Python image Dockerfile
+    build: ./flink_py_image 
     container_name: flink-taskmanager
     command: taskmanager # Start TaskManager
     environment:
@@ -470,7 +383,7 @@ services:
       flink-jobmanager:
         condition: service_healthy
 
-  # Flink Job Submitter (one-off service to submit the PyFlink Job)
+  # Flink Job Submitter
   flink-job-submitter:
     build: ./flink_py_image
     container_name: flink-job-submitter
@@ -505,12 +418,12 @@ services:
       timeout: 3s
       retries: 5
 
-  # New: Real-time Recommendation Service (Flask app reading from Redis)
+  # Real-time Recommendation Service 
   realtime_recommendation_service:
-    build: ./realtime_recommendation_service # Path to your Dockerfile for this service
+    build: ./realtime_recommendation_service 
     container_name: realtime_recommendation_service
     ports:
-      - "5004:5004" # Expose on port 5004
+      - "5004:5004" 
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -534,16 +447,16 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
-      OFFLINE_CRON_SCHEDULE: "0 2 * * *" # 例如：每天凌晨2点运行离线计算
+      OFFLINE_CRON_SCHEDULE: "0 2 * * *" 
     depends_on:
       recommendation_db:
         condition: service_healthy # 依赖推荐数据库
       redis:
         condition: service_healthy # 依赖 Redis 存储结果
 
-  # New Log Ingestion Service (Frontend Logs to Kafka)
+  # Log Ingestion Service 
   log_service:
-    build: ./log_service # 假设你的Flask日志服务代码在 log_service 目录下
+    build: ./log_service 
     container_name: frontend_log_ingestion
     ports:
       - "5006:5006" # 为日志服务分配一个端口
@@ -566,7 +479,6 @@ services:
       environment:
         MINIO_ROOT_USER: ${MINIO_ROOT_USER}
         MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-        # ⬇️ 将原来的环境变量替换为这个 ⬇️
         MINIO_CORS_ALLOW_ORIGIN: "http://localhost:5173"
       volumes:
         - minio_data:/data
@@ -577,19 +489,15 @@ services:
         timeout: 20s
         retries: 3
 
+# 数据持久化
 volumes:
   auth_mysql_data:
   book_mongo_data:
-  zookeeper_data: # Zookeeper 数据持久化
-  kafka_data:     # Kafka 数据持久化
-  recommendation_mysql_data: # 推荐服务数据库持久化
+  zookeeper_data: 
+  kafka_data:     
+  recommendation_mysql_data: 
   user_engagement_mysql_data:
-  # 为 DataX 的任务和日志添加新的卷，这样即使容器重建，这些数据也能保留
-  # datax_jobs:
-  # datax_logs:
-  clickhouse_data: # 为 ClickHouse 添加数据卷
-  clickhouse_logs: # 为 ClickHouse 添加日志卷
-  # namenode_data: # NameNode 数据卷
-  # datanode_data: # DataNode 数据卷
+  clickhouse_data: 
+  clickhouse_logs:
   redis_data:
   minio_data:

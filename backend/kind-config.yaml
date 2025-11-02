@@ -1,0 +1,39 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# 三节点配置（1个控制平面 + 2个工作节点）
+nodes:
+  - role: control-plane
+    # 开放NodePort范围供外部访问（30000-30020）
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 30000
+      - containerPort: 30001
+        hostPort: 30001
+      - containerPort: 30002
+        hostPort: 30002
+      - containerPort: 30003
+        hostPort: 30003
+      - containerPort: 30004
+        hostPort: 30004
+      - containerPort: 30005
+        hostPort: 30005
+      - containerPort: 30006
+        hostPort: 30006
+      - containerPort: 30007
+        hostPort: 30007
+      - containerPort: 30008
+        hostPort: 30008
+      - containerPort: 30009
+        hostPort: 30009
+      - containerPort: 30010
+        hostPort: 30010
+
+  - role: worker
+
+  - role: worker
+
+# 允许本地镜像仓库（如需加载自定义镜像）
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
+      endpoint = ["http://host.docker.internal:5000"]

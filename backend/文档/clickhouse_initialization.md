@@ -11,8 +11,8 @@ ORDER BY (user_id, client_timestamp, event_type)
 PARTITION BY toYYYYMM(client_timestamp)
 TTL client_timestamp + toIntervalYear(3);
 
-curl -X DELETE http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink
+curl -X DELETE <http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink>
 
-curl -X POST -H "Content-Type: application/json" --data @clickhouse_user_behavior_sink_connector.json http://localhost:8083/connectors
+curl -X POST -H "Content-Type: application/json" --data @clickhouse_user_behavior_sink_connector.json <http://localhost:8083/connectors>
 
-curl http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink/status | jq .
+curl <http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink/status> | jq .

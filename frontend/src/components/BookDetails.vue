@@ -14,7 +14,7 @@
           <div class="celestial-judgement">
             <span class="stars-bestowed">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 -
               Math.round(book.rating))
-              }}</span>
+            }}</span>
             <span class="whispers-of-appraisal">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
           </div>
 
@@ -65,7 +65,7 @@
           <h3 class="section-heading">Notable Figures Within</h3>
           <div class="characters-of-note">
             <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
-              }}</span>
+            }}</span>
           </div>
         </div>
 

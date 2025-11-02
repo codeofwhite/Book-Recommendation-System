@@ -488,20 +488,26 @@ const topAuthorsChartOptions = computed(() => {
 .section-divider {
   border: none;
   border-top: 1px dashed #e0e0e0;
-  margin: 40px 0; /* 调整间距，将图表与上下区域分隔开 */
+  margin: 40px 0;
+  /* 调整间距，将图表与上下区域分隔开 */
 }
 
 /* --- 图表区域 --- */
 .charts-section {
-  margin-top: 20px; /* 与分隔线保持间距 */
+  margin-top: 20px;
+  /* 与分隔线保持间距 */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); /* 确保至少两列，每列最小450px */
-  gap: 30px; /* 增加图表之间的间距 */
-  padding: 0 20px; /* 稍微内缩，避免太靠近边缘 */
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  /* 确保至少两列，每列最小450px */
+  gap: 30px;
+  /* 增加图表之间的间距 */
+  padding: 0 20px;
+  /* 稍微内缩，避免太靠近边缘 */
 }
 
 .charts-section h3 {
-  grid-column: 1 / -1; /* 标题占据所有列 */
+  grid-column: 1 / -1;
+  /* 标题占据所有列 */
   text-align: center;
   color: #2c3e50;
   font-size: 1.8em;
@@ -514,11 +520,14 @@ const topAuthorsChartOptions = computed(() => {
   padding: 25px;
   border-radius: 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  min-height: 400px; /* 确保图表容器有足够的最小高度 */
+  min-height: 400px;
+  /* 确保图表容器有足够的最小高度 */
   display: flex;
   flex-direction: column;
-  justify-content: center; /* 垂直居中内容 */
-  align-items: center; /* 水平居中内容 */
+  justify-content: center;
+  /* 垂直居中内容 */
+  align-items: center;
+  /* 水平居中内容 */
   transition: box-shadow 0.3s ease;
 }
 
@@ -535,16 +544,20 @@ const topAuthorsChartOptions = computed(() => {
 }
 
 .chart {
-  height: 300px; /* 图表实际渲染的高度 */
-  width: 100%; /* 图表宽度填充容器 */
+  height: 300px;
+  /* 图表实际渲染的高度 */
+  width: 100%;
+  /* 图表宽度填充容器 */
 }
 
 /* --- 表格区域 --- */
 .table-container {
-  overflow-x: auto; /* 允许表格水平滚动 */
+  overflow-x: auto;
+  /* 允许表格水平滚动 */
   margin-top: 30px;
   margin-bottom: 20px;
-  border: 1px solid #e0e0e0; /* 边框 */
+  border: 1px solid #e0e0e0;
+  /* 边框 */
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
@@ -694,6 +707,7 @@ const topAuthorsChartOptions = computed(() => {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -797,7 +811,8 @@ const topAuthorsChartOptions = computed(() => {
 }
 
 /* 消息样式 */
-.loading-message, .no-data-message {
+.loading-message,
+.no-data-message {
   text-align: center;
   color: #7f8c8d;
   font-style: italic;
@@ -817,14 +832,16 @@ const topAuthorsChartOptions = computed(() => {
 }
 
 /* 表格内部的消息样式 */
-.loading-message-cell, .error-message-cell, .no-data-message-cell {
+.loading-message-cell,
+.error-message-cell,
+.no-data-message-cell {
   text-align: center !important;
   font-style: italic;
   color: #7f8c8d;
   padding: 20px;
 }
+
 .error-message-cell {
   color: #e74c3c;
 }
-
 </style>

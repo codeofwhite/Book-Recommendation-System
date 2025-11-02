@@ -51,7 +51,7 @@
           </div>
           <div class="rating">
             <span class="stars">{{ '★'.repeat(Math.floor(review.rating)) }}{{ '☆'.repeat(5 - Math.floor(review.rating))
-            }}</span>
+              }}</span>
             <span class="rating-text">({{ review.rating }}/5)</span>
           </div>
           <div class="review-text">
