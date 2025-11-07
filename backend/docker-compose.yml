@@ -14,7 +14,7 @@ services:
       - --default-authentication-plugin=mysql_native_password
       - --binlog-format=ROW # 启用 binlog，Debezium 需要
       - --log-bin=mysql-bin # 启用 binlog，Debezium 需要
-      - --server-id=1                   # <--- IMPORTANT: For Debezium, MySQL needs a unique server-id
+      - --server-id=1 # <--- IMPORTANT: For Debezium, MySQL needs a unique server-id
     ports:
       - "3307:3306"
     volumes:
@@ -26,6 +26,7 @@ services:
       retries: 10
       interval: 10s
 
+  # 认证服务
   auth_service:
     build: ./auth_service
     ports:
@@ -52,7 +53,20 @@ services:
     volumes:
       - book_mongo_data:/data/db # 只保留数据持久化卷
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet", "-u", "book_user", "-p", "book_password", "--authenticationDatabase", "admin"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--eval",
+          "db.adminCommand('ping')",
+          "--quiet",
+          "-u",
+          "book_user",
+          "-p",
+          "book_password",
+          "--authenticationDatabase",
+          "admin",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -63,7 +77,7 @@ services:
       - --keyFile
       - /etc/mongo/mongodb_keyfile.txt # Keyfile 现在在镜像内部
       - --bind_ip_all
-  
+
   # 初始化 MongoDB 副本集（Debezium 需要）
   mongo_setup:
     image: mongo:latest
@@ -82,8 +96,9 @@ services:
           });EOF
       "
 
+  # Book Management Service
   book_manage:
-    build: ./book_manage
+    build: ./book_manage_service
     ports:
       - "5001:5001"
     environment:
@@ -115,7 +130,7 @@ services:
       - "3309:3306" # Map to a new host port
     volumes:
       - user_engagement_mysql_data:/var/lib/mysql
-      - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql 
+      - ./init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -129,19 +144,14 @@ services:
       - "5003:5003" # Expose the Flask
     environment:
       DATABASE_URL: mysql+pymysql://engagement_user:engagement_password@user_engagement_db:3306/book_engagement
-    # DB_HOST: user_engagement_db
-    # DB_USER: engagement_user
-    # DB_PASSWORD: engagement_password
-    # DB_NAME: book_engagement
     depends_on:
       user_engagement_db:
         condition: service_healthy
-  # kafka:
-  #   condition: service_healthy
 
   # --- ETL Infrastructure ---
+  # --- Kafka & Zookeeper ---
   zookeeper:
-    image: 'confluentinc/cp-zookeeper:7.5.3'
+    image: "confluentinc/cp-zookeeper:7.5.3"
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -149,15 +159,16 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    healthcheck: 
+    healthcheck:
       test: ["CMD", "sh", "-c", "nc -z localhost 2181 || exit 1"] # Check if port 2181 is open
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s # Give Zookeeper some time to start up initially
 
+  # --- Kafka Broker ---
   kafka:
-    image: confluentinc/cp-kafka:7.5.3 
+    image: confluentinc/cp-kafka:7.5.3
     hostname: kafka
     container_name: kafka
     ports:
@@ -165,7 +176,7 @@ services:
       - "9094:9094" # For external access if needed
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9094
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -179,15 +190,22 @@ services:
     depends_on:
       zookeeper:
         condition: service_healthy
-    healthcheck: 
-      test: ["CMD", "sh", "-c", "kafka-topics --bootstrap-server kafka:29092 --list > /dev/null || exit 1"] 
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "kafka-topics --bootstrap-server kafka:29092 --list > /dev/null || exit 1",
+        ]
       interval: 10s
-      timeout: 10s 
+      timeout: 10s
       retries: 5
-      start_period: 30s 
+      start_period: 30s
 
+  # --- Kafka Connect ---
   kafka_connect:
-    image: confluentinc/cp-kafka-connect:8.0.0 
+    image: confluentinc/cp-kafka-connect:8.0.0
     container_name: kafka_connect
     ports:
       - "8083:8083"
@@ -195,21 +213,21 @@ services:
       CONNECT_BOOTSTRAP_SERVERS: kafka:29092
       CONNECT_GROUP_ID: connect-cluster-group
       CONNECT_LISTENERS: http://0.0.0.0:8083
-      CONNECT_REST_ADVERTISED_HOST_NAME: kafka_connect 
-      
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka_connect
+
       # --- 内部主题配置 ---
       CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
       CONNECT_STATUS_STORAGE_TOPIC: connect-status
-      
+
       # 内部主题的副本因子
       CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      
-      CONNECT_CONFIG_STORAGE_PARTITIONS: 1 
-      CONNECT_OFFSET_STORAGE_PARTITIONS: 25 
-      CONNECT_STATUS_STORAGE_PARTITIONS: 5 
+
+      CONNECT_CONFIG_STORAGE_PARTITIONS: 1
+      CONNECT_OFFSET_STORAGE_PARTITIONS: 25
+      CONNECT_STATUS_STORAGE_PARTITIONS: 5
 
       # 明确设置内部主题的清理策略
       CONNECT_CONFIG_STORAGE_CLEANUP_POLICY: "compact"
@@ -250,36 +268,16 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-      auth_db: 
+      auth_db:
         condition: service_healthy
-      book_db_mongo: 
+      book_db_mongo:
         condition: service_healthy
-      mongo_setup: 
+      mongo_setup:
         condition: service_completed_successfully
-      clickhouse: 
+      clickhouse:
         condition: service_healthy
     networks:
       - default
-
-  # --- Recommendation Service DB ---
-  recommendation_db:
-    image: mysql:8.0 
-    container_name: recommendation_mysql_db
-    environment:
-      MYSQL_ROOT_PASSWORD: your_rec_root_password
-      MYSQL_DATABASE: recommendation_db 
-      MYSQL_USER: rec_user
-      MYSQL_PASSWORD: rec_password
-    ports:
-      - "3308:3306" 
-    volumes:
-      - recommendation_mysql_data:/var/lib/mysql
-      - ./init_recommendation_db.sql:/docker-entrypoint-initdb.d/init_recommendation_db.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-      interval: 10s
 
   # --- ETL Spark Processor (作为消费者) ---
   spark_etl_processor:
@@ -292,9 +290,9 @@ services:
       REC_DB_PASSWORD: rec_password
       REC_DB_NAME: recommendation_db
       CLICKHOUSE_HOST: clickhouse # 添加 ClickHouse 连接信息
-      CLICKHOUSE_PORT: 8123       # HTTP 端口
-      CLICKHOUSE_USER: default    # 默认用户
-      CLICKHOUSE_PASSWORD:        # 默认无密码
+      CLICKHOUSE_PORT: 8123 # HTTP 端口
+      CLICKHOUSE_USER: default # 默认用户
+      CLICKHOUSE_PASSWORD: # 默认无密码
     depends_on:
       kafka:
         condition: service_healthy
@@ -310,37 +308,15 @@ services:
     deploy:
       resources:
         limits: # 硬限制（超限时服务会被杀死）
-        cpus: '2.0'  # 最多用 2 核 CPU
-        memory: 4G   # 最多用 4G 内存
-      reservations:  # 最小保障（启动时至少分配）
-        cpus: '1.0'
+        cpus: "2.0" # 最多用 2 核 CPU
+        memory: 4G # 最多用 4G 内存
+      reservations: # 最小保障（启动时至少分配）
+        cpus: "1.0"
         memory: 2G
-
-  # --- ClickHouse Service ---
-  clickhouse:
-    image: clickhouse/clickhouse-server:23.8 
-    container_name: clickhouse_db
-    ports:
-      - "8123:8123"   # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
-      - "9000:9000"   # 原生 TCP 接口 (用于 clickhouse-client)
-      - "9009:9009"   # MySQL 兼容接口
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse # 数据持久化
-      - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
-    ulimits: # ClickHouse 对文件描述符有限制，建议调高
-      nofile:
-        soft: 262144
-        hard: 262144
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider 'http://localhost:8123/ping' || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s # 给予启动时间
 
   # Flink JobManager
   flink-jobmanager:
-    build: ./flink_py_image 
+    build: ./flink_py_image
     container_name: flink-jobmanager
     ports:
       - "8081:8081" # Flink Web UI
@@ -368,9 +344,9 @@ services:
       retries: 5
       start_period: 30s
 
-  # Flink TaskManager 
+  # Flink TaskManager
   flink-taskmanager:
-    build: ./flink_py_image 
+    build: ./flink_py_image
     container_name: flink-taskmanager
     command: taskmanager # Start TaskManager
     environment:
@@ -397,8 +373,8 @@ services:
         /opt/flink/bin/flink run --jarfile /opt/flink/usrlib/jars/flink-sql-connector-kafka-3.0.0-1.17.jar -py /opt/flink/usrlib/scripts/realtime_recommendation_job.py
       " # <-- 注意这一整行
     volumes:
-      - ./flink_jars:/opt/flink/usrlib/jars      # 将JAR包挂载到 /opt/flink/usrlib/jars
-      - ./flink_jobs:/opt/flink/usrlib/scripts   # 将Python脚本挂载到 /opt/flink/usrlib/scripts
+      - ./flink_jars:/opt/flink/usrlib/jars # 将JAR包挂载到 /opt/flink/usrlib/jars
+      - ./flink_jobs:/opt/flink/usrlib/scripts # 将Python脚本挂载到 /opt/flink/usrlib/scripts
     depends_on:
       flink-jobmanager:
         condition: service_healthy
@@ -418,27 +394,47 @@ services:
       timeout: 3s
       retries: 5
 
-  # Real-time Recommendation Service 
+  # --- Recommendation Service DB ---
+  recommendation_db:
+    image: mysql:8.0
+    container_name: recommendation_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: your_rec_root_password
+      MYSQL_DATABASE: recommendation_db
+      MYSQL_USER: rec_user
+      MYSQL_PASSWORD: rec_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - recommendation_mysql_data:/var/lib/mysql
+      - ./init_recommendation_db.sql:/docker-entrypoint-initdb.d/init_recommendation_db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  # Real-time Recommendation Service
   realtime_recommendation_service:
-    build: ./realtime_recommendation_service 
+    build: ./realtime_recommendation_service
     container_name: realtime_recommendation_service
     ports:
-      - "5004:5004" 
+      - "5004:5004"
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
       redis:
-        condition: service_healthy # Ensure Redis is up before starting
-      flink-job-submitter: # Ensure Flink job potentially started before this service
-        condition: service_completed_successfully # Or service_healthy if job is long-running
+        condition: service_healthy 
+      flink-job-submitter: 
+        condition: service_completed_successfully 
 
   # NEW SERVICE: Offline Recommendation Service
   offline_recommendation_service:
     build: ./offline_recommendation_service
     container_name: offline_recommendation_service_app
     ports:
-      - "5005:5005" 
+      - "5005:5005"
     environment:
       REC_DB_HOST: recommendation_db
       REC_DB_USER: rec_user
@@ -447,16 +443,16 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
-      OFFLINE_CRON_SCHEDULE: "0 2 * * *" 
+      OFFLINE_CRON_SCHEDULE: "0 2 * * *"
     depends_on:
       recommendation_db:
-        condition: service_healthy # 依赖推荐数据库
+        condition: service_healthy 
       redis:
-        condition: service_healthy # 依赖 Redis 存储结果
+        condition: service_healthy 
 
-  # Log Ingestion Service 
+  # Log Ingestion Service
   log_service:
-    build: ./log_service 
+    build: ./log_service
     container_name: frontend_log_ingestion
     ports:
       - "5006:5006" # 为日志服务分配一个端口
@@ -465,39 +461,66 @@ services:
     depends_on:
       kafka:
         condition: service_healthy # 确保 Kafka 启动后再启动日志服务
-    # volumes: # 如果需要持久化日志文件，可以加上
+    # 如果需要持久化日志文件
+    # volumes: 
     #   - ./logs:/app/logs
     networks:
       - default
 
   minio:
-      image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
-      container_name: minio
-      ports:
-        - "9002:9000" # MinIO API 端口
-        - "9001:9001" # MinIO Console (UI) 端口
-      environment:
-        MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-        MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-        MINIO_CORS_ALLOW_ORIGIN: "http://localhost:5173"
-      volumes:
-        - minio_data:/data
-      command: minio server /data --console-address ":9001"
-      healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:9002/minio/health/live"]
-        interval: 30s
-        timeout: 20s
-        retries: 3
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: minio
+    ports:
+      - "9002:9000" # MinIO API 端口
+      - "9001:9001" # MinIO Console (UI) 端口
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_CORS_ALLOW_ORIGIN: "http://localhost:5173"
+    volumes:
+      - minio_data:/data
+    command: minio server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # --- ClickHouse Service ---
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: clickhouse_db
+    ports:
+      - "8123:8123" # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
+      - "9000:9000" # 原生 TCP 接口 (用于 clickhouse-client)
+      - "9009:9009" # MySQL 兼容接口
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse # 数据持久化
+      - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
+    ulimits: # ClickHouse 对文件描述符有限制，建议调高
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider 'http://localhost:8123/ping' || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # 给予启动时间
 
 # 数据持久化
 volumes:
   auth_mysql_data:
   book_mongo_data:
-  zookeeper_data: 
-  kafka_data:     
-  recommendation_mysql_data: 
+  zookeeper_data:
+  kafka_data:
+  recommendation_mysql_data:
   user_engagement_mysql_data:
-  clickhouse_data: 
+  clickhouse_data:
   clickhouse_logs:
   redis_data:
   minio_data:

@@ -1,0 +1,53 @@
+services:
+  # --- Auth Service ---
+  auth_db:
+    image: mysql:8.0
+    container_name: auth_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: your_auth_root_password
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_password
+      MYSQL_DEBEZIUM_USER: debezium
+      MYSQL_DEBEZIUM_PASSWORD: dbz
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --binlog-format=ROW # 启用 binlog，Debezium 需要
+      - --log-bin=mysql-bin # 启用 binlog，Debezium 需要
+      - --server-id=1                   # <--- IMPORTANT: For Debezium, MySQL needs a unique server-id
+    ports:
+      - "3307:3306"
+    volumes:
+      - auth_mysql_data:/var/lib/mysql
+      - ../tools/scripts/sqls/init_debezium_user.sql:/docker-entrypoint-initdb.d/init_debezium_user.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  auth_service:
+    build: ../microservices/auth-service
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: auth_db
+      DB_USER: auth_user
+      DB_PASSWORD: auth_password
+      DB_NAME: auth_db
+    depends_on:
+      auth_db:
+        condition: service_healthy
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+
+# 引用 base.yml 的网络和卷（关键：让模块知道公共资源的存在）
+networks:
+  book-recommend-network:
+    external: true 
+
+volumes:
+  auth_mysql_data: 

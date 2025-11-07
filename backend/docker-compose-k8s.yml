@@ -107,7 +107,7 @@ services:
           cpus: '0.2'
           memory: 256M
 
-  book_manage:
+  book_manage_service:
     build: ./book_manage
     # ports:
     #   - "5001:5001"

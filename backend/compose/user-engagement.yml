@@ -1,0 +1,49 @@
+services:
+  # --- User Engagement Service (Likes & Collections) ---
+  user_engagement_db:
+    image: mysql:8.0
+    container_name: user_engagement_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: your_engagement_root_password # Set a strong password
+      MYSQL_DATABASE: book_engagement
+      MYSQL_USER: engagement_user
+      MYSQL_PASSWORD: engagement_password
+      MYSQL_DEBEZIUM_USER: debezium # Re-use or create new for this DB
+      MYSQL_DEBEZIUM_PASSWORD: dbz # Re-use or create new for this DB
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --binlog-format=ROW
+      - --log-bin=mysql-bin
+      - --server-id=2 # IMPORTANT: Must be a unique server-id for Debezium across all MySQL instances
+    ports:
+      - "3309:3306" # Map to a new host port
+    volumes:
+      - user_engagement_mysql_data:/var/lib/mysql
+      - ../tools/scripts/sqls/init_debezium_user_engagement.sql:/docker-entrypoint-initdb.d/init_debezium_user_engagement.sql 
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  user_engagement_service:
+    build: ../microservices/user-engagement-service # Points to the new directory
+    container_name: user_engagement_service_app
+    ports:
+      - "5003:5003" # Expose the Flask
+    environment:
+      DATABASE_URL: mysql+pymysql://engagement_user:engagement_password@user_engagement_db:3306/book_engagement
+    depends_on:
+      user_engagement_db:
+        condition: service_healthy
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+networks:
+  book-recommend-network:
+    external: true 
+
+volumes:
+  user_engagement_mysql_data:

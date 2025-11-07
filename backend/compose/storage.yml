@@ -1,0 +1,72 @@
+services:
+  # --- ClickHouse Service ---
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8 
+    container_name: clickhouse_db
+    ports:
+      - "8123:8123"   # HTTP 接口 (用于 ClickHouse Client、JDBC、ODBC 等)
+      - "9000:9000"   # 原生 TCP 接口 (用于 clickhouse-client)
+      - "9009:9009"   # MySQL 兼容接口
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse # 数据持久化
+      - clickhouse_logs:/var/log/clickhouse-server # 日志持久化
+    ulimits: # ClickHouse 对文件描述符有限制，建议调高
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider 'http://localhost:8123/ping' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # 给予启动时间
+    networks:
+      - book-recommend-network  # 接入公共网络
+      
+  # --- MinIO Service ---
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: minio
+    ports:
+      - "9002:9000" # MinIO API 端口
+      - "9001:9001" # MinIO Console (UI) 端口
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_CORS_ALLOW_ORIGIN: "http://localhost:5173"
+    volumes:
+      - minio_data:/data
+    command: minio server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # Log Ingestion Service 
+  log_service:
+    build: ../microservices/log-service
+    container_name: frontend_log_ingestion
+    ports:
+      - "5006:5006" # 为日志服务分配一个端口
+    environment:
+      KAFKA_BROKER_URL: kafka:29092 # 连接到 Kafka
+    depends_on:
+      kafka:
+        condition: service_healthy # 确保 Kafka 启动后再启动日志服务
+    # volumes: # 如果需要持久化日志文件，可以加上
+    #   - ./logs:/app/logs
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+networks:
+  book-recommend-network:
+    external: true 
+
+volumes:
+  clickhouse_data:
+  clickhouse_logs:
+  minio_data:
+
