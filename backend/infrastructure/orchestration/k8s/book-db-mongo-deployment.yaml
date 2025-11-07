@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+      -o k8s/
+    kompose.version: 1.21.0 (992df58d8)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: book-db-mongo
+  name: book-db-mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: book-db-mongo
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+          -o k8s/
+        kompose.version: 1.21.0 (992df58d8)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: book-db-mongo
+    spec:
+      containers:
+      - args:
+        - mongod
+        - --replSet
+        - dbrs
+        - --keyFile
+        - /etc/mongo/mongodb_keyfile.txt
+        - --bind_ip_all
+        env:
+        - name: MONGO_INITDB_DATABASE
+          value: book_manage_db
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: book_password
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: book_user
+        image: book-db-mongo
+        imagePullPolicy: ""
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - db.adminCommand('ping')
+            - --quiet
+            - -u
+            - book_user
+            - -p
+            - book_password
+            - --authenticationDatabase
+            - admin
+          failureThreshold: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+        name: book-mongo-db
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1073741824"
+          requests:
+            cpu: 500m
+            memory: "536870912"
+        volumeMounts:
+        - mountPath: /data/db
+          name: book-mongo-data
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes:
+      - name: book-mongo-data
+        persistentVolumeClaim:
+          claimName: book-mongo-data
+status: {}

@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+      -o k8s/
+    kompose.version: 1.21.0 (992df58d8)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: user-engagement-db
+  name: user-engagement-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: user-engagement-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+          -o k8s/
+        kompose.version: 1.21.0 (992df58d8)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: user-engagement-db
+    spec:
+      containers:
+      - args:
+        - --default-authentication-plugin=mysql_native_password
+        - --binlog-format=ROW
+        - --log-bin=mysql-bin
+        - --server-id=2
+        env:
+        - name: MYSQL_DATABASE
+          value: book_engagement
+        - name: MYSQL_DEBEZIUM_PASSWORD
+          value: dbz
+        - name: MYSQL_DEBEZIUM_USER
+          value: debezium
+        - name: MYSQL_PASSWORD
+          value: engagement_password
+        - name: MYSQL_ROOT_PASSWORD
+          value: your_engagement_root_password
+        - name: MYSQL_USER
+          value: engagement_user
+        image: mysql:8.0
+        imagePullPolicy: ""
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          failureThreshold: 10
+          periodSeconds: 10
+          timeoutSeconds: 20
+        name: user-engagement-mysql-db
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1073741824"
+          requests:
+            cpu: 500m
+            memory: "536870912"
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: user-engagement-mysql-data
+        - mountPath: /docker-entrypoint-initdb.d/init_debezium_user_engagement.sql
+          name: user-engagement-db-claim1
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes:
+      - name: user-engagement-mysql-data
+        persistentVolumeClaim:
+          claimName: user-engagement-mysql-data
+      - name: user-engagement-db-claim1
+        persistentVolumeClaim:
+          claimName: user-engagement-db-claim1
+status: {}

@@ -1,0 +1,134 @@
+services:
+  # --- ETL Infrastructure ---
+  zookeeper:
+    image: 'confluentinc/cp-zookeeper:7.5.3'
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "22181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck: 
+      test: ["CMD", "sh", "-c", "nc -z localhost 2181 || exit 1"] # Check if port 2181 is open
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Give Zookeeper some time to start up initially
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3 
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094" # For external access if needed
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+      # --- ADD THESE LINES TO INCREASE MESSAGE SIZE LIMIT ---
+      KAFKA_MESSAGE_MAX_BYTES: 1572864000 # Set to 1.5GB (1.5 * 1024 * 1024 * 1024)
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 1572864000 # Should be >= KAFKA_MESSAGE_MAX_BYTES
+      KAFKA_MAX_REQUEST_SIZE: 1572864000 # Should be >= KAFKA_MESSAGE_MAX_BYTES
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck: 
+      test: ["CMD", "sh", "-c", "kafka-topics --bootstrap-server kafka:29092 --list > /dev/null || exit 1"] 
+      interval: 10s
+      timeout: 10s 
+      retries: 5
+      start_period: 30s 
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  kafka_connect:
+    image: confluentinc/cp-kafka-connect:8.0.0 
+    container_name: kafka_connect
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_GROUP_ID: connect-cluster-group
+      CONNECT_LISTENERS: http://0.0.0.0:8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka_connect 
+      
+      # --- 内部主题配置 ---
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status
+      
+      # 内部主题的副本因子
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      
+      CONNECT_CONFIG_STORAGE_PARTITIONS: 1 
+      CONNECT_OFFSET_STORAGE_PARTITIONS: 25 
+      CONNECT_STATUS_STORAGE_PARTITIONS: 5 
+
+      # 明确设置内部主题的清理策略
+      CONNECT_CONFIG_STORAGE_CLEANUP_POLICY: "compact"
+      CONNECT_OFFSET_STORAGE_CLEANUP_POLICY: "compact"
+      CONNECT_STATUS_STORAGE_CLEANUP_POLICY: "compact"
+
+      CONNECT_HEAP_OPTS: "-Xmx2G -Xms2G" # 例如，限制为2GB。根据实际可用内存调整
+      CONNECT_LINGER_MS: 50 # 生产者在发送批次前等待的时间，单位毫秒。适当增加可减少请求次数
+      CONNECT_BATCH_SIZE: 8192 # 生产者发送的批次大小，单位字节。适当增加可提高吞吐量
+      CONNECT_MAX_REQUEST_SIZE: 1048576 # 客户端可发送的最大请求字节数
+      CONNECT_MAX_PARTITION_FETCH_BYTES: 1048576 # 每个分区的最大字节数
+
+      # 序列化器配置
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "true"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "true"
+
+      # 内部转换器也需要设置，以确保 Connect 内部通信正常
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+
+      CONNECT_PLUGIN_PATH: "/usr/share/confluent-hub-components"
+      CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+    command:
+      - bash
+      - -c
+      - |
+        # Wait for Kafka to be fully ready (optional, but can help stability)
+        echo "Waiting for Kafka to be ready..."
+        cub kafka-ready -b kafka:29092 1 20
+        echo "Kafka is ready. Installing clickhouse/kafka-connect-sink:1.3.1"
+        confluent-hub install --no-prompt clickhouse/clickhouse-kafka-connect:latest
+        echo "Kafka is ready. Installing Debezium connectors..."
+        confluent-hub install --no-prompt debezium/debezium-connector-mysql:3.1.2
+        confluent-hub install --no-prompt debezium/debezium-connector-mongodb:3.1.2
+        /etc/confluent/docker/run
+    depends_on:
+      kafka:
+        condition: service_healthy
+      auth_db: 
+        condition: service_healthy
+      book_db_mongo: 
+        condition: service_healthy
+      mongo_setup: 
+        condition: service_completed_successfully
+      clickhouse: 
+        condition: service_healthy
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+networks:
+  book-recommend-network:
+    external: true 
+
+volumes:
+  zookeeper_data:
+  kafka_data:

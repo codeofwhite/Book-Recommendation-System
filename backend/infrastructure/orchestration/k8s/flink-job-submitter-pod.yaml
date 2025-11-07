@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: flink-job-submitter
+  name: flink-job-submitter
+spec:
+  containers:
+  - args:
+    - bash
+    - -c
+    - |2
+
+        echo 'Waiting for Flink JobManager...' &&
+        until curl -f http://flink-jobmanager:8081/overview; do
+          sleep 5;
+        done &&
+        echo 'Submitting PyFlink Job...' &&
+        /opt/flink/bin/flink run --jarfile /opt/flink/usrlib/jars/flink-sql-connector-kafka-3.0.0-1.17.jar -py /opt/flink/usrlib/scripts/realtime_recommendation_job.py
+    image: flink-job-submitter
+    name: flink-job-submitter
+    resources:
+      limits:
+        cpu: 500m
+        memory: "536870912"
+    volumeMounts:
+    - mountPath: /opt/flink/usrlib/jars
+      name: flink-job-submitter-claim0
+    - mountPath: /opt/flink/usrlib/scripts
+      name: flink-job-submitter-claim1
+  restartPolicy: Never
+  volumes:
+  - name: flink-job-submitter-claim0
+    persistentVolumeClaim:
+      claimName: flink-job-submitter-claim0
+  - name: flink-job-submitter-claim1
+    persistentVolumeClaim:
+      claimName: flink-job-submitter-claim1
+status: {}

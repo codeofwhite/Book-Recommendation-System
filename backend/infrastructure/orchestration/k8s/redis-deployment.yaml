@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+      -o k8s/
+    kompose.version: 1.21.0 (992df58d8)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: redis
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+          -o k8s/
+        kompose.version: 1.21.0 (992df58d8)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: redis
+    spec:
+      containers:
+      - image: redis:6.2-alpine
+        imagePullPolicy: ""
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          failureThreshold: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+        name: redis-cache
+        resources:
+          limits:
+            cpu: 500m
+            memory: "536870912"
+        volumeMounts:
+        - mountPath: /data
+          name: redis-data
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data
+status: {}

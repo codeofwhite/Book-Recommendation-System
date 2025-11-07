@@ -1,0 +1,34 @@
+# 公共网络定义（所有模块共享的网络资源）
+networks:
+  app-network:
+    name: book-recommend-network  # 显式指定网络名，避免自动生成随机名
+    driver: bridge
+
+# 全局持久化卷（所有模块共享的持久化资源）
+volumes:
+  auth_mysql_data:
+  book_mongo_data:
+  zookeeper_data: 
+  kafka_data:     
+  recommendation_mysql_data: 
+  user_engagement_mysql_data:
+  clickhouse_data: 
+  clickhouse_logs:
+  redis_data:
+  minio_data:
+
+# 通用健康检查模板
+x-healthcheck: &common-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+# 添加占位服务，触发网络/卷创建
+services:
+  dummy-service:
+    image: alpine:latest
+    command: ["echo", "Base network/volumes initialized"]
+    networks:
+      - app-network
+    # 启动后立即退出，不占用资源
+    restart: "no"

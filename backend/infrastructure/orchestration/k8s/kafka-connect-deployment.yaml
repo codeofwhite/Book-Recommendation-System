@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+      -o k8s/
+    kompose.version: 1.21.0 (992df58d8)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: kafka-connect
+  name: kafka-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: kafka-connect
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert -f docker-compose-copy.yml
+          -o k8s/
+        kompose.version: 1.21.0 (992df58d8)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: kafka-connect
+    spec:
+      containers:
+      - args:
+        - bash
+        - -c
+        - |
+          echo "Waiting for Kafka to be ready..."
+          cub kafka-ready -b kafka:29092 1 20
+          echo "Installing connectors..."
+          confluent-hub install --no-prompt clickhouse/clickhouse-kafka-connect:latest
+          confluent-hub install --no-prompt debezium/debezium-connector-mysql:3.1.2
+          confluent-hub install --no-prompt debezium/debezium-connector-mongodb:3.1.2
+          /etc/confluent/docker/run
+        env:
+        - name: CONNECT_BOOTSTRAP_SERVERS
+          value: kafka:29092
+        - name: CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR
+          value: "1"
+        - name: CONNECT_CONFIG_STORAGE_TOPIC
+          value: connect-configs
+        - name: CONNECT_GROUP_ID
+          value: connect-cluster-group
+        - name: CONNECT_HEAP_OPTS
+          value: -Xmx2G -Xms2G
+        - name: CONNECT_INTERNAL_KEY_CONVERTER
+          value: org.apache.kafka.connect.json.JsonConverter
+        - name: CONNECT_INTERNAL_VALUE_CONVERTER
+          value: org.apache.kafka.connect.json.JsonConverter
+        - name: CONNECT_KEY_CONVERTER
+          value: org.apache.kafka.connect.json.JsonConverter
+        - name: CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE
+          value: "true"
+        - name: CONNECT_LISTENERS
+          value: http://0.0.0.0:8083
+        - name: CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR
+          value: "1"
+        - name: CONNECT_OFFSET_STORAGE_TOPIC
+          value: connect-offsets
+        - name: CONNECT_PLUGIN_PATH
+          value: /usr/share/confluent-hub-components
+        - name: CONNECT_REST_ADVERTISED_HOST_NAME
+          value: kafka_connect
+        - name: CONNECT_STATUS_STORAGE_REPLICATION_FACTOR
+          value: "1"
+        - name: CONNECT_STATUS_STORAGE_TOPIC
+          value: connect-status
+        - name: CONNECT_VALUE_CONVERTER
+          value: org.apache.kafka.connect.json.JsonConverter
+        - name: CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE
+          value: "true"
+        image: confluentinc/cp-kafka-connect:8.0.0
+        imagePullPolicy: ""
+        name: kafka-connect
+        resources:
+          limits:
+            cpu: "1"
+            memory: "3221225472"
+          requests:
+            cpu: 500m
+            memory: "2147483648"
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}

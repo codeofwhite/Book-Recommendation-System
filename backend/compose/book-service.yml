@@ -1,0 +1,67 @@
+services:
+  # --- Book Management Service (MongoDB) ---
+  book_db_mongo:
+    build: ../infrastructure/storage/mongo/custom-image # 指向你的自定义镜像 Dockerfile 路径
+    container_name: book_mongo_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: book_user
+      MONGO_INITDB_ROOT_PASSWORD: book_password
+      MONGO_INITDB_DATABASE: book_manage_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - book_mongo_data:/data/db # 只保留数据持久化卷
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet", "-u", "book_user", "-p", "book_password", "--authenticationDatabase", "admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    command:
+      - mongod
+      - --replSet
+      - dbrs
+      - --keyFile
+      - /etc/mongo/mongodb_keyfile.txt # Keyfile 现在在镜像内部
+      - --bind_ip_all
+    networks:
+      - book-recommend-network  # 接入公共网络
+  
+  # 初始化 MongoDB 副本集（Debezium 需要）
+  mongo_setup:
+    image: mongo:latest
+    container_name: mongo_setup
+    networks:
+      - book-recommend-network  # 接入公共网络
+    depends_on:
+      book_db_mongo:
+        condition: service_healthy # <--- 确保这里是 service_healthy
+    command: >
+      bash -c "
+        mongosh --host book_db_mongo:27017 --username book_user --password book_password --authenticationDatabase admin <<EOF
+          rs.initiate({
+            _id: 'dbrs',
+            members: [ { _id: 0, host: 'book_db_mongo:27017' } ]
+          });EOF
+      "
+
+  book_manage:
+    build: ../microservices/book-manage-service
+    ports:
+      - "5001:5001"
+    environment:
+      MONGO_HOST: book_db_mongo
+      MONGO_USER: book_user
+      MONGO_PASSWORD: book_password
+      MONGO_DB_NAME: book_manage_db
+    depends_on:
+      book_db_mongo:
+        condition: service_healthy
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+networks:
+  book-recommend-network:
+    external: true 
+
+volumes:
+  book_mongo_data:

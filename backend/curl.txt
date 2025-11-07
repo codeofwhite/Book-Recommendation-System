@@ -1,5 +1,0 @@
-MySQL
-curl -X POST -H "Content-Type: application/json" --data @mysql_connector.json http://localhost:8083/connectors
-
-MongoDB
-curl -X POST -H "Content-Type: application/json" --data @mongodb_connector.json http://localhost:8083/connectors

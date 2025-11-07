@@ -1,0 +1,193 @@
+services:
+  # Real-time Recommendation Service 
+  realtime_recommendation_service:
+    build: ../microservices/realtime-recommendation-service
+    container_name: realtime_recommendation_service
+    ports:
+      - "5004:5004" 
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy # Ensure Redis is up before starting
+      flink-job-submitter: # Ensure Flink job potentially started before this service
+        condition: service_completed_successfully # Or service_healthy if job is long-running
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # NEW SERVICE: Offline Recommendation Service
+  offline_recommendation_service:
+    build: ../microservices/offline-recommendation-service
+    container_name: offline_recommendation_service_app
+    ports:
+      - "5005:5005"
+    environment:
+      REC_DB_HOST: recommendation_db
+      REC_DB_USER: rec_user
+      REC_DB_PASSWORD: rec_password
+      REC_DB_NAME: recommendation_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      OFFLINE_CRON_SCHEDULE: "0 2 * * *"
+    depends_on:
+      recommendation_db:
+        condition: service_healthy 
+      redis:
+        condition: service_healthy 
+
+  # Flink JobManager
+  flink-jobmanager:
+    build: ../computing-engine/streaming/flink/custom-images/py
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081" # Flink Web UI
+      - "6123:6123" # RPC 端口
+    command: jobmanager # Start JobManager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
+        rest.address: flink-jobmanager
+        rest.port: 8081
+        taskmanager.numberOfTaskSlots: 1
+        python.executable: /usr/bin/python3
+    volumes:
+      - ../computing-engine/streaming/flink/jobs:/opt/flink/usrlib # Mount Flink Job Python script
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis: # Flink job writes to Redis, so depend on it
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/overview || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # Flink TaskManager 
+  flink-taskmanager:
+    build: ../computing-engine/streaming/flink/custom-images/py
+    container_name: flink-taskmanager
+    command: taskmanager # Start TaskManager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
+        taskmanager.numberOfTaskSlots: 1
+        python.executable: /usr/bin/python3
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # Flink Job Submitter
+  flink-job-submitter:
+    build: ../computing-engine/streaming/flink/custom-images/py
+    container_name: flink-job-submitter
+    command: >
+      bash -c "
+        echo 'Waiting for Flink JobManager...' &&
+        until curl -f http://flink-jobmanager:8081/overview; do
+          sleep 5;
+        done &&
+        echo 'JobManager is ready. Submitting PyFlink Job...' &&
+        /opt/flink/bin/flink run --jarfile /opt/flink/usrlib/jars/flink-sql-connector-kafka-3.0.0-1.17.jar -py /opt/flink/usrlib/scripts/realtime_recommendation_job.py
+      " # <-- 注意这一整行
+    volumes:
+      - ../computing-engine/streaming/flink/jars:/opt/flink/usrlib/jars      # 将JAR包挂载到 /opt/flink/usrlib/jars
+      - ../computing-engine/streaming/flink/jobs:/opt/flink/usrlib/scripts   # 将Python脚本挂载到 /opt/flink/usrlib/scripts
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # --- Recommendation Service DB ---
+  recommendation_db:
+    image: mysql:8.0 
+    container_name: recommendation_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: your_rec_root_password
+      MYSQL_DATABASE: recommendation_db 
+      MYSQL_USER: rec_user
+      MYSQL_PASSWORD: rec_password
+    ports:
+      - "3308:3306" 
+    volumes:
+      - recommendation_mysql_data:/var/lib/mysql
+      - ../tools/scripts/sqls/init_recommendation_db.sql:/docker-entrypoint-initdb.d/init_recommendation_db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # --- ETL Spark Processor (作为消费者) ---
+  spark_etl_processor:
+    build: ../computing-engine/batch/spark/etl-processor
+    container_name: spark_etl_processor
+    environment:
+      KAFKA_BROKER_URL: kafka:29092
+      REC_DB_HOST: recommendation_db
+      REC_DB_USER: rec_user
+      REC_DB_PASSWORD: rec_password
+      REC_DB_NAME: recommendation_db
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD:
+    depends_on:
+      kafka:
+        condition: service_healthy
+      recommendation_db:
+        condition: service_healthy
+      auth_db:
+        condition: service_healthy
+      book_db_mongo:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    command: /opt/bitnami/spark/bin/spark-submit --master local[*] --driver-memory 2G --executor-memory 2G --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.kafka:kafka-clients:3.4.1,org.mongodb.spark:mongo-spark-connector_2.12:3.0.1,mysql:mysql-connector-java:8.0.28 /app/main.py
+    deploy:
+      resources:
+        limits: # 硬限制（超限时服务会被杀死）
+          cpus: '2.0'  # 正确缩进：在 limits 内部，比 limits 多 2 个空格
+          memory: 4G   # 正确缩进
+        reservations:  # 最小保障（启动时至少分配）
+          cpus: '1.0'
+          memory: 2G
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+  # Redis Service
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - book-recommend-network  # 接入公共网络
+
+networks:
+  book-recommend-network:
+    external: true 
+
+volumes:
+  recommendation_mysql_data:
+  redis_data:

@@ -1,0 +1,20 @@
+MySQL
+curl -X POST -H "Content-Type: application/json" --data @mysql_connector.json http://localhost:8083/connectors
+
+MongoDB
+curl -X POST -H "Content-Type: application/json" --data @mongodb_connector.json http://localhost:8083/connectors
+
+ClickHouse
+curl -X POST -H "Content-Type: application/json" --data @clickhouse_user_behavior_sink_connector.json http://localhost:8083/connectors
+
+# 查看所有已创建的Connector列表
+curl http://localhost:8083/connectors
+
+1. MySQL Connector 状态
+curl http://localhost:8083/connectors/mysql-auth-connector/status
+
+2. MongoDB Connector 状态
+curl http://localhost:8083/connectors/mongodb-book-connector/status
+
+3. ClickHouse Connector 状态
+curl http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink/status
