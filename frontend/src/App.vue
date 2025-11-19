@@ -1,15 +1,15 @@
 <template>
   <div id="app">
     <nav class="main-nav">
-      <div class="project-title">BookHug</div>
-      <router-link to="/" class="nav-item">The Grand Hall</router-link>
-      <router-link to="/books" class="nav-item">The Catalogue</router-link>
+      <div class="project-title">书语相拥（BookHug）</div>
+      <router-link to="/" class="nav-item">主页</router-link>
+      <router-link to="/books" class="nav-item">书库</router-link>
       <template v-if="isLoggedIn">
-        <router-link to="/userview" class="nav-item user-dashboard-button">My Scriptorium</router-link>
-        <a href="#" @click.prevent="logout" class="nav-item logout-button">Depart the Archives</a>
+        <router-link to="/userview" class="nav-item user-dashboard-button">个人中心</router-link>
+        <a href="#" @click.prevent="logout" class="nav-item logout-button">退出登录</a>
       </template>
       <template v-else>
-        <router-link to="/auth" class="nav-item login-button">Enter the Archives</router-link>
+        <router-link to="/auth" class="nav-item login-button">登录</router-link>
       </template>
     </nav>
 
@@ -19,14 +19,14 @@
 
     <footer class="main-footer">
       <p>&copy; 2025 The Scriptorium. All rights reserved.</p>
-      <router-link to="/about" class="footer-nav-item">关于我们的机构</router-link>
+      <router-link to="/about" class="footer-nav-item">关于我们</router-link>
     </footer>
 
     <div v-if="showGlobalPopup" class="global-popup-overlay">
       <div class="global-popup-content">
         <h3 class="popup-title">{{ popupTitle }}</h3>
         <p class="popup-message">{{ popupMessage }}</p>
-        <button @click="closeGlobalPopup" class="popup-close-button">了解</button>
+        <button @click="closeGlobalPopup" class="popup-close-button">确认</button>
       </div>
     </div>
   </div>
@@ -167,21 +167,21 @@ onUnmounted(() => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #3e2723;
+  color: #4a5043; /* 低饱和深绿灰，替代原深棕 */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #fcf8f0;
+  background-color: #f8f9fa; /* 极浅米白，更清爽 */
 }
 
 .main-nav {
   padding: 20px 30px;
-  background-color: #5d4037;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #7c9473; /* 莫兰迪蓝绿，替代原深棕 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 阴影减淡，更柔和 */
   display: flex;
   justify-content: center;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* --- Project Title Styles --- */
@@ -189,25 +189,25 @@ onUnmounted(() => {
   font-family: 'Playfair Display', serif;
   font-size: 2.2em;
   font-weight: bold;
-  color: #ffcc80;
+  color: #f0e6d2; /* 米白色，替代原金色 */
   margin-right: auto;
   padding-right: 40px;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
   letter-spacing: 1.5px;
 
   /* Animation for BookHug */
-  animation: pulseGold 2s infinite alternate ease-in-out;
+  animation: pulseBeige 2s infinite alternate ease-in-out;
 }
 
-@keyframes pulseGold {
+@keyframes pulseBeige {
   from {
-    color: #ffcc80;
+    color: #f0e6d2;
     transform: scale(1);
     opacity: 1;
   }
 
   to {
-    color: #ffd54f;
+    color: #fff8e7; /* 更浅的米白，替代原亮金 */
     transform: scale(1.02);
     opacity: 0.95;
   }
@@ -215,7 +215,7 @@ onUnmounted(() => {
 
 .nav-item {
   font-weight: bold;
-  color: #ede0d4;
+  color: #faf6ed; /* 极浅米白，替代原浅棕 */
   text-decoration: none;
   margin: 0 25px;
   padding: 8px 0;
@@ -224,42 +224,42 @@ onUnmounted(() => {
 }
 
 .nav-item:hover {
-  color: #bcaaa4;
+  color: #d4c7b8; /* 暖灰棕，替代原灰棕 */
   transform: translateY(-2px);
 }
 
 .nav-item.router-link-exact-active {
-  color: #bcaaa4;
-  border-bottom: 2px solid #bcaaa4;
+  color: #d4c7b8;
+  border-bottom: 2px solid #d4c7b8;
 }
 
 /* Login Button Styles */
 .login-button {
-  background-color: #8d6e63;
+  background-color: #9da8a3; /* 莫兰迪灰绿，替代原棕 */
   color: white;
   padding: 10px 20px;
   border-radius: 5px;
   margin-left: 40px;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
   letter-spacing: 0.5px;
 }
 
 .login-button:hover {
-  background-color: #795548;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  background-color: #8a9690; /* 深一点的灰绿，替代原深棕 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .app-content {
   flex-grow: 1;
   padding: 40px;
-  background-color: #fffaf0;
+  background-color: #faf6ed; /* 浅米白，比原背景更柔和 */
 }
 
 .main-footer {
   padding: 20px;
-  background-color: #5d4037;
-  color: #ede0d4;
+  background-color: #7c9473; /* 与导航一致的蓝绿 */
+  color: #faf6ed; /* 极浅米白，替代原浅棕 */
   font-size: 0.95em;
   margin-top: auto;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
@@ -271,17 +271,14 @@ onUnmounted(() => {
 }
 
 .footer-nav-item {
-  color: #ede0d4;
-  /* 链接颜色与页脚文本一致 */
+  color: #faf6ed;
   text-decoration: none;
   margin-left: 20px;
-  /* 与版权信息或其他页脚项的间距 */
   transition: color 0.3s ease;
 }
 
 .footer-nav-item:hover {
-  color: #bcaaa4;
-  /* 悬停效果与主导航链接一致 */
+  color: #d4c7b8; /* 与导航hover一致 */
 }
 
 body {
@@ -295,50 +292,42 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  /* 半透明背景 */
+  background-color: rgba(0, 0, 0, 0.4); /* 稍浅的遮罩 */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  /* 确保弹窗在最上层 */
   animation: fadeIn 0.3s ease-out;
-  /* 弹窗出现动画 */
 }
 
 .global-popup-content {
-  background-color: #fffaf0;
-  /* 与内容区背景色一致 */
+  background-color: #faf6ed; /* 与内容区一致 */
   border-radius: 8px;
   padding: 30px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
   max-width: 400px;
   width: 90%;
   position: relative;
   animation: slideIn 0.4s ease-out;
-  /* 弹窗内容滑入动画 */
 }
 
 .popup-title {
   font-family: 'Playfair Display', serif;
   font-size: 1.8em;
-  color: #5d4037;
-  /* 深棕色标题 */
+  color: #7c9473; /* 与导航一致的蓝绿，替代原深棕 */
   margin-bottom: 15px;
 }
 
 .popup-message {
   font-size: 1.1em;
-  color: #3e2723;
-  /* 深棕色文字 */
+  color: #4a5043; /* 与正文一致的深绿灰 */
   margin-bottom: 25px;
   line-height: 1.6;
 }
 
 .popup-close-button {
-  background-color: #8d6e63;
-  /* 与登录按钮颜色相似 */
+  background-color: #9da8a3; /* 与登录按钮一致的灰绿 */
   color: white;
   padding: 10px 25px;
   border: none;
@@ -349,7 +338,7 @@ body {
 }
 
 .popup-close-button:hover {
-  background-color: #795548;
+  background-color: #8a9690; /* 深一点的灰绿 */
   transform: translateY(-2px);
 }
 
@@ -374,5 +363,63 @@ body {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* --- 新增：书籍列表相关配色（保持风格统一）--- */
+/* 筛选器样式（如果需要） */
+.filter-container {
+  background-color: #f5f1e9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filter-label {
+  color: #4a5043;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.genre-tag {
+  background-color: #e8e3d7;
+  color: #4a5043;
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin: 0 8px 8px 0;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.genre-tag:hover, .genre-tag.active {
+  background-color: #7c9473;
+  color: white;
+}
+
+/* 书籍卡片样式（如果需要） */
+.book-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.book-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.book-title {
+  color: #7c9473;
+  font-family: 'Playfair Display', serif;
+  margin-bottom: 10px;
+}
+
+.book-author {
+  color: #6b7268;
+  font-style: italic;
+  margin-bottom: 15px;
 }
 </style>

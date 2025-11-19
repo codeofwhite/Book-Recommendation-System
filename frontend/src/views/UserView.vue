@@ -4,44 +4,44 @@
       <nav class="classic-nav">
         <div class="nav-header">
           <div class="nav-logo">📚</div>
-          <h3 class="nav-title">The Scholar's Study</h3>
+          <h3 class="nav-title">学究斋</h3>
         </div>
         <ul>
           <li @click="activeSection = 'user-info'" :class="{ active: activeSection === 'user-info' }">
             <span class="nav-icon">👤</span>
-            <span class="nav-text">Personal Ledger</span>
+            <span class="nav-text">个人档案</span>
             <span class="nav-decoration">〰</span>
           </li>
           <li @click="activeSection = 'favorite-books'" :class="{ active: activeSection === 'favorite-books' }">
             <span class="nav-icon">📚</span>
-            <span class="nav-text">Literary Treasury</span>
+            <span class="nav-text">藏书阁</span>
             <span class="nav-decoration">〰</span>
           </li>
           <li @click="activeSection = 'favorite-reviews'" :class="{ active: activeSection === 'favorite-reviews' }">
             <span class="nav-icon">✍️</span>
-            <span class="nav-text">Critiques & Reflections</span>
+            <span class="nav-text">评论文集</span>
             <span class="nav-decoration">〰</span>
           </li>
           <li @click="activeSection = 'my-reviews'" :class="{ active: activeSection === 'my-reviews' }">
             <span class="nav-icon">📝</span>
-            <span class="nav-text">My Reviews</span>
+            <span class="nav-text">我的书评</span>
             <span class="nav-decoration">〰</span>
           </li>
           <li @click="activeSection = 'my-comments'" :class="{ active: activeSection === 'my-comments' }">
             <span class="nav-icon">💬</span>
-            <span class="nav-text">My Comments</span>
+            <span class="nav-text">我的评论</span>
             <span class="nav-decoration">〰</span>
           </li>
         </ul>
         <div class="nav-footer">
-          <p class="chinese-proverb">"The path to learning is arduous, but diligence is the way."</p>
+          <p class="chinese-proverb">"书山有路勤为径，学海无涯苦作舟。"</p>
         </div>
       </nav>
 
       <main class="content-area">
         <div class="parchment-header">
           <h1 class="main-heading">
-            <span class="chinese-brush">The User's Athenaeum</span>
+            <span class="chinese-brush">个人文藏馆</span>
           </h1>
           <div class="header-ornament">✒︎</div>
         </div>
@@ -50,7 +50,7 @@
           <div class="chapter-header">
             <h2 class="chapter-title">
               <i class="fas fa-user-circle title-icon"></i>
-              <span>Personal Particulars</span>
+              <span>个人信息</span>
             </h2>
             <div class="header-decoration"></div>
           </div>
@@ -59,7 +59,7 @@
             <div class="avatar-display">
               <div class="avatar-wrapper">
                 <img :src="user.avatar_url || 'https://via.placeholder.com/150/d7ccc8/5d4037?text=User'"
-                  alt="User Effigy" class="user-avatar" />
+                  alt="用户头像" class="user-avatar" />
                 <div class="avatar-overlay">
                   <i class="fas fa-camera-retro change-avatar-icon"></i>
                 </div>
@@ -69,37 +69,37 @@
             <div class="info-grid">
               <div class="info-entry">
                 <label for="nickname-input" class="info-label"><i class="fas fa-signature info-icon"></i>
-                  Appellation:</label>
+                  昵称：</label>
                 <div class="info-value-group">
                   <span v-if="!isEditingNickname" class="info-text">{{ user.nickname || 'Not Set' }}</span>
                   <input v-else id="nickname-input" type="text" v-model="editableNickname" class="styled-input"
-                    @keyup.enter="saveNickname" @blur="saveNickname" aria-label="Edit Nickname" />
+                    @keyup.enter="saveNickname" @blur="saveNickname" aria-label="编辑昵称" />
                   <button @click="toggleEditNickname" class="action-button small-button"
                     :class="{ 'button-saving': isSavingNickname }">
-                    <span v-if="!isSavingNickname">{{ isEditingNickname ? 'Preserve' : 'Amend' }}</span>
-                    <span v-else><i class="fas fa-spinner fa-spin"></i> Saving...</span>
+                    <span v-if="!isSavingNickname">{{ isEditingNickname ? '保存' : '修改' }}</span>
+                    <span v-else><i class="fas fa-spinner fa-spin"></i> 保存中...</span>
                   </button>
                 </div>
               </div>
 
               <div class="info-entry">
-                <span class="info-label"><i class="fas fa-envelope info-icon"></i> Electronic Mail:</span>
-                <span class="info-text">{{ user.email || 'N/A' }}</span>
+                <span class="info-label"><i class="fas fa-envelope info-icon"></i> 电子邮箱：</span>
+                <span class="info-text">{{ user.email || '暂无' }}</span>
               </div>
 
               <div class="info-entry">
-                <span class="info-label"><i class="fas fa-calendar-alt info-icon"></i> Membership Since:</span>
-                <span class="info-text">{{ formatDate(user.registration_date) || 'Undetermined' }}</span>
+                <span class="info-label"><i class="fas fa-calendar-alt info-icon"></i> 注册时间：</span>
+                <span class="info-text">{{ formatDate(user.registration_date) || '未确定' }}</span>
               </div>
 
               <div class="info-entry">
-                <span class="info-label"><i class="fas fa-book-reader info-icon"></i> Preferred Genres:</span>
+                <span class="info-label"><i class="fas fa-book-reader info-icon"></i> 偏好流派：</span>
                 <span class="info-text">
                   <template v-if="user.preferred_genres && user.preferred_genres.length">
                     {{ user.preferred_genres.join(', ') }}
                   </template>
                   <template v-else>
-                    None Specified
+                    未指定
                   </template>
                 </span>
               </div>
@@ -107,8 +107,8 @@
 
             <div v-if="!user.is_profile_complete" class="profile-incomplete-banner">
               <i class="fas fa-exclamation-triangle warning-icon"></i>
-              <span>Your Chronicle Awaits Completion. Kindly proceed to
-                <router-link to="/user-onboarding" class="banner-link">Fulfill Your Details</router-link>.
+              <span>您的档案尚未完善，请前往
+                <router-link to="/user-onboarding" class="banner-link">补充个人信息</router-link>.
               </span>
             </div>
           </div>
@@ -118,27 +118,27 @@
           <div class="section-header">
             <h2 class="chapter-title">
               <span class="title-icon">📖</span>
-              <span>Literary Treasury ({{ favoriteBooks.length }} Tomes)</span>
+              <span>藏书阁 ({{ favoriteBooks.length }} 本典籍)</span>
             </h2>
             <div class="section-divider"></div>
           </div>
 
           <div v-if="favoriteBooks.length === 0" class="empty-state">
             <div class="empty-icon">📚</div>
-            <p class="empty-text">No Esteemed Volumes as yet Adorn Your Treasury.</p>
+            <p class="empty-text">您的藏书阁暂无珍藏典籍。</p>
           </div>
 
           <div v-else class="book-gallery">
             <div v-for="book in favoriteBooks" :key="book.bookId" @click="goToBookDetails(book.bookId)"
               class="book-card">
               <div class="book-cover-wrapper">
-                <img :src="book.coverImg || 'https://via.placeholder.com/100'" alt="Book's Visage" class="book-cover" />
+                <img :src="book.coverImg || 'https://via.placeholder.com/100'" alt="书籍封面" class="book-cover" />
                 <div class="book-cover-overlay"></div>
               </div>
               <div class="book-info">
                 <h4 class="book-title">{{ book.title }}</h4>
-                <p class="book-author">Authored By: {{ book.author }}</p>
-                <p class="book-publisher">Printed By: {{ book.publisher }}</p>
+                <p class="book-author">著者： {{ book.author }}</p>
+                <p class="book-publisher">出版社： {{ book.publisher }}</p>
               </div>
               <div class="book-corner"></div>
             </div>
@@ -149,14 +149,14 @@
           <div class="section-header">
             <h2 class="chapter-title">
               <span class="title-icon">🖋</span>
-              <span>Critiques & Reflections ({{ favoriteReviews.length }} Scrolls)</span>
+              <span>评论文集 ({{ favoriteReviews.length }} 篇书评)</span>
             </h2>
             <div class="section-divider"></div>
           </div>
 
           <div v-if="favoriteReviews.length === 0" class="empty-state">
             <div class="empty-icon">✍️</div>
-            <p class="empty-text">No Learned Discourses as yet Grace Your Collection.</p>
+            <p class="empty-text">您的文集暂无收录书评。</p>
           </div>
 
           <div v-else class="review-container">
@@ -164,11 +164,11 @@
               class="review-card">
               <div class="review-header">
                 <div class="reviewer-avatar-wrapper">
-                  <img :src="review.reviewerAvatarUrl || 'https://via.placeholder.com/50'" alt="Reviewer's Likeness"
+                  <img :src="review.reviewerAvatarUrl || 'https://via.placeholder.com/50'" alt="评论者头像"
                     class="reviewer-avatar" />
                 </div>
                 <div class="reviewer-info">
-                  <span class="reviewer-nickname">Penned By: {{ review.reviewerNickname || 'Anonymous Scribe' }}</span>
+                  <span class="reviewer-nickname">Penned By: {{ review.reviewerNickname || '匿名评者' }}</span>
                   <div class="review-meta">
                     <span class="review-rating">
                       <span v-for="i in 5" :key="i" class="star" :class="{ filled: i <= review.rating }">★</span>
@@ -199,14 +199,14 @@
           <div class="section-header">
             <h2 class="chapter-title">
               <span class="title-icon">📝</span>
-              <span>My Published Reviews ({{ myReviews.length }} Entries)</span>
+              <span>我的书评 ({{ myReviews.length }} 篇)</span>
             </h2>
             <div class="section-divider"></div>
           </div>
 
           <div v-if="myReviews.length === 0" class="empty-state">
             <div class="empty-icon">🤷‍♀️</div>
-            <p class="empty-text">You have not yet inscribed any reviews.</p>
+            <p class="empty-text">您尚未撰写任何书评。</p>
           </div>
 
           <div v-else class="review-container">
@@ -214,11 +214,11 @@
               class="review-card">
               <div class="review-header">
                 <div class="reviewer-avatar-wrapper">
-                  <img :src="user.avatar_url || 'https://via.placeholder.com/50'" alt="Your Likeness"
+                  <img :src="user.avatar_url || 'https://via.placeholder.com/50'" alt="您的头像"
                     class="reviewer-avatar" />
                 </div>
                 <div class="reviewer-info">
-                  <span class="reviewer-nickname">Authored by: {{ user.nickname || 'You' }}</span>
+                  <span class="reviewer-nickname">评者： {{ user.nickname || '您' }}</span>
                   <div class="review-meta">
                     <span class="review-rating">
                       <span v-for="i in 5" :key="i" class="star" :class="{ filled: i <= review.rating }">★</span>
@@ -242,35 +242,35 @@
           </div>
           <div v-if="myReviewsPagination.pages > 1" class="pagination-controls">
             <button @click="fetchMyReviews(myReviewsPagination.current_page - 1)"
-              :disabled="!myReviewsPagination.has_prev" class="elegant-button">Previous</button>
-            <span>Page {{ myReviewsPagination.current_page }} of {{ myReviewsPagination.pages }}</span>
+              :disabled="!myReviewsPagination.has_prev" class="elegant-button">上一页</button>
+            <span>第  {{ myReviewsPagination.current_page }} 页 / 共 {{ myReviewsPagination.pages }} 页</span>
             <button @click="fetchMyReviews(myReviewsPagination.current_page + 1)"
-              :disabled="!myReviewsPagination.has_next" class="elegant-button">Next</button>
+              :disabled="!myReviewsPagination.has_next" class="elegant-button">下一页</button>
           </div>
         </section>
         <section v-show="activeSection === 'my-comments'" class="chapter-section">
           <div class="section-header">
             <h2 class="chapter-title">
               <span class="title-icon">💬</span>
-              <span>My Published Comments ({{ myComments.length }} Entries)</span>
+              <span>我的评论 ({{ myComments.length }} 条)</span>
             </h2>
             <div class="section-divider"></div>
           </div>
 
           <div v-if="myComments.length === 0" class="empty-state">
             <div class="empty-icon">🤷‍♂️</div>
-            <p class="empty-text">You have not yet penned any comments.</p>
+            <p class="empty-text">您尚未发表任何评论。</p>
           </div>
 
           <div v-else class="comment-container">
             <div v-for="comment in myComments" :key="comment.id" class="comment-card">
               <div class="comment-header">
                 <div class="commenter-avatar-wrapper">
-                  <img :src="user.avatar_url || 'https://via.placeholder.com/50'" alt="Your Likeness"
+                  <img :src="user.avatar_url || 'https://via.placeholder.com/50'" alt="您的头像"
                     class="commenter-avatar" />
                 </div>
                 <div class="commenter-info">
-                  <span class="commenter-nickname">Comment by: {{ user.nickname || 'You' }}</span>
+                  <span class="commenter-nickname">评论者： {{ user.nickname || '您' }}</span>
                   <div class="comment-meta">
                     <span class="comment-time">{{ formatDate(comment.commentTime) }}</span>
                   </div>
@@ -285,7 +285,7 @@
                   <span class="action-count">{{ comment.likeCount || 0 }}</span>
                 </span>
                 <span class="comment-link" @click="goToBookDetails(comment.bookId)">
-                  <span class="action-icon">📖</span> View Related Book
+                  <span class="action-icon">📖</span> 查看相关书籍
                 </span>
               </div>
               <div class="comment-corner"></div>
@@ -293,10 +293,10 @@
           </div>
           <div v-if="myCommentsPagination.pages > 1" class="pagination-controls">
             <button @click="fetchMyComments(myCommentsPagination.current_page - 1)"
-              :disabled="!myCommentsPagination.has_prev" class="elegant-button">Previous</button>
-            <span>Page {{ myCommentsPagination.current_page }} of {{ myCommentsPagination.pages }}</span>
+              :disabled="!myCommentsPagination.has_prev" class="elegant-button">上一页</button>
+            <span>第 {{ myCommentsPagination.current_page }} 页 / 共 {{ myCommentsPagination.pages }} 页</span>
             <button @click="fetchMyComments(myCommentsPagination.current_page + 1)"
-              :disabled="!myCommentsPagination.has_next" class="elegant-button">Next</button>
+              :disabled="!myCommentsPagination.has_next" class="elegant-button">下一页</button>
           </div>
         </section>
       </main>

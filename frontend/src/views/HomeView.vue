@@ -7,26 +7,26 @@
       </div>
 
       <div class="hero-content">
-        <h1 class="hero-title">The Grand Tapestry of Knowledge: Charting Paths to Enlightenment</h1>
+        <h1 class="hero-title">知识宏卷：铺就启迪之路</h1>
         <p class="hero-subtitle">
           <span class="typewriter-text" ref="heroSubtitleText"></span><span class="blink-cursor">|</span>
         </p>
-        <button class="explore-button" @click="scrollToSection('popular-books')">Embark on the Quest</button>
+        <button class="explore-button" @click="scrollToSection('popular-books')">启碇探索</button>
       </div>
     </header>
 
     <main class="main-content">
       <p v-if="loading" class="loading-message">
-      <div class="spinner"></div> The Quills are Busy, Kindly Stand By...
+      <div class="spinner"></div> 典籍誊抄中，敬请稍候...
       </p>
 
       <div v-else class="content-wrapper">
         <div class="main-sections">
           <section class="section-container" id="popular-books">
             <div class="section-header">
-              <h2 class="section-title">Volumes of Esteem: Acclaimed by the Cognoscenti</h2>
+              <h2 class="section-title">菁华典籍：众贤推崇之作</h2>
               <a href="#" @click.prevent="openBookModal('popular')" class="more-link">
-                Peruse the Archives &gt;
+                遍览藏书 &gt;
               </a>
             </div>
             <transition-group name="book-card-fade" tag="div" class="book-grid">
@@ -34,9 +34,9 @@
                 <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
-                  <p class="book-author">Authored by: {{ book.author }}</p>
-                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">Genre: {{ book.genres[0] }}</p>
-                  <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
+                  <p class="book-author">著者：{{ book.author }}</p>
+                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">類型： {{ book.genres[0] }}</p>
+                  <button @click="viewBookDetails(book.id)" class="details-button">解锁篇章</button>
                 </div>
               </div>
             </transition-group>
@@ -46,9 +46,9 @@
 
           <section class="section-container" id="personalized-books">
             <div class="section-header">
-              <h2 class="section-title">Curated for Your Discerning Eye</h2>
+              <h2 class="section-title">为君甄选：契合雅趣之选</h2>
               <a href="#" @click.prevent="openBookModal('personalized')" class="more-link">
-                More Selections Befitting Your Taste &gt;
+                更多心仪典籍 &gt;
               </a>
             </div>
             <transition-group name="book-card-fade" tag="div" class="book-grid">
@@ -56,9 +56,9 @@
                 <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
-                  <p class="book-author">Authored by: {{ book.author }}</p>
-                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">Genre: {{ book.genres[0] }}</p>
-                  <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
+                  <p class="book-author">著者：{{ book.author }}</p>
+                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">類型： {{ book.genres[0] }}</p>
+                  <button @click="viewBookDetails(book.id)" class="details-button">解锁篇章</button>
                 </div>
               </div>
             </transition-group>
@@ -69,8 +69,8 @@
           <section class="section-container section-two-columns">
             <div class="ranking-section-wrapper" id="rankings">
               <div class="section-header-compact">
-                <h2 class="section-title-small">The Pantheon of Literary Distinction</h2>
-                <router-link to="/rankings" class="more-link-small">Behold the Full Register &gt;</router-link>
+                <h2 class="section-title-small">文学殿堂：典籍排行榜</h2>
+                <router-link to="/rankings" class="more-link-small">查看完整榜单 &gt;</router-link>
               </div>
               <transition-group name="ranking-item-fade" tag="div" class="ranking-grid-compact">
                 <div v-for="(rankList, index) in bookRankings" :key="index" class="ranking-card-compact">
@@ -88,8 +88,8 @@
 
             <div class="activity-section-wrapper" id="activities">
               <div class="section-header-compact">
-                <h2 class="section-title-small">Forthcoming Convocations & Salons</h2>
-                <router-link to="/activities" class="more-link-small">Discover More Gatherings &gt;</router-link>
+                <h2 class="section-title-small">文苑雅集：近期活动</h2>
+                <router-link to="/activities" class="more-link-small">探索更多活动 &gt;</router-link>
               </div>
               <transition-group name="activity-item-fade" tag="div" class="activity-list-compact">
                 <div v-for="activity in activities.slice(0, 3)" :key="activity.id" class="activity-item-compact">
@@ -126,10 +126,10 @@
 
       <aside :class="['daily-book-sidebar', { 'is-open': isSidebarOpen }]">
         <div class="daily-book-card">
-          <h2 class="sidebar-title">The Day's Chosen Volume</h2>
+          <h2 class="sidebar-title">今日甄选典籍</h2>
           <BookOfTheDay v-if="isSidebarOpen" :initial-book="dailyBook" />
           <p v-else-if="!isSidebarOpen" class="no-daily-book">
-            No book recommendation for today. Check back later!
+            今日暂无推荐典籍，敬请稍后再来！
           </p>
         </div>
       </aside>
@@ -328,10 +328,10 @@ let tooltipTimer = null;
 // --- 打字机效果相关变量和函数 (已更新) ---
 const heroSubtitleText = ref(null); // 用于引用模板中的副标题 span 元素
 const heroSubtitleTexts = [ // 多条标语
-  "A Conclave for Artisans, a Repository for Luminary Works.",
-  "Discover, Delve, and Disentangle.",
-  "Your Gateway to Infinite Stories.",
-  "Where Knowledge Finds Its Home."
+  "创作者的聚集地，精品佳作的收藏库。",
+  "发现、钻研、顿悟。",
+  "解锁万象故事，从此启程。",
+  "知识有处可依，思想有处栖息。"
 ];
 const currentSubtitleIndex = ref(0); // 当前显示的标语索引
 const typewriterIndex = ref(0); // 打字机效果的当前字符索引
@@ -439,7 +439,7 @@ const closeBookModal = () => {
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-  color: #3e2723;
+  color: #393e23;
   background-color: #fcf8f0;
   /* Ensure the body has no horizontal overflow due to sidebar */
   overflow-x: hidden;

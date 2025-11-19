@@ -2,32 +2,32 @@
   <div class="ancient-tome-container">
     <div class="top-folio-controls">
       <div class="search-quill-box">
-        <input type="text" v-model="inputSearchKeyword" placeholder="Inscribe thy quest here..."
-          @keyup.enter="handleSearch" class="quill-input" />
+        <input type="text" v-model="inputSearchKeyword" placeholder="在此镌刻您的求索..." @keyup.enter="handleSearch"
+          class="quill-input" />
         <button @click="handleSearch" class="seek-button">
-          Seek & Discover
+          探寻典籍
           <div class="info-bubble bottom-right" v-if="showSearchTip">
-            Press Enter or click 'Seek' to begin your literary journey!
+            按下回车键或点击"探寻典籍"，开启您的书香之旅！
           </div>
         </button>
       </div>
 
       <div class="astrolabe-filters-horizontal">
         <div class="filter-section-inline genre-filter-section">
-          <h3 class="filter-title-inline">By Genre's Lore:</h3>
+          <h3 class="filter-title-inline">按類型甄选：</h3>
           <div class="genre-filter-wrapper">
-            <input type="text" v-model="genreSearchTerm" placeholder="Search genres..." class="genre-search-input" />
+            <input type="text" v-model="genreSearchTerm" placeholder="搜索類型..." class="genre-search-input" />
             <div class="genre-pill-container">
               <span v-for="genre in filteredAvailableGenres" :key="genre" class="genre-filter-pill"
                 :class="{ 'is-selected': selectedGenres.includes(genre) }" @click="toggleGenre(genre)">
                 {{ genre }}
                 <div class="info-bubble top-center" v-if="showGenreTip && genre === 'Fiction'">
-                  Click on genres to filter your results!
+                  点击類型即可筛选结果！
                 </div>
               </span>
               <span v-if="filteredAvailableGenres.length === 0 && availableGenres.length > 0"
-                class="no-options-message">No matching genres.</span>
-              <span v-else-if="availableGenres.length === 0" class="no-options-message">No genres discovered.</span>
+                class="no-options-message">无匹配類型。</span>
+              <span v-else-if="availableGenres.length === 0" class="no-options-message">暂无已发现類型。</span>
             </div>
             <button v-if="availableGenres.length > maxDisplayedGenres && !showAllGenres" @click="showAllGenres = true"
               class="toggle-genre-button">Show All ({{ availableGenres.length - maxDisplayedGenres }} More)</button>
@@ -36,43 +36,42 @@
         </div>
 
         <div class="filter-section-inline">
-          <h3 class="filter-title-inline">By Celestial Judgement (Rating):</h3>
+          <h3 class="filter-title-inline">按星评等级：</h3>
           <select v-model="selectedRating" @change="applyFilters" class="filter-select-inline">
-            <option value="">Any Appraisal</option>
-            <option value="4">4 Stars & Above</option>
-            <option value="3">3 Stars & Above</option>
-            <option value="2">2 Stars & Above</option>
-            <option value="1">1 Star & Above</option>
+            <option value="">不限星评</option>
+            <option value="4">4星及以上</option>
+            <option value="3">3星及以上</option>
+            <option value="2">2星及以上</option>
+            <option value="1">1星及以上</option>
           </select>
         </div>
 
         <div class="filter-section-inline">
-          <h3 class="filter-title-inline">By Scrivener's Price:</h3>
+          <h3 class="filter-title-inline">按典籍定价：</h3>
           <div class="price-input-wrapper">
-            <input type="number" v-model.number="minPrice" @input="applyFiltersDebounced" placeholder="Min."
+            <input type="number" v-model.number="minPrice" @input="applyFiltersDebounced" placeholder="最低"
               class="filter-input-inline" />
             <span> — </span>
-            <input type="number" v-model.number="maxPrice" @input="applyFiltersDebounced" placeholder="Max."
+            <input type="number" v-model.number="maxPrice" @input="applyFiltersDebounced" placeholder="最高"
               class="filter-input-inline" />
           </div>
         </div>
         <div class="filter-section-inline">
-          <h3 class="filter-title-inline">By Inscription Year:</h3>
+          <h3 class="filter-title-inline">按刊印年份：</h3>
           <select v-model="selectedYear" @change="applyFilters" class="filter-select-inline">
-            <option value="">All Epochs</option>
+            <option value="">所有年代</option>
             <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
           </select>
         </div>
       </div>
 
-      <button @click="resetFilters" class="reset-filters-button-inline">Clear All Astrolabe Settings</button>
+      <button @click="resetFilters" class="reset-filters-button-inline">重置所有筛选条件</button>
     </div>
 
     <div class="parchment-scroll-wrapper">
       <main class="catalogue-of-works">
-        <p v-if="loading" class="scribe-message">The Scribe is diligently turning pages...</p>
-        <p v-else-if="!paginatedBooks || paginatedBooks.length === 0" class="scribe-message">Alas, no such tome matches
-          these refined criteria.</p>
+        <p v-if="loading" class="scribe-message">典籍官正在勤勉检索...稍候</p>
+        <p v-else-if="!paginatedBooks || paginatedBooks.length === 0" class="scribe-message">暂无符合此条件的典籍。</p>
         <transition-group name="book-fade" tag="div" class="tome-collection" v-else>
           <div v-for="book in paginatedBooks" :key="book.bookId" class="tome-folio">
             <div class="illumination-plate">
@@ -83,22 +82,22 @@
                 @click="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
-              <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>
-              <p class="tome-author">Penned by {{ book.author }}</p>
+              <h3 v-if="book.series" class="tome-series"> {{ book.series }} 系列篇章</h3>
+              <p class="tome-author">著者： {{ book.author }}</p>
               <div class="celestial-guidance">
                 <span class="stars-illuminated">{{ '★'.repeat(Math.round(book.rating)) }}{{
                   '☆'.repeat(5 - Math.round(book.rating)) }}</span>
-                <span class="whispers-of-critics">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
+                <span class="whispers-of-critics">({{ book.rating }} 分 {{ book.numRatings }} 条评价)</span>
               </div>
               <p class="tome-summary">{{ truncateDescription(book.description) }}</p>
               <div class="tome-provenance">
-                <span><strong>Incepted:</strong> {{ book.publishDate }}</span>
-                <span><strong>Folios:</strong> {{ book.pages }}</span>
-                <span><strong>Appraisal:</strong> ${{ book.price }}</span>
+                <span><strong>刊印日期：</strong> {{ book.publishDate }}</span>
+                <span><strong>页数：</strong> {{ book.pages }}</span>
+                <span><strong>定价：</strong> ${{ book.price }}</span>
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                  }}</span>
+                }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>
@@ -107,7 +106,7 @@
 
         <div v-if="totalPages > 1" class="pagination-controls">
           <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-button">
-            &laquo; Prior Folio
+            &laquo; 上一页
           </button>
           <span v-for="page in paginationPages" :key="page" class="page-number"
             :class="{ 'is-current': page === currentPage, 'is-ellipsis': page === '...' }"
@@ -115,7 +114,7 @@
             {{ page }}
           </span>
           <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="pagination-button">
-            Next Folio &raquo;
+            下一页 &raquo;
           </button>
         </div>
 
@@ -123,7 +122,7 @@
 
       <aside class="oracle-sidebar">
         <div class="oracle-header">
-          <h3 class="oracle-title">Whispers from the Oracle</h3>
+          <h3 class="oracle-title">智者私语</h3>
           <p class="oracle-subtitle">为您量身定制的卷轴 (实时推荐)</p>
         </div>
         <div class="oracle-list">
@@ -133,7 +132,7 @@
           <p v-else-if="realtimeRecommendations.length === 0" class="no-recommendations-message">
             尚无实时推荐。探索更多书籍以生成个性化推荐！
           <div class="info-bubble bottom-left" v-if="showRecommendationTip">
-            Click on books to refine your "Whispers"!
+            点击书籍可优化您的"智者私语"推荐！
           </div>
           </p>
           <transition-group name="recommendation-slide" tag="div" v-else>
@@ -578,17 +577,22 @@ export default {
 /* --- 新增：气泡提示样式 --- */
 .info-bubble {
   position: absolute;
-  background-color: #795548; /* 深棕色背景 */
+  background-color: #795548;
+  /* 深棕色背景 */
   color: #fff;
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 0.85em;
   white-space: nowrap;
-  z-index: 999; /* 确保在其他内容之上 */
+  z-index: 999;
+  /* 确保在其他内容之上 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  pointer-events: none; /* 让气泡不阻碍下方的点击事件 */
-  opacity: 0; /* 默认隐藏 */
-  animation: fadeInOut 5s forwards; /* 动画持续5秒，结束后保持状态 */
+  pointer-events: none;
+  /* 让气泡不阻碍下方的点击事件 */
+  opacity: 0;
+  /* 默认隐藏 */
+  animation: fadeInOut 5s forwards;
+  /* 动画持续5秒，结束后保持状态 */
 }
 
 /* 气泡箭头 */
@@ -601,75 +605,109 @@ export default {
 
 /* 搜索按钮气泡位置 */
 .seek-button {
-  position: relative; /* 使气泡相对于按钮定位 */
+  position: relative;
+  /* 使气泡相对于按钮定位 */
 }
 
 .info-bubble.bottom-right {
-  top: 100%; /* 位于父元素底部 */
+  top: 100%;
+  /* 位于父元素底部 */
   left: 50%;
-  transform: translate(-10%, 10px); /* 稍微偏右，并向下移动 */
+  transform: translate(-10%, 10px);
+  /* 稍微偏右，并向下移动 */
 }
 
 .info-bubble.bottom-right::after {
   top: -6px;
   left: 20%;
-  border-color: transparent transparent #795548 transparent; /* 向上箭头 */
+  border-color: transparent transparent #795548 transparent;
+  /* 向上箭头 */
 }
 
 /* 流派筛选气泡位置 */
 .genre-filter-pill {
-  position: relative; /* 使气泡相对于 pill 定位 */
+  position: relative;
+  /* 使气泡相对于 pill 定位 */
 }
 
 .info-bubble.top-center {
-  bottom: 100%; /* 位于父元素顶部 */
+  bottom: 100%;
+  /* 位于父元素顶部 */
   left: 50%;
-  transform: translate(-50%, -10px); /* 水平居中，并向上移动 */
+  transform: translate(-50%, -10px);
+  /* 水平居中，并向上移动 */
 }
 
 .info-bubble.top-center::after {
   bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  border-color: #795548 transparent transparent transparent; /* 向下箭头 */
+  border-color: #795548 transparent transparent transparent;
+  /* 向下箭头 */
 }
 
 /* 实时推荐气泡位置 */
 .no-recommendations-message {
-    position: relative; /* 使气泡相对于消息定位 */
-    display: inline-block; /* 确保 position: relative 生效 */
+  position: relative;
+  /* 使气泡相对于消息定位 */
+  display: inline-block;
+  /* 确保 position: relative 生效 */
 }
 
 .info-bubble.bottom-left {
-  top: 100%; /* 位于父元素底部 */
+  top: 100%;
+  /* 位于父元素底部 */
   right: 0;
-  transform: translate(0, 10px); /* 与父元素右侧对齐，并向下移动 */
+  transform: translate(0, 10px);
+  /* 与父元素右侧对齐，并向下移动 */
 }
 
 .info-bubble.bottom-left::after {
   top: -6px;
-  right: 15px; /* 箭头位置 */
-  border-color: transparent transparent #795548 transparent; /* 向上箭头 */
+  right: 15px;
+  /* 箭头位置 */
+  border-color: transparent transparent #795548 transparent;
+  /* 向上箭头 */
 }
 
 
 /* 气泡动画 */
 @keyframes fadeInOut {
-  0% { opacity: 0; }
-  10% { opacity: 1; } /* 动画开始后很快完全显示 */
-  90% { opacity: 1; } /* 保持完全显示大部分时间 */
-  100% { opacity: 0; } /* 动画结束时完全隐藏 */
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  /* 动画开始后很快完全显示 */
+  90% {
+    opacity: 1;
+  }
+
+  /* 保持完全显示大部分时间 */
+  100% {
+    opacity: 0;
+  }
+
+  /* 动画结束时完全隐藏 */
 }
 
 /* 确保现有样式兼容 */
 .top-folio-controls {
-  position: relative; /* 确保气泡可以在此范围内定位 */
+  position: relative;
+  /* 确保气泡可以在此范围内定位 */
 }
+
 .genre-filter-section {
-  position: relative; /* 确保气泡可以在此范围内定位 */
+  position: relative;
+  /* 确保气泡可以在此范围内定位 */
 }
+
 .oracle-sidebar {
-  position: relative; /* 确保气泡可以在此范围内定位 */
+  position: relative;
+  /* 确保气泡可以在此范围内定位 */
 }
 
 /* The Grand Container of Lore */
