@@ -3,13 +3,11 @@
 import os
 from flask import Flask
 from flask_cors import CORS
-from models import db  # 从 models.py 导入 db 实例
-from routes.book_engagement import book_engagement_bp  # 导入书籍互动蓝图
-from routes.review_engagement import review_engagement_bp  # 导入书评互动蓝图
-from routes.review_content import review_content_bp  # **新增：导入书评内容蓝图**
-from routes.review_admin_routes import review_bp  # 如果有书评提交的蓝图
-
-# from routes.review_submission import review_submission_bp # 如果有书评提交的蓝图
+from models import db  
+from routes.book_engagement import book_engagement_bp 
+from routes.review_engagement import review_engagement_bp 
+from routes.review_content import review_content_bp  
+from routes.review_admin_routes import review_bp  
 
 app = Flask(__name__)
 
@@ -29,9 +27,8 @@ db.init_app(app)
 # 注意：蓝图的 url_prefix 是在蓝图文件内部定义的，这里只需要注册蓝图对象
 app.register_blueprint(book_engagement_bp)
 app.register_blueprint(review_engagement_bp)
-app.register_blueprint(review_content_bp)  # **新增：注册书评内容蓝图**
-app.register_blueprint(review_bp)  # 如果有书评提交的蓝图
-# app.register_blueprint(review_submission_bp) # 如果有书评提交的蓝图
+app.register_blueprint(review_content_bp)  
+app.register_blueprint(review_bp)  
 
 
 # --- Database Initialization (Run once to create tables) ---
@@ -47,6 +44,7 @@ def init_db_command():
 
 
 if __name__ == "__main__":
-    # 确保 app.run 监听在 0.0.0.0，以便 Docker 容器可以从外部访问
-    # 端口保持 5003，与 docker-compose.yml 中的映射一致
+    with app.app_context():
+        db.create_all()  # 扫描 models.py 中的所有模型，创建对应表
+
     app.run(host="0.0.0.0", debug=True, port=5003)

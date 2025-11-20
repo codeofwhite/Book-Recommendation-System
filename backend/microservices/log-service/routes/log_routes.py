@@ -12,8 +12,7 @@ LOG_FILE_PATH = os.path.join(os.path.dirname(__file__), '..', 'logs', 'frontend_
 os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
 
 # 初始化 Kafka Producer
-# 这里的 KAFKA_BROKER_URL 应该指向你的 Kafka 服务地址，例如 'kafka:29092'
-# 可以在环境变量中配置
+# 这里的 KAFKA_BROKER_URL 应该指向 Kafka 服务地址
 KAFKA_BROKER_URL = os.environ.get('KAFKA_BROKER_URL', 'kafka:29092') # 确保你的Docker Compose网络中Kafka是可达的
 producer = KafkaProducer(
     bootstrap_servers=[KAFKA_BROKER_URL],
