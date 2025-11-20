@@ -26,7 +26,6 @@ class DataLoader:
     def load_book_data(self):
         """从 rec_books 表加载图书数据 (使用 MySQL)"""
         print("Loading book data from rec_books (MySQL)...")
-        # 根据你提供的字段，我们加载更多信息，即使 category 暂时没有数据
         df = pd.read_sql(
             """
             SELECT 
@@ -46,6 +45,7 @@ class DataLoader:
         从 ClickHouse 的 default.user_behavior_logs_raw 表加载用户行为日志数据。
         根据提供的字段示例，提取 user_id, book_id (作为 item_id), event_type, 和交互强度。
         """
+        
         print(
             "Loading user behavior logs from ClickHouse default.user_behavior_logs_raw..."
         )

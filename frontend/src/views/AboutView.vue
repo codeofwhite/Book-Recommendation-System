@@ -1,87 +1,67 @@
 <!-- 关于页面 -->
 <template>
     <div class="establishment-container">
-        <h1 class="main-heading">Concerning The Scriptorium: Our Endeavour</h1>
+        <h1 class="main-heading">关于书斋：我们的初衷</h1>
 
         <section class="chapter-section mission-statement">
-            <h2 class="chapter-title">Our Sacred Mission</h2>
+            <h2 class="chapter-title">我们的使命</h2>
             <p class="chapter-paragraph">
-                Welcome, esteemed patron, to The Scriptorium – your esteemed guide through the boundless realms of
-                literature. Our solemn mission is to aid every ardent reader in discerning their next cherished volume.
-                In a world brimming with countless literary treasures, the quest for the perfect narrative can be both
-                exhilarating and, at times, daunting. With the wisdom of advanced algorithms and a profound appreciation
-                for the nuances of literary taste, we endeavour to present recommendations uniquely tailored to your
-                discerning predilections.
+                欢迎来到书斋——这里是你探索海量书籍的贴心向导。我们的目标很简单：帮每一位爱读书的人，找到下一本喜欢的书。
+                如今好书太多，想挑到合心意的难免让人纠结。我们用先进的算法，结合对阅读喜好的精准把握，为你推荐专属的优质书籍。
             </p>
         </section>
 
         <section class="chapter-section how-it-works">
-            <h2 class="chapter-title">The Mechanics of Our Craft</h2>
+            <h2 class="chapter-title">我们的运作方式</h2>
             <p class="chapter-paragraph">
-                The very fabric of our system is woven with your literary journey at its core. As you engage with our
-                platform – by appraising volumes, marking them as perused, or consigning them to your personal ledger of
-                desired acquisitions – our discerning engine diligently apprehends your singular reading inclinations.
-                We meticulously analyse sundry elements, including your preferred genres, the distinctive styles of
-                authors, their publication epochs, and even the very sentiments conveyed within critical appraisals,
-                thereby furnishing recommendations of remarkable precision. The more profound your engagement with our
-                establishment, the more perspicacious becomes its comprehension of your cultivated literary palate!
+                我们的系统核心，就是围绕你的阅读经历打造。当你在平台上给书籍评分、标记已读或加入想读清单时，系统会悄悄记录你的阅读偏好。
+                我们会分析你喜欢的 genres、作者风格、出版年代，甚至书评里的真实感受，让推荐更精准。你和平台互动越多，我们就越懂你的阅读口味！
             </p>
             <ul class="feature-list">
                 <li>
                     <span class="feature-icon">★</span>
-                    <strong>Curated Disclosures:</strong> Recommendations bespoke to your reading chronicles and
-                    cultivated tastes.
+                    <strong>专属推荐：</strong> 根据你的阅读记录和喜好，量身打造推荐列表。
                 </li>
                 <li>
                     <span class="feature-icon">◆</span>
-                    <strong>Diverse Literary Domains:</strong> Traverse the vast expanse from captivating Fictions and
-                    profound Non-Fictions to the lyrical expressions of Poesy and the wondrous speculations of the
-                    Scientific Romances.
+                    <strong>书籍种类丰富：</strong> 涵盖小说、非虚构、诗歌、科幻等各种类型，满足不同需求。
                 </li>
                 <li>
                     <span class="feature-icon">ↈ</span>
-                    <strong>Communal Convocations:</strong> Discern the preferences of fellow literary enthusiasts and
-                    graciously impart your own profound insights.
+                    <strong>读者社区：</strong> 了解其他读者的喜好，也分享自己的阅读心得。
                 </li>
                 <li>
                     <span class="feature-icon">◊</span>
-                    <strong>An Intuitive Compendium:</strong> A seamless and most intuitive experience devised for every
-                    devoted bibliophile.
+                    <strong>操作简单：</strong> 界面直观好上手，让每一位读者都能轻松使用。
                 </li>
             </ul>
         </section>
 
         <section class="chapter-section our-team">
-            <h2 class="chapter-title">The Artisans of This Establishment</h2>
+            <h2 class="chapter-title">我们的团队</h2>
             <p class="chapter-paragraph">
-                We are a collective of impassioned developers, sagacious data scientists, and fervent readers, each
-                profoundly convinced of the inherent power within the written word. Our combined acumen in machine
-                learning, user experience architecting, and the venerable realm of literature fuels our unwavering
-                commitment to forge a recommendation system both intelligent in its discernment and truly felicitous in
-                its application. We incessantly strive to refine our algorithms and augment our ever-expanding
-                repository of tomes, ensuring you shall perpetually encounter fresh and beguiling discoveries.
+                我们是一群热爱开发的工程师、懂数据的专家，同时也是忠实的读者。我们相信文字的力量，
+                结合机器学习、用户体验设计和文学领域的知识，打造出既智能又好用的书籍推荐系统。
+                我们会不断优化算法、扩充书籍库，让你总能发现新鲜有趣的好书。
             </p>
         </section>
 
         <section class="chapter-section contact-us">
-            <h2 class="chapter-title">Making Your Acquaintance</h2>
+            <h2 class="chapter-title">联系我们</h2>
             <p class="chapter-paragraph">
-                We are ever eager to lend an attentive ear to the esteemed voices of our patrons! Should you possess any
-                queries, commendations, or sage counsel, pray, do not hesitate to make contact. Your invaluable
-                observations serve to perpetually refine and elevate The Scriptorium.
+                我们非常愿意倾听你的声音！如果你有任何问题、建议或想法，都可以随时联系我们。
+                你的反馈对我们很重要，能帮助书斋变得更好。
             </p>
             <p class="chapter-paragraph contact-email">
-                One may address us via correspondence:
+                邮箱联系：
                 <a href="mailto:curator@thescriptorium.com">curator@thescriptorium.com</a>
             </p>
         </section>
 
         <section class="chapter-section acknowledgements">
-            <h2 class="chapter-title">A Word of Gratitude</h2>
+            <h2 class="chapter-title">致谢</h2>
             <p class="chapter-paragraph">
-                Our profound thanks are extended to the venerable open-source fraternities and the various purveyors of
-                data, whose invaluable resources proved instrumental in the very construction and perpetual enhancement
-                of this cherished platform.
+                特别感谢开源社区和各类数据提供商，他们的宝贵资源为这个平台的搭建和持续优化提供了重要支持。
             </p>
         </section>
     </div>

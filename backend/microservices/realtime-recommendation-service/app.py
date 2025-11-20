@@ -38,9 +38,6 @@ def setup_redis_client():
 
 @app.route('/')
 def home():
-    """
-    根路径欢迎信息。
-    """
     return "欢迎来到 Redis 数据查看器！请访问 /redis/all_recent_views 或 /redis/recent_views/<user_id>"
 
 @app.route('/health', methods=['GET'])
@@ -116,7 +113,7 @@ def get_user_recent_views(user_id):
         print(f"从 Redis 获取用户 '{user_id}' 最近浏览数据时出错: {e}")
         return jsonify({"error": "获取数据失败", "details": str(e)}), 500
 
-# 新增路由：获取所有用户的实时更新推荐
+# 获取所有用户的实时更新推荐
 @app.route('/redis/all_realtime_updated_recommendations', methods=['GET'])
 def get_all_realtime_updated_recommendations():
     """
@@ -154,7 +151,6 @@ def get_all_realtime_updated_recommendations():
         print(f"从 Redis 获取所有实时更新推荐数据时出错: {e}")
         return jsonify({"error": "获取数据失败", "details": str(e)}), 500
 
-# 【重点】定义你的书籍服务（service-b）的URL。请根据你的实际部署修改。
 SERVICE_B_BASE_URL = "http://book_manage:5001" 
 
 @app.route('/realtime_updated_recommendations/<user_id>', methods=['GET'])

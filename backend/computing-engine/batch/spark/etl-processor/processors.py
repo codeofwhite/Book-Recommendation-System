@@ -472,7 +472,7 @@ def process_review_favorite_data(df, epoch_id, spark):
         )
 
 
-# --- 新增：处理 BookLike 数据 ---
+# --- 处理 BookLike 数据 ---
 def process_book_like_data(df, epoch_id, spark):
     print(f"Processing book like data in batch {epoch_id}...")
     like_df = (
@@ -536,7 +536,7 @@ def process_book_like_data(df, epoch_id, spark):
         print(f"Batch {epoch_id} contained no valid book like records after filtering.")
 
 
-# --- 新增：处理 ReviewLike 数据 ---
+# --- 处理 ReviewLike 数据 ---
 def process_review_like_data(df, epoch_id, spark):
     print(f"Processing review like data in batch {epoch_id}...")
     like_df = (
@@ -602,7 +602,7 @@ def process_review_like_data(df, epoch_id, spark):
         )
 
 
-# --- 新增：处理 Review 数据 ---
+# --- 处理 Review 数据 ---
 def process_review_data(df, epoch_id, spark):
     print(f"Processing review data in batch {epoch_id}...")
     review_df = (
@@ -676,7 +676,7 @@ def process_review_data(df, epoch_id, spark):
         print(f"Batch {epoch_id} contained no valid review records after filtering.")
 
 
-# --- 新增：处理 Comment 数据 ---
+# --- 处理 Comment 数据 ---
 def process_comment_data(df, epoch_id, spark):
     print(f"Processing comment data in batch {epoch_id}...")
     comment_df = (

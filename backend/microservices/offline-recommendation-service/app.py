@@ -44,39 +44,12 @@ def run_offline_training_job():
         print(traceback.format_exc()) # 打印完整的错误堆栈
         print("--- Offline recommendation job terminated with errors ---")
 
-# def schedule_offline_job(): # <--- 暂时注释掉定时任务函数
-#     """设置定时任务来运行离线推荐计算"""
-#     print(f"Scheduling offline recommendation job to run at {Config.OFFLINE_CRON_SCHEDULE} daily.")
-#     try:
-#         cron_parts = Config.OFFLINE_CRON_SCHEDULE.split()
-#         if len(cron_parts) >= 2:
-#             schedule_hour = cron_parts[1]
-#             schedule_minute = cron_parts[0]
-#             schedule_time_str = f"{schedule_hour}:{schedule_minute}"
-#             print(f"Parsed schedule time: {schedule_time_str}")
-#             schedule.every().day.at(schedule_time_str).do(run_offline_training_job)
-#         else:
-#             print(f"Warning: OFFLINE_CRON_SCHEDULE format '{Config.OFFLINE_CRON_SCHEDULE}' is not as expected. Skipping daily scheduling.")
-#             schedule.every(1).minutes.do(run_offline_training_job) # 默认设置为每分钟检查一次，方便调试
-
-#     except Exception as e:
-#         print(f"Error parsing OFFLINE_CRON_SCHEDULE: {e}")
-#         print(traceback.format_exc())
-#         print("Defaulting to schedule every 1 minute for debugging.")
-#         schedule.every(1).minutes.do(run_offline_training_job) # 兜底，每分钟运行一次方便调试
-
-#     while True:
-#         schedule.run_pending()
-#         time.sleep(1)
-
-# Define your Service B URL, just like you did for real-time recommendations
-# Ensure this matches your Docker Compose service name (e.g., 'book_manage')
 SERVICE_B_BASE_URL = "http://book_manage:5001" 
 
 @app.route('/recommend/offline/user/<int:user_id>', methods=['GET'])
 def get_offline_user_recommendations(user_id):
     """
-    【新接口】获取指定用户的离线训练生成的 Top-N 推荐图书列表。
+    获取指定用户的离线训练生成的 Top-N 推荐图书列表。
     此接口用于验证离线推荐结果，会返回 Config.TOP_N_RECOMMENDATIONS 数量的推荐。
     """
     print(f"收到请求：获取用户 {user_id} 的离线推荐。")
@@ -168,7 +141,7 @@ def health_check():
     status = "healthy" if redis_status else "unhealthy (Redis)"
     return jsonify({"status": status, "redis_connected": redis_status}), 200
 
-# --- 新增的接口用于测试 ClickHouse 数据加载 ---
+# --- 测试 ClickHouse 数据加载 ---
 @app.route('/data/user_behavior_logs', methods=['GET'])
 def get_user_behavior_logs_data():
     """
@@ -205,9 +178,5 @@ def get_user_behavior_logs_data():
         }), 500
 
 if __name__ == '__main__':
-    # 在 Flask 应用启动时，在单独的线程中启动离线计算的定时任务
-    # offline_scheduler_thread = threading.Thread(target=schedule_offline_job) # <--- 暂时注释掉
-    # offline_scheduler_thread.daemon = True
-    # offline_scheduler_thread.start() # <--- 暂时注释掉
 
     app.run(host='0.0.0.0', port=5005, debug=True)

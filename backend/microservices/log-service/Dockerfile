@@ -10,12 +10,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
 # 复制整个 log_service 目录到容器
-# 注意：这里假设你的 log_service 目录结构如下：
-# log_service/
-# ├── app.py
-# ├── routes/
-# │   └── log_routes.py
-# └── requirements.txt
 COPY . .
 
 # 暴露 Flask 应用运行的端口

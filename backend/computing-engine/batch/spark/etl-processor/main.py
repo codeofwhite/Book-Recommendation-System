@@ -60,10 +60,8 @@ def create_kafka_stream(topic_name):
 # 创建数据流
 user_stream = create_kafka_stream("auth_db_cdc.auth_db.users")
 book_stream = create_kafka_stream("book_db_cdc.book_manage_db.books")
-# 创建数据流 (新增部分)
-# 请确保 Debezium 的 topic.prefix 与这里的主题名称前缀匹配
-# 例如，如果 Debezium topic.prefix 是 user_engagement_db_cdc
-# 那么主题名将是 user_engagement_db_cdc.book_engagement.BOOK_FAVORITE
+
+# 创建数据流
 book_favorite_stream = create_kafka_stream(
     "user_engagement_db_cdc.book_engagement.BOOK_FAVORITE"
 )
