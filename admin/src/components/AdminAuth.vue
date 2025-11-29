@@ -61,8 +61,6 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    // For demo purposes, using mock authentication
-    // Replace with your actual API endpoint
     const response = await axios.post('/api/admin/login', {
       email: loginForm.value.email,
       password: loginForm.value.password

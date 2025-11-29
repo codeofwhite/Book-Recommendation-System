@@ -19,7 +19,7 @@
           </li>
           <li @click="activeSection = 'favorite-reviews'" :class="{ active: activeSection === 'favorite-reviews' }">
             <span class="nav-icon">✍️</span>
-            <span class="nav-text">评论文集</span>
+            <span class="nav-text">我收藏的书评</span>
             <span class="nav-decoration">〰</span>
           </li>
           <li @click="activeSection = 'my-reviews'" :class="{ active: activeSection === 'my-reviews' }">
