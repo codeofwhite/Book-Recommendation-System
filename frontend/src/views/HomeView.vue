@@ -1,57 +1,67 @@
 <template>
   <div class="home-view">
     <header class="hero-section">
+      <div class="hero-bg-anim-container">
+        <div class="hero-bg-sparkle"></div>
+        <div class="hero-bg-glow"></div>
+      </div>
+
       <div class="hero-content">
-        <h1 class="hero-title">The Grand Tapestry of Knowledge: Charting Paths to Enlightenment</h1>
-        <p class="hero-subtitle">A Conclave for Artisans, a Repository for Luminary Works. Discover, Delve, and
-          Disentangle.</p>
-        <button class="explore-button" @click="scrollToSection('popular-books')">Embark on the Quest</button>
+        <h1 class="hero-title">知识宏卷：铺就启迪之路</h1>
+        <p class="hero-subtitle">
+          <span class="typewriter-text" ref="heroSubtitleText"></span><span class="blink-cursor">|</span>
+        </p>
+        <button class="explore-button" @click="scrollToSection('popular-books')">启碇探索</button>
       </div>
     </header>
 
     <main class="main-content">
       <p v-if="loading" class="loading-message">
-      <div class="spinner"></div> The Quills are Busy, Kindly Stand By...
+      <div class="spinner"></div> 典籍誊抄中，敬请稍候...
       </p>
 
       <div v-else class="content-wrapper">
         <div class="main-sections">
           <section class="section-container" id="popular-books">
             <div class="section-header">
-              <h2 class="section-title">Volumes of Esteem: Acclaimed by the Cognoscenti</h2>
-              <router-link to="/books" class="more-link">Peruse the Archives &gt;</router-link>
+              <h2 class="section-title">菁华典籍：众贤推崇之作</h2>
+              <a href="#" @click.prevent="openBookModal('popular')" class="more-link">
+                遍览藏书 &gt;
+              </a>
             </div>
-            <div class="book-grid">
-              <div v-for="book in popularBooks" :key="book.id" class="book-card">
-                <img :src="book.coverImage" :alt="book.title" class="book-cover" />
+            <transition-group name="book-card-fade" tag="div" class="book-grid">
+              <div v-for="book in popularBooks.slice(0, 4)" :key="book.id" class="book-card">
+                <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
-                  <p class="book-author">Authored by: {{ book.author }}</p>
-                  <p class="book-genre">Genre: {{ book.genre }}</p>
-                  <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
+                  <p class="book-author">著者：{{ book.author }}</p>
+                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">類型： {{ book.genres[0] }}</p>
+                  <button @click="viewBookDetails(book.id)" class="details-button">解锁篇章</button>
                 </div>
               </div>
-            </div>
+            </transition-group>
           </section>
 
           <hr class="section-divider" />
 
           <section class="section-container" id="personalized-books">
             <div class="section-header">
-              <h2 class="section-title">Curated for Your Discerning Eye</h2>
-              <router-link to="/books" class="more-link">More Selections Befitting Your Taste &gt;</router-link>
+              <h2 class="section-title">为君甄选：契合雅趣之选</h2>
+              <a href="#" @click.prevent="openBookModal('personalized')" class="more-link">
+                更多心仪典籍 &gt;
+              </a>
             </div>
-            <div class="book-grid">
-              <div v-for="book in personalizedBooks" :key="book.id" class="book-card">
-                <img :src="book.coverImage" :alt="book.title" class="book-cover" />
+            <transition-group name="book-card-fade" tag="div" class="book-grid">
+              <div v-for="book in personalizedBooks.slice(0, 4)" :key="book.id" class="book-card">
+                <img :src="book.coverImg" :alt="book.title" class="book-cover" />
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
-                  <p class="book-author">Authored by: {{ book.author }}</p>
-                  <p class="book-genre">Genre: {{ book.genre }}</p>
-                  <button @click="viewBookDetails(book.id)" class="details-button">Unfold the Narrative</button>
+                  <p class="book-author">著者：{{ book.author }}</p>
+                  <p class="book-genre" v-if="book.genres && book.genres.length > 0">類型： {{ book.genres[0] }}</p>
+                  <button @click="viewBookDetails(book.id)" class="details-button">解锁篇章</button>
                 </div>
               </div>
-            </div>
+            </transition-group>
           </section>
 
           <hr class="section-divider" />
@@ -59,10 +69,10 @@
           <section class="section-container section-two-columns">
             <div class="ranking-section-wrapper" id="rankings">
               <div class="section-header-compact">
-                <h2 class="section-title-small">The Pantheon of Literary Distinction</h2>
-                <router-link to="/rankings" class="more-link-small">Behold the Full Register &gt;</router-link>
+                <h2 class="section-title-small">文学殿堂：典籍排行榜</h2>
+                <router-link to="/rankings" class="more-link-small">查看完整榜单 &gt;</router-link>
               </div>
-              <div class="ranking-grid-compact">
+              <transition-group name="ranking-item-fade" tag="div" class="ranking-grid-compact">
                 <div v-for="(rankList, index) in bookRankings" :key="index" class="ranking-card-compact">
                   <h3>{{ rankList.title }}</h3>
                   <ul>
@@ -73,114 +83,319 @@
                     </li>
                   </ul>
                 </div>
-              </div>
+              </transition-group>
             </div>
 
             <div class="activity-section-wrapper" id="activities">
               <div class="section-header-compact">
-                <h2 class="section-title-small">Forthcoming Convocations & Salons</h2>
-                <router-link to="/activities" class="more-link-small">Discover More Gatherings &gt;</router-link>
+                <h2 class="section-title-small">文苑雅集：近期活动</h2>
+                <router-link to="/activities" class="more-link-small">探索更多活动 &gt;</router-link>
               </div>
-              <div class="activity-list-compact">
+              <transition-group name="activity-item-fade" tag="div" class="activity-list-compact">
                 <div v-for="activity in activities.slice(0, 3)" :key="activity.id" class="activity-item-compact">
                   <img :src="activity.image" :alt="activity.title" class="activity-image-small" />
                   <div class="activity-info-compact">
                     <h4>{{ activity.title }}</h4>
                     <p>{{ activity.date }}</p>
-                    <button class="join-button-small">Graciously Attend</button>
+                    <button class="join-button-small" @click="viewActivityDetails(activity.id)">Graciously
+                      Attend</button>
                   </div>
                 </div>
-              </div>
+              </transition-group>
             </div>
           </section>
         </div>
       </div>
     </main>
 
-    <button :class="['sidebar-toggle-button', { 'is-open': isSidebarOpen }]" @click="toggleSidebar">
-      <span v-if="!isSidebarOpen">每日一书</span>
-      <span v-else>&#x2715;</span> </button>
-
-    <div class="sidebar-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="toggleSidebar"></div>
-
-    <aside :class="['daily-book-sidebar', { 'is-open': isSidebarOpen }]">
-      <div class="daily-book-card">
-        <h2 class="sidebar-title">The Day's Chosen Volume</h2>
-        <div v-if="dailyBook" class="book-of-the-day">
-          <img :src="dailyBook.coverImage" :alt="dailyBook.title" class="daily-book-cover" />
-          <h3 class="daily-book-title">{{ dailyBook.title }}</h3>
-          <p class="daily-book-author">Authored by: {{ dailyBook.author }}</p>
-          <p class="daily-book-genre">Genre: {{ dailyBook.genre }}</p>
-          <button @click="viewBookDetails(dailyBook.id)" class="details-button">Unfold the Narrative</button>
+    <div>
+      <transition name="pop-in">
+        <div v-if="showTooltip" class="daily-book-tooltip" @click="hideTooltip">
+          <p>✨ 发现今日好书！点击这里</p>
+          <span class="tooltip-arrow"></span>
         </div>
-        <p v-else class="no-daily-book">
-          No book recommendation for today. Check back later!
-        </p>
-      </div>
-    </aside>
+      </transition>
+
+      <button :class="['sidebar-toggle-button', { 'is-open': isSidebarOpen }]" @click="toggleSidebar">
+        <span v-if="!isSidebarOpen">每日一书</span>
+        <span v-else>&#x2715;</span>
+        <span class="ripple-effect"></span>
+      </button>
+
+      <div class="sidebar-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="toggleSidebar"></div>
+
+      <aside :class="['daily-book-sidebar', { 'is-open': isSidebarOpen }]">
+        <div class="daily-book-card">
+          <h2 class="sidebar-title">今日甄选典籍</h2>
+          <BookOfTheDay v-if="isSidebarOpen" :initial-book="dailyBook" />
+          <p v-else-if="!isSidebarOpen" class="no-daily-book">
+            今日暂无推荐典籍，敬请稍后再来！
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <BookListModal :is-visible="isModalVisible" :title="modalTitle" :books="modalBooks" @close="closeBookModal"
+      @view-details="viewBookDetails" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import BookOfTheDay from '../views/BookOfTheDay.vue';
+import BookListModal from '../components/BookListModal.vue';
 
 const router = useRouter();
-const loading = ref(true); // 控制加载状态
-const isSidebarOpen = ref(false); // 控制侧边栏展开/收起状态
-
-// 模拟数据
-const mockBooks = [
-  { id: '1', title: 'Vue.js 3 实践指南', author: '前端老张', genre: '编程技术', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '2', title: '微服务架构设计', author: '架构师李工', genre: '系统设计', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '3', title: 'Python Flask 实战', author: 'Python 小白', genre: '后端开发', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '4', title: '算法导论', author: 'Thomas H. Cormen', genre: '计算机科学', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '5', title: '三体', author: '刘慈欣', genre: '科幻小说', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '6', title: '设计模式', author: 'Erich Gamma', genre: '编程技术', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '7', title: '人类简史', author: '尤瓦尔·赫拉利', genre: '历史', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: '8', title: '非暴力沟通', author: '马歇尔·卢森堡', genre: '心理学', coverImage: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-];
+const loading = ref(true);
+const isSidebarOpen = ref(false);
+const showTooltip = ref(false);
 
 const popularBooks = ref([]);
 const personalizedBooks = ref([]);
-const bookRankings = ref([
-  { title: '畅销榜', books: [mockBooks[4], mockBooks[0], mockBooks[6], mockBooks[7], mockBooks[2], mockBooks[1], mockBooks[3]] }, // Added more for testing slice
-  { title: '新书榜', books: [mockBooks[7], mockBooks[5], mockBooks[1], mockBooks[0], mockBooks[4], mockBooks[6], mockBooks[3]] }, // Added more for testing slice
-]);
+const bookRankings = ref([]);
 const activities = ref([
-  { id: 'a1', title: '夏日读书挑战赛：奇幻文学专题', date: '2025.07.01 - 2025.08.31', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: 'a2', title: '线上读书分享会：哲学思辨之夜', date: '2025.07.15 19:00', image: 'https://th.bing.com/th/id/OIP.WMA1iLv8OEsKbQNzopefQQHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: 'a3', title: '线下作家见面会：历史长河探秘', date: '2025.07.20 14:00', image: 'https://th.bing.com/th/id/OIP.CyDI-M6iaUlGY7yOyQeM8wHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
-  { id: 'a4', title: '编程技术沙龙：Vue3新特性', date: '2025.07.25 10:00', image: 'https://th.bing.com/th/id/OIP.21XL-cVbf89_FE_pAvvX4gHaGq?w=209&h=189&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3' },
+  {
+    id: 'a1',
+    title: '夏日读书挑战赛：奇幻文学专题',
+    date: '2025.07.01 - 2025.08.31',
+    image: 'https://th.bing.com/th/id/OIP.z8K89wSx6Od2ctAjgdEE5gHaEM?w=310&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '深入奇幻文学的瑰丽世界，挑战阅读极限，赢取丰厚奖励。'
+  },
+  {
+    id: 'a2',
+    title: '线上读书分享会：哲学思辨之夜',
+    date: '2025.07.15 19:00',
+    image: 'https://th.bing.com/th/id/OIP.ac8a6uFFGWNUWltXnKib4AHaQY?w=158&h=349&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '邀请知名哲学家，共同探讨人生、宇宙与存在的意义。'
+  },
+  {
+    id: 'a3',
+    title: '线下作家见面会：历史长河探秘',
+    date: '2025.07.20 14:00',
+    image: 'https://th.bing.com/th/id/OIP.j2QL_B60LLgWU7x-xH6b6gHaHa?w=192&h=193&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '与畅销历史作家面对面，分享创作故事和历史发现的乐趣。'
+  },
+  {
+    id: 'a4',
+    title: '青年创作者工作坊：故事构建技巧',
+    date: '2025.08.05 19:30 (CST)',
+    image: 'https://th.bing.com/th/id/OIP.w4PWaTPnW8Z79qSTqPk0xwHaC9?w=322&h=139&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3',
+    description: '针对青年作家，提升故事构思、人物塑造和情节发展能力。',
+  },
 ]);
 
-const dailyBook = ref(null); // This will hold your daily recommended book
-
-// 模拟数据获取函数
-const fetchData = async () => {
-  await new Promise(resolve => setTimeout(resolve, 1500)); // 模拟网络延迟
-  popularBooks.value = [mockBooks[0], mockBooks[4], mockBooks[2], mockBooks[6]]; // 示例热门
-  personalizedBooks.value = [mockBooks[1], mockBooks[3], mockBooks[5], mockBooks[7]]; // 示例个性化
-  
-  // Logic to fetch and set the daily recommended book
-  if (mockBooks.length > 0) {
-    const randomIndex = Math.floor(Math.random() * mockBooks.length);
-    dailyBook.value = mockBooks[randomIndex];
-  } else {
-    dailyBook.value = null;
-  }
-
-  loading.value = false;
+const viewActivityDetails = (activityId) => {
+  router.push(`/activities/${activityId}`);
+  isSidebarOpen.value = false;
+  hideTooltip();
 };
 
-onMounted(() => {
-  fetchData();
+const dailyBook = ref(null);
+
+const isModalVisible = ref(false);
+const modalTitle = ref('');
+const modalBooks = ref([]);
+
+const API_BASE_URL = '/service-b/api';
+
+const getParsedUserData = () => {
+  const storedUserData = localStorage.getItem('user_data');
+  if (storedUserData) {
+    try {
+      return JSON.parse(storedUserData);
+    } catch (e) {
+      console.error("Error parsing user_data from localStorage:", e);
+      return null;
+    }
+  }
+  return null;
+};
+
+const shuffleArray = (array) => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+const fetchData = async () => {
+  loading.value = true;
+  const isFallbackRecommendation = ref(false);
+
+  try {
+    const popularRes = await axios.get(`${API_BASE_URL}/books/popular`);
+    popularBooks.value = popularRes.data.map(book => ({
+      id: book.id || book.bookId,
+      title: book.title,
+      author: book.author,
+      genres: book.genres,
+      coverImg: book.coverImg
+    }));
+
+    const loggedInUser = getParsedUserData();
+    const userId = loggedInUser ? loggedInUser.user_id : null;
+
+    if (userId) {
+      try {
+        const offlineRecommendationApiUrl = `/service-g/recommend/offline/user/${userId}`;
+        console.log(`尝试获取用户 ${userId} 的离线推荐：${offlineRecommendationApiUrl}`);
+        const personalizedRes = await axios.get(offlineRecommendationApiUrl);
+
+        if (personalizedRes.data && personalizedRes.data.recommendations && personalizedRes.data.recommendations.length > 0) {
+          personalizedBooks.value = personalizedRes.data.recommendations.map(book => ({
+            id: book.bookId,
+            title: book.title,
+            author: book.author,
+            coverImg: book.coverImg,
+            genres: book.genres || ['未知分类']
+          }));
+          console.log("离线个性化推荐数据:", personalizedBooks.value);
+        } else {
+          personalizedBooks.value = [];
+          console.log("当前用户有离线推荐记录，但推荐列表为空。");
+        }
+      } catch (error) {
+        console.error('Error fetching personalized (offline) recommendations:', error);
+        personalizedBooks.value = [];
+        if (error.response && error.response.status === 404) {
+          console.log("当前用户没有离线推荐数据，或离线任务尚未运行。");
+        }
+      }
+    } else {
+      console.log("用户未登录，无法获取个性化（离线）推荐。");
+      personalizedBooks.value = [];
+    }
+
+    if (personalizedBooks.value.length === 0 && popularBooks.value.length > 0) {
+      console.log("冷启动：个性化推荐为空，使用随机打乱的热门书籍作为后备推荐。");
+      isFallbackRecommendation.value = true;
+      const shuffledPopularBooks = shuffleArray(popularBooks.value);
+      personalizedBooks.value = shuffledPopularBooks.slice(0, 12);
+    } else {
+      isFallbackRecommendation.value = false;
+    }
+
+    const bestsellingRes = await axios.get(`${API_BASE_URL}/books/rankings/bestselling?limit=7`);
+    const newReleasesRes = await axios.get(`${API_BASE_URL}/books/rankings/new_releases?limit=7`);
+
+    bookRankings.value = [
+      {
+        title: '高分榜',
+        books: bestsellingRes.data.map(book => ({
+          id: book.id || book.bookId,
+          title: book.title,
+          author: book.author,
+        }))
+      },
+      {
+        title: '新书榜',
+        books: newReleasesRes.data.map(book => ({
+          id: book.id || book.bookId,
+          title: book.title,
+          author: book.author,
+        }))
+      }
+    ];
+
+    const dailyBookRes = await axios.get(`${API_BASE_URL}/books/daily`);
+    if (dailyBookRes.data) {
+      dailyBook.value = {
+        id: dailyBookRes.data.id || dailyBookRes.data.bookId,
+        title: dailyBookRes.data.title,
+        author: dailyBookRes.data.author,
+        genres: dailyBookRes.data.genres,
+        coverImg: dailyBookRes.data.coverImg
+      };
+    }
+
+  } catch (error) {
+    console.error('Error fetching data (main sections):', error);
+    if (personalizedBooks.value.length === 0 && popularBooks.value.length > 0) {
+      personalizedBooks.value = popularBooks.value.slice(0, 12);
+      isFallbackRecommendation.value = true;
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+let tooltipTimer = null;
+
+// --- 打字机效果相关变量和函数 (已更新) ---
+const heroSubtitleText = ref(null); // 用于引用模板中的副标题 span 元素
+const heroSubtitleTexts = [ // 多条标语
+  "创作者的聚集地，精品佳作的收藏库。",
+  "发现、钻研、顿悟。",
+  "解锁万象故事，从此启程。",
+  "知识有处可依，思想有处栖息。"
+];
+const currentSubtitleIndex = ref(0); // 当前显示的标语索引
+const typewriterIndex = ref(0); // 打字机效果的当前字符索引
+let typewriterInterval = null; // 打字定时器
+let nextTextDelayTimer = null; // 切换下一条标语的延时定时器
+
+const startTypewriterEffect = () => {
+  if (!heroSubtitleText.value) return; // 确保元素存在
+
+  // 清除所有现有定时器，以防重复调用或状态混乱
+  if (typewriterInterval) clearInterval(typewriterInterval);
+  if (nextTextDelayTimer) clearTimeout(nextTextDelayTimer);
+
+  const fullText = heroSubtitleTexts[currentSubtitleIndex.value];
+  typewriterIndex.value = 0;
+  heroSubtitleText.value.textContent = ''; // 清空文本，重新开始打字
+
+  const type = () => {
+    if (typewriterIndex.value < fullText.length) {
+      heroSubtitleText.value.textContent += fullText.charAt(typewriterIndex.value);
+      typewriterIndex.value++;
+    } else {
+      clearInterval(typewriterInterval); // 当前文本打完，停止打字
+      // 等待一段时间后，切换到下一条标语
+      nextTextDelayTimer = setTimeout(() => {
+        currentSubtitleIndex.value = (currentSubtitleIndex.value + 1) % heroSubtitleTexts.length; // 循环到下一条
+        startTypewriterEffect(); // 开始打下一条标语
+      }, 2000); // 每条标语显示2秒后切换
+    }
+  };
+
+  typewriterInterval = setInterval(type, 70); // 打字速度，毫秒
+};
+
+onMounted(async () => {
+  await fetchData();
+  // 在 DOM 更新后（即页面加载完成且数据填充后）启动打字机效果
+  await nextTick(); // 等待 DOM 更新
+  startTypewriterEffect();
+
+  tooltipTimer = setTimeout(() => {
+    const loggedInUser = getParsedUserData();
+    if (loggedInUser && !isSidebarOpen.value) {
+      showTooltip.value = true;
+    }
+  }, 3000); // 3秒后显示提示
+});
+
+onUnmounted(() => {
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer);
+  }
+  if (typewriterInterval) { // 组件卸载时清除打字机定时器
+    clearInterval(typewriterInterval);
+  }
+  if (nextTextDelayTimer) { // 组件卸载时清除下一条文本延时定时器
+    clearTimeout(nextTextDelayTimer);
+  }
 });
 
 const viewBookDetails = (bookId) => {
   router.push(`/books/${bookId}`);
-  // Close sidebar if open when navigating
   isSidebarOpen.value = false;
+  hideTooltip();
 };
 
 const scrollToSection = (id) => {
@@ -192,6 +407,28 @@ const scrollToSection = (id) => {
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
+  hideTooltip();
+};
+
+const hideTooltip = () => {
+  showTooltip.value = false;
+};
+
+const openBookModal = (type) => {
+  if (type === 'popular') {
+    modalTitle.value = '全部热门图书';
+    modalBooks.value = popularBooks.value;
+  } else if (type === 'personalized') {
+    modalTitle.value = '全部个性化推荐';
+    modalBooks.value = personalizedBooks.value;
+  }
+  isModalVisible.value = true;
+};
+
+const closeBookModal = () => {
+  isModalVisible.value = false;
+  modalTitle.value = '';
+  modalBooks.value = [];
 };
 </script>
 
@@ -202,10 +439,10 @@ const toggleSidebar = () => {
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-  color: #3e2723;
+  color: #393e23;
   background-color: #fcf8f0;
   /* Ensure the body has no horizontal overflow due to sidebar */
-  overflow-x: hidden; 
+  overflow-x: hidden;
 }
 
 /* Hero Section Styles */
@@ -315,7 +552,8 @@ const toggleSidebar = () => {
 
 .content-wrapper {
   /* This div now wraps all your main sections */
-  padding-bottom: 50px; /* Add some space at the bottom */
+  padding-bottom: 50px;
+  /* Add some space at the bottom */
 }
 
 .section-container {
@@ -520,6 +758,9 @@ const toggleSidebar = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
   padding: 30px;
   border: 1px dashed #d7ccc8;
+  /* 确保容器有明确的最大宽度，或内容不会撑破 */
+  overflow: hidden;
+  /* 防止内容溢出到容器外部 */
 }
 
 .ranking-grid-compact {
@@ -546,6 +787,10 @@ const toggleSidebar = () => {
   padding-bottom: 10px;
   border-bottom: 1px solid #e7e0da;
   letter-spacing: 0.5px;
+  /* 添加文本溢出处理 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ranking-card-compact ul {
@@ -559,16 +804,23 @@ const toggleSidebar = () => {
   margin-bottom: 10px;
   font-size: 1em;
   color: #5d4037;
+  min-width: 0;
+  /* 移除这里的 gap，改为手动控制间距 */
 }
 
 .ranking-book-link {
   color: #4e342e;
   text-decoration: none;
-  flex-grow: 1;
   transition: color 0.2s ease;
+  /* 关键：确保文本溢出时截断并显示省略号 */
   white-space: nowrap;
+  /* 文本不换行 */
   overflow: hidden;
+  /* 溢出部分隐藏 */
   text-overflow: ellipsis;
+  /* 显示省略号 */
+  min-width: 0;
+  /* 允许flex项缩小 */
 }
 
 .ranking-book-link:hover {
@@ -579,10 +831,12 @@ const toggleSidebar = () => {
 .rank-number {
   font-weight: bold;
   color: #bcaaa4;
-  margin-right: 8px;
-  font-size: 1.1em;
-  width: 25px;
+  /* 调整这里：使用 min-width 和 max-content 来确保足够的空间，并用 padding 调整间距 */
+  min-width: 30px;
+  /* 确保足以容纳 "10." 并留出一些空隙 */
   text-align: right;
+  padding-right: 8px;
+  /* 在数字和书名之间添加右侧内边距 */
   flex-shrink: 0;
 }
 
@@ -591,10 +845,17 @@ const toggleSidebar = () => {
   color: #a1887f;
   margin-left: 10px;
   font-style: italic;
+  /* 关键：确保文本溢出时截断并显示省略号 */
   white-space: nowrap;
+  /* 文本不换行 */
   overflow: hidden;
+  /* 溢出部分隐藏 */
   text-overflow: ellipsis;
+  /* 显示省略号 */
   flex-shrink: 1;
+  /* 允许缩小，但会优先 book-link */
+  min-width: 0;
+  /* 允许flex项缩小 */
 }
 
 
@@ -641,6 +902,8 @@ const toggleSidebar = () => {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  /* 确保 flex item 内部内容不会溢出 */
 }
 
 .activity-info-compact h4 {
@@ -649,6 +912,12 @@ const toggleSidebar = () => {
   margin-top: 0;
   margin-bottom: 5px;
   line-height: 1.3;
+  white-space: nowrap;
+  /* 不换行 */
+  overflow: hidden;
+  /* 隐藏溢出 */
+  text-overflow: ellipsis;
+  /* 显示省略号 */
 }
 
 .activity-info-compact p {
@@ -656,6 +925,12 @@ const toggleSidebar = () => {
   color: #795548;
   margin-bottom: 10px;
   font-style: italic;
+  white-space: nowrap;
+  /* 不换行 */
+  overflow: hidden;
+  /* 隐藏溢出 */
+  text-overflow: ellipsis;
+  /* 显示省略号 */
 }
 
 .join-button-small {
@@ -715,10 +990,6 @@ const toggleSidebar = () => {
 
   .book-cover {
     height: 180px;
-  }
-
-  .book-title {
-    font-size: 1.3em;
   }
 
   .section-title-small {
@@ -802,12 +1073,17 @@ const toggleSidebar = () => {
 
   .ranking-card-compact h3 {
     font-size: 1.2em;
+    white-space: normal;
+    /* 在小屏幕下允许换行 */
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .ranking-card-compact li {
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
+    /* 在小屏幕下，如果需要，可以取消 min-width: 0; */
   }
 
   .rank-number {
@@ -818,7 +1094,12 @@ const toggleSidebar = () => {
   .ranking-book-link,
   .rank-author-small {
     white-space: normal;
+    /* 允许换行 */
     text-overflow: unset;
+    /* 取消省略号 */
+    overflow: visible;
+    /* 允许内容可见 */
+    /* 在小屏幕下，如果需要，可以取消 min-width: 0; */
   }
 }
 
@@ -826,52 +1107,166 @@ const toggleSidebar = () => {
 
 /* Sidebar itself */
 .daily-book-sidebar {
-  position: fixed; /* Fixed to the viewport */
+  position: fixed;
+  /* Fixed to the viewport */
   top: 0;
-  right: 0; /* Starts off-screen to the right */
-  width: 300px; /* Fixed width of the sidebar */
-  height: 100%; /* Full height of the viewport */
-  background-color: #fffaf0; /* Match your parchment theme */
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1); /* Shadow indicating it slides in */
-  transform: translateX(100%); /* Start completely off-screen */
-  transition: transform 0.4s ease-in-out; /* Smooth slide animation */
-  z-index: 1000; /* Ensure it's above other content */
+  /* right: 0; */
+  /* 移除或改为 left: 0 */
+  left: 0;
+  /* 新增：从左侧开始 */
+  width: 100%;
+  /* 将宽度改为 100% */
+  height: 100%;
+  /* Full height of the viewport */
+  background-color: #fffaf0;
+  /* Match your parchment theme */
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  /* Shadow indicating it slides in */
+  /* transform: translateX(100%); */
+  /* 移除或改为 translateX(-100%) */
+  transform: translateX(-100%);
+  /* 新增：从左侧完全移出屏幕 */
+  transition: transform 0.4s ease-in-out;
+  /* Smooth slide animation */
+  z-index: 1000;
+  /* Ensure it's above other content */
   padding: 20px;
-  overflow-y: auto; /* Allow scrolling if content is too long */
+  overflow-y: auto;
+  /* Allow scrolling if content is too long */
 }
 
 .daily-book-sidebar.is-open {
-  transform: translateX(0); /* Slide into view */
+  transform: translateX(0);
+  /* Slide into view */
 }
 
-/* Toggle button for the sidebar */
+/* --- 引导性气泡样式 --- */
+.daily-book-tooltip {
+  position: fixed;
+  right: 50px;
+  /* 调整位置，让它在按钮旁边 */
+  top: calc(50% - 60px);
+  /* 向上一些，避免遮挡按钮文字 */
+  transform: translateY(-50%) rotate(0deg);
+  /* 气泡不旋转 */
+  z-index: 1002;
+  /* 确保在按钮之上 */
+  background-color: #fff8e1;
+  /* 浅羊皮纸色 */
+  color: #4e342e;
+  /* 深棕色文字 */
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: 0.95em;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  /* 提示用户可以点击关闭 */
+  border: 1px solid #dcd3c5;
+  /* 细边框 */
+  animation: bounce-scale 1s infinite alternate ease-in-out;
+  /* 添加跳动和缩放动画 */
+}
+
+/* 气泡小箭头 */
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #fff8e1;
+  /* 箭头颜色与气泡背景一致 */
+  bottom: -10px;
+  /* 定位在气泡下方 */
+  right: 20px;
+  /* 与按钮对齐 */
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.1));
+  /* 给箭头添加柔和阴影 */
+}
+
+/* 气泡的 Vue Transition 动画 */
+.pop-in-enter-active,
+.pop-in-leave-active {
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  /* 弹跳效果 */
+}
+
+.pop-in-enter-from,
+.pop-in-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) rotate(0deg) scale(0.5);
+}
+
+/* Sidebar Toggle Button - Revised Style (添加动画) */
 .sidebar-toggle-button {
   position: fixed;
-  right: 20px; /* Adjust as needed */
+  right: 1%;
+  /* 紧贴右侧边缘，或留一点间隙 */
   top: 50%;
-  transform: translateY(-50%) rotate(-90deg); /* Rotate to be vertical */
-  z-index: 1001; /* Above sidebar overlay */
-  background-color: #8d6e63; /* Match your theme buttons */
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
+  transform: translateY(-50%) rotate(-90deg);
+  /* 保持旋转，使其垂直 */
+  transform-origin: 100% 50%;
+  /* 旋转中心改为右边缘 */
+  z-index: 1001;
+
+  background-color: #dcd3c5;
+  /* 柔和的米灰色，接近羊皮纸 */
+  color: #5d4037;
+  /* 深棕色文字 */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  /* 细微的边框线 */
+  border-right: none;
+  /* 右侧无边框，与侧边栏融合 */
+  padding: 12px 20px 12px 25px;
+  /* 调整内边距，左侧多一点给弧度 */
+  border-radius: 8px 0 0 8px;
+  /* 左侧圆角，右侧直角，像书签 */
   cursor: pointer;
-  font-size: 1em;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  white-space: nowrap; /* Prevent text wrapping */
-  transform-origin: center; /* Ensure rotation is centered */
+  font-size: 1.05em;
+  /* 稍微大一点的字体 */
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  /* 增加字母间距，提升精致感 */
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
+  /* 柔和的阴影 */
+  transition: all 0.3s ease-in-out;
+  /* 更平滑的过渡效果 */
+  white-space: nowrap;
+
+  /* === 新增：应用动画 === */
+  animation: pulse 2s infinite ease-in-out;
+  /* 动画名称、持续时间、无限循环、缓动函数 */
 }
 
 .sidebar-toggle-button:hover {
-  background-color: #5d4037;
+  background-color: #c0b2a3;
+  /* 悬停时颜色略深 */
+  box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.15);
+  /* 阴影更明显 */
+  transform: translateY(-50%) rotate(-90deg) translateX(-5px);
+  /* 悬停时向左轻微偏移 */
+  animation: none;
+  /* 悬停时停止动画 */
 }
 
+/* 按钮打开时的样式 */
 .sidebar-toggle-button.is-open {
-  transform: translateY(-50%) rotate(0deg); /* Rotate back when open, reposition */
-  right: 320px; /* Adjust to sit left of the open sidebar (sidebar width + right padding) */
-  background-color: #5d4037; /* Change color when open */
+  transform: translateY(-50%) rotate(0deg);
+  /* 恢复正常角度 */
+  right: 20px;
+  /* 调整到侧边栏内部，或保持在原位但隐藏 */
+  background-color: #8d6e63;
+  /* 打开时深色，对比更明显 */
+  color: #fff;
+  border-radius: 5px;
+  /* 打开时恢复正常按钮形状 */
+  border: none;
+  /* 移除边框 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: none;
+  /* 打开时也停止动画 */
 }
 
 /* Overlay that appears when sidebar is open */
@@ -881,30 +1276,41 @@ const toggleSidebar = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  z-index: 999; /* Below sidebar, above content */
-  opacity: 0; /* Start invisible */
-  visibility: hidden; /* Hide from screen readers when not visible */
-  transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s; /* Fade and hide after transition */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent black */
+  z-index: 999;
+  /* Below sidebar, above content */
+  opacity: 0;
+  /* Start invisible */
+  visibility: hidden;
+  /* Hide from screen readers when not visible */
+  transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s;
+  /* Fade and hide after transition */
 }
 
 .sidebar-overlay.is-visible {
-  opacity: 1; /* Fade in */
-  visibility: visible; /* Make visible */
-  transition-delay: 0s; /* No delay when appearing */
+  opacity: 1;
+  /* Fade in */
+  visibility: visible;
+  /* Make visible */
+  transition-delay: 0s;
+  /* No delay when appearing */
 }
 
 /* Adjust main content when sidebar is open (optional, but good UX) */
 .home-view.sidebar-open .main-content {
   /* You might want to push the main content slightly, or dim it */
-  filter: blur(2px); /* Example: blur the background */
-  pointer-events: none; /* Disable interaction with main content */
+  filter: blur(2px);
+  /* Example: blur the background */
+  pointer-events: none;
+  /* Disable interaction with main content */
 }
 
 /* Style for the daily book card inside the sidebar */
 .daily-book-card {
   text-align: center;
-  padding: 20px; /* Add some padding inside the card */
+  padding: 20px;
+  /* Add some padding inside the card */
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background-color: #ffffff;
@@ -912,7 +1318,8 @@ const toggleSidebar = () => {
 }
 
 .sidebar-title {
-  font-size: 1.8em; /* Slightly larger for prominence */
+  font-size: 1.8em;
+  /* Slightly larger for prominence */
   color: #4e342e;
   margin-bottom: 1.5rem;
   border-bottom: 2px dashed #c0b2a3;
@@ -927,14 +1334,16 @@ const toggleSidebar = () => {
 }
 
 .daily-book-cover {
-  max-width: 180px; /* A bit larger cover */
+  max-width: 180px;
+  /* A bit larger cover */
   height: auto;
   border-radius: 4px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
 
 .daily-book-title {
-  font-size: 1.5em; /* More prominent title */
+  font-size: 1.5em;
+  /* More prominent title */
   color: #4e342e;
   margin-top: 1rem;
   font-weight: 600;
@@ -958,26 +1367,68 @@ body.no-scroll {
   overflow: hidden;
 }
 
+/* 针对全屏侧边栏的按钮定位微调 */
+@media (min-width: 769px) {
+
+  /* 在大屏幕上，侧边栏全屏时 */
+  .sidebar-toggle-button.is-open {
+    top: 20px;
+    /* 移动到右上角 */
+    right: 20px;
+    transform: none;
+    /* 取消所有 transform */
+    padding: 10px 15px;
+    /* 调整内边距 */
+  }
+}
+
 /* Responsive adjustments for the sidebar toggle button */
 @media (max-width: 768px) {
   .sidebar-toggle-button {
-    top: 20px; /* Move to top right corner on small screens */
+    top: 20px;
+    /* 保持在顶部 */
     right: 20px;
-    transform: rotate(0deg); /* Don't rotate on small screens */
-    padding: 8px 12px;
-    font-size: 0.9em;
-    border-radius: 4px;
+    transform: rotate(0deg);
+    /* 小屏幕不旋转 */
+    transform-origin: center;
+    /* 旋转中心重置 */
+    border-radius: 5px;
+    /* 小屏幕也正常圆角 */
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    /* 小屏幕边框正常 */
   }
 
   .sidebar-toggle-button.is-open {
-    right: 20px; /* Stay in place when open */
-    transform: rotate(0deg); /* Remain unrotated */
+    right: 20px;
+    transform: rotate(0deg);
   }
 
   .daily-book-sidebar {
-    width: 80%; /* Wider sidebar on small screens */
-    max-width: 350px; /* Cap max width */
+    width: 80%;
+    /* Wider sidebar on small screens */
+    max-width: 350px;
+    /* Cap max width */
     padding: 15px;
+  }
+}
+
+/* 定义呼吸动画 */
+@keyframes pulse {
+  0% {
+    transform: translateY(-50%) rotate(-90deg) scale(1);
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  50% {
+    transform: translateY(-50%) rotate(-90deg) scale(1.03);
+    /* 轻微放大 */
+    box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.2);
+    /* 阴影更明显 */
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(-90deg) scale(1);
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
 </style>

@@ -115,7 +115,7 @@ class RecommendationTrainer:
             interactions_from_logs = pd.DataFrame(columns=['user_id', 'item_id', 'timestamp', 'interaction_value'])
             if not behavior_logs.empty:
                 behavior_logs['item_id'] = behavior_logs['item_id'].astype(str)
-                behavior_logs['user_id'] = behavior_logs['user_id'].astype(str)
+                behavior_logs['user_id'] = behavior_logs['userId'].astype(str)
                 interactions_from_logs = behavior_logs[['user_id', 'item_id', 'timestamp', 'interaction_value']]
             
             interactions_from_favorites = pd.DataFrame(columns=['user_id', 'item_id', 'timestamp', 'interaction_value'])
@@ -307,8 +307,6 @@ class RecommendationTrainer:
             self.item_content_similarity_matrix = cosine_similarity(self.content_matrix)
             logging.info(f"Item Content similarity matrix calculated with shape: {self.item_content_similarity_matrix.shape}")
             logging.info(f"Item Content similarity matrix: Min={np.min(self.item_content_similarity_matrix):.4f}, Max={np.max(self.item_content_similarity_matrix):.4f}, Mean={np.mean(self.item_content_similarity_matrix):.4f}")
-            
-            self._debug_harry_potter_content_similarity()
 
 
         # --- 3. 相似度融合 (如果两者都存在) ---
@@ -333,38 +331,6 @@ class RecommendationTrainer:
         else:
             self.item_similarity_matrix = None
             logging.error("No item similarity matrix could be calculated!")
-
-    def _debug_harry_potter_content_similarity(self):
-        """
-        调试：打印哈利波特系列书籍之间的内容相似度。
-        假设哈利波特系列书籍的 ID 包含 "Harry_Potter"。
-        """
-        if self.item_content_similarity_matrix is None:
-            return
-
-        hp_book_ids = [
-            item_id for item_id in self.books_df['book_id'].unique()
-            if "Harry_Potter" in str(item_id) 
-        ]
-        
-        if len(hp_book_ids) > 1:
-            logging.info(f"Found {len(hp_book_ids)} Harry Potter books: {hp_book_ids}")
-            logging.info("Content similarity between Harry Potter books:")
-            for i, hp1_id in enumerate(hp_book_ids):
-                for j, hp2_id in enumerate(hp_book_ids):
-                    if i < j: 
-                        if hp1_id in self.item_to_idx and hp2_id in self.item_to_idx:
-                            idx1 = self.item_to_idx[hp1_id]
-                            idx2 = self.item_to_idx[hp2_id]
-                            sim = self.item_content_similarity_matrix[idx1, idx2]
-                            logging.info(f"  - {hp1_id} vs {hp2_id}: {sim:.4f}")
-                        else:
-                            logging.warning(f"Harry Potter book ID not found in item_to_idx: {hp1_id} or {hp2_id}")
-            logging.info("--- End Harry Potter Content Similarity Debug ---")
-        elif len(hp_book_ids) == 1:
-            logging.info(f"Only one Harry Potter book found: {hp_book_ids[0]}. Cannot calculate pairwise content similarity.")
-        else:
-            logging.info("No Harry Potter books found for content similarity debug.")
 
     def calculate_user_profiles(self):
         """
@@ -572,8 +538,8 @@ class RecommendationTrainer:
                 book_info = books_df_str_id.loc[item_id]
                 final_recommendations.append({
                     'book_id': item_id,
-                    'title': book_info['title'],
-                    'score': float(mixed_scores[idx]), 
+                    'title': str(book_info['title']), # 强制转换为字符串
+                    'score': float(mixed_scores[idx]), # 确保分数是 float
                     'raw_cf_score': current_raw_cf_score, 
                     'raw_popularity_score': current_raw_popularity_score 
                 })

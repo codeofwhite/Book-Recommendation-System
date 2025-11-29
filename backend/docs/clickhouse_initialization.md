@@ -1,18 +1,31 @@
-CREATE TABLE user_data.user_behavior_logs_raw (
-    event_id UUID DEFAULT generateUUIDv4(),
-    user_id String DEFAULT '', -- <-- 关键修改：将 Nullable(String) 改为 String 并设置默认值
-    event_type String,
-    client_timestamp DateTime,
-    server_receive_time DateTime64(3, 'Asia/Shanghai') DEFAULT now(),
-    payload_raw String
+1. ClickHouse 目标表创建
+
+为了接收用户行为数据流，必须在 ClickHouse 中手动创建 user_behavior_logs 表。请执行以下 SQL 语句：
+
+```sql
+DROP TABLE IF EXISTS user_behavior_logs; 
+
+CREATE TABLE user_behavior_logs (
+    userId UInt32,
+    sessionId String,
+    eventType String, -- 【关键修正】改为普通 String
+    timestamp String,
+    pageUrl String,
+    payload String,
+    event_date Date DEFAULT today(),
+    server_receive_time DateTime DEFAULT now()
 )
 ENGINE = MergeTree()
-ORDER BY (user_id, client_timestamp, event_type)
-PARTITION BY toYYYYMM(client_timestamp)
-TTL client_timestamp + toIntervalYear(3);
+PARTITION BY toYYYYMM(event_date)
+ORDER BY (event_date, userId);
+```
 
-curl -X DELETE <http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink>
+- 删除现有 Sink Connector
+```bash
+curl -X DELETE http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink
+```
 
-curl -X POST -H "Content-Type: application/json" --data @clickhouse_user_behavior_sink_connector.json <http://localhost:8083/connectors>
-
-curl <http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink/status> | jq .
+- 部署新的 Sink Connector
+```bash
+curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\clickhouse_user_behavior_sink_connector.json http://localhost:8083/connectors
+```

@@ -356,7 +356,6 @@ class BookModel:
 
     @staticmethod
     def search_douban_books(keyword):
-        # ... (此方法保持不变)
         search_url = f"https://search.douban.com/book/subject_search?search_text={keyword}&cat=1001"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -430,7 +429,6 @@ class BookModel:
 
     @classmethod
     def get_popular_books(cls, limit=4):
-        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
@@ -449,7 +447,6 @@ class BookModel:
 
     @classmethod
     def get_new_books(cls, limit=5):
-        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
@@ -467,7 +464,6 @@ class BookModel:
 
     @classmethod
     def get_top_rated_books(cls, limit=5):
-        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
@@ -485,7 +481,6 @@ class BookModel:
 
     @classmethod
     def get_personalized_books(cls, user_id=None, limit=4):
-        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"
@@ -518,7 +513,6 @@ class BookModel:
 
     @classmethod
     def get_daily_book(cls):
-        # ... (此方法保持不变)
         collection = cls.get_collection()
         if collection is None:
             return None, "Database connection failed"

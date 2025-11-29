@@ -1,5 +1,36 @@
-# Vue 3 + Vite
+### 1. 顶层目录概览
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+* **`README.md`**: 项目的**介绍文档**。包含了如何设置、运行和使用此管理员界面的基本指南。
+* **`config.js`**: **全局配置文件**。用于存储如后端 API 地址、管理员认证配置等关键信息。
+* **`index.html`**: 项目的**入口 HTML 文件**。这是单页应用加载的起点。
+* **`node_modules/`**: **依赖模块目录**。由 npm 或 Yarn 等包管理器自动生成，包含了项目所需的所有第三方 JavaScript 库。
+* **`package-lock.json`**: **包锁定文件**。确保项目依赖的版本一致性，详细记录了 `node_modules` 中所有包的精确版本。
+* **`package.json`**: **项目配置文件**。定义了项目的元数据、脚本命令、直接依赖项和开发依赖项。
+* **`src/`**: **源代码目录**。项目的主要开发代码都存放于此，是应用的核心部分。
+* **`vite.config.js`**: **Vite 配置文件**。用于配置 Vite 构建工具的行为，例如开发服务器代理、打包优化等。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+---
+
+### 2. `src/` 源代码目录详情
+
+`src/` 目录是管理员前端应用的核心，其内部结构如下：
+
+* **`App.vue`**: **根组件**。Vue 应用的入口组件，通常包含路由视图（`router-view`）和其他全局布局元素。
+* **`main.js`**: **应用入口文件**。Vue 应用的初始化文件，负责创建 Vue 实例、注册插件（如路由）和挂载根组件到 `index.html`。
+* **`components/`**: **通用组件目录**。存放可在应用中多处复用的 UI 组件，如通用的表单元素、表格组件、导航菜单等。
+* **`router/`**: **路由配置目录**。定义了管理员界面的所有页面路由和导航逻辑，将 URL 路径映射到对应的组件。
+
+---
+
+### 3. `src/views/` (页面组件)
+
+**注意：** 虽然您没有明确列出 `src/views/` 目录，但根据提供的组件列表，这些组件很可能位于 `src/views/` 或类似的页面级组件目录中。
+
+这些是构成管理员系统各个功能页面的核心组件：
+
+* **`AddBook.vue`**: **添加图书页面**。用于管理员录入新图书信息。
+* **`AdminAuth.vue`**: **管理员认证页面**。处理管理员的登录、登出和可能的注册流程。
+* **`DashboardOverview.vue`**: **仪表盘概览页面**。提供管理员后台的核心数据概览和统计信息。
+* **`ManageBooks.vue`**: **图书管理页面**。允许管理员查看、编辑、删除现有图书信息。
+* **`ManageReviews.vue`**: **评论管理页面**。用于管理员审核、删除用户提交的图书评论。
+* **`ManageUsers.vue`**: **用户管理页面**。允许管理员查看、编辑、禁用或删除用户信息。

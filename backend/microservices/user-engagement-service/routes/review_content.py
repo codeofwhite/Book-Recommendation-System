@@ -14,8 +14,6 @@ from models import (
 import uuid
 from datetime import datetime
 
-# 创建一个蓝图，处理书评和评论内容相关的API
-# 注意这里的 url_prefix，它将用于处理 /api/books/<book_id>/reviews 和 /api/reviews/<review_id>/comments
 review_content_bp = Blueprint("review_content", __name__)
 
 # --- 书评相关 API ---

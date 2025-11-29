@@ -1,0 +1,75 @@
+  # --- DataX Worker Service ---
+  datax_worker:
+    build:
+      context: ./datax_worker # 指向 DataX Dockerfile 所在的目录
+      dockerfile: Dockerfile
+    container_name: datax_sync_worker
+    volumes:
+      # 挂载一个卷用于存放 DataX 的任务配置文件和日志
+      - ./datax_jobs:/app/datax/job # DataX 任务配置文件通常放在 datax/job 目录下
+      - ./datax_logs:/app/datax/log # DataX 日志输出目录
+    # DataX 需要连接到源数据库（auth_db, user_engagement_db, book_db_mongo）
+    # 和目标数据库（recommendation_db 或你的离线数仓）
+    depends_on:
+      auth_db:
+        condition: service_healthy
+      book_db_mongo:
+        condition: service_healthy
+      user_engagement_db:
+        condition: service_healthy
+      recommendation_db: # 假设你的离线数据会同步到 recommendation_db
+        condition: service_healthy
+      clickhouse: # DataX 可能需要同步数据到 ClickHouse
+        condition: service_healthy
+    networks:
+      - default # 确保与所有数据库服务在同一网络
+    deploy: # 资源限制，根据你的数据量调整
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G # DataX 可能会消耗较多内存，特别是处理大文件时
+    command: ["tail", "-f", "/dev/null"] # 保持容器运行，以便手动或通过 cron 触发任务
+
+  # --- HDFS Services ---
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
+    container_name: namenode
+    ports:
+      - "9870:9870" # HDFS Web UI
+      - "9900:9000" # HDFS Default Port
+    volumes:
+      - namenode_data:/hadoop/dfs/name # 持久化 NameNode 数据
+      - ./namenode-entrypoint.sh:/usr/local/bin/namenode-entrypoint.sh # 挂载你的启动脚本
+    environment:
+      # These typically come from Hadoop's core-site.xml, but can be set via env vars for Docker
+      HDFS_CONF_dfs_namenode_name_dir: file:///hadoop/dfs/name
+      HDFS_CONF_dfs_replication: 1 # For a single-node setup
+    env_file:
+      - ./hadoop.env # For HDFS specific configurations (explained below)
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-report"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Give NameNode ample time to start and format
+    command: ["bash", "/usr/local/bin/namenode-entrypoint.sh"]
+
+  # -- HDFS DataNode Service ---
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8 # Hadoop 3.x 镜像
+    container_name: datanode
+    volumes:
+      - datanode_data:/hadoop/dfs/data # 持久化 DataNode 数据
+    environment:
+      HDFS_CONF_dfs_datanode_data_dir: file:///hadoop/dfs/data
+    env_file:
+      - ./hadoop.env # For HDFS specific configurations
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-getServiceState", "hdfs://namenode:9000/"] # Check if connected to NameNode
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

@@ -5,13 +5,13 @@ from models import db, BookFavorite, BookLike # 从 models.py 导入 db 和模�
 # 创建一个蓝图
 book_engagement_bp = Blueprint('book_engagement', __name__, url_prefix='/api/books')
 
-# --- 新增：获取书籍总收藏数 ---
+# --- 获取书籍总收藏数 ---
 @book_engagement_bp.route('/<string:book_id>/total_favorites', methods=['GET'])
 def get_book_total_favorites(book_id):
     favorite_count = BookFavorite.query.filter_by(book_id=book_id).count()
     return jsonify({"totalFavoriteCount": favorite_count})
 
-# --- 新增：获取书籍总点赞数 ---
+# --- 获取书籍总点赞数 ---
 @book_engagement_bp.route('/<string:book_id>/total_likes', methods=['GET'])
 def get_book_total_likes(book_id):
     like_count = BookLike.query.filter_by(book_id=book_id).count()

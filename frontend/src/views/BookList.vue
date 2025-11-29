@@ -1,28 +1,33 @@
-<!-- 书籍展示页面 -->
 <template>
   <div class="ancient-tome-container">
     <div class="top-folio-controls">
       <div class="search-quill-box">
-        <input type="text" v-model="inputSearchKeyword" placeholder="Inscribe thy quest here..."
-          @keyup.enter="handleSearch" class="quill-input" />
+        <input type="text" v-model="inputSearchKeyword" placeholder="在此镌刻您的求索..." @keyup.enter="handleSearch"
+          class="quill-input" />
         <button @click="handleSearch" class="seek-button">
-          Seek & Discover
+          探寻典籍
+          <div class="info-bubble bottom-right" v-if="showSearchTip">
+            按下回车键或点击"探寻典籍"，开启您的书香之旅！
+          </div>
         </button>
       </div>
 
       <div class="astrolabe-filters-horizontal">
-        <div class="filter-section-inline">
-          <h3 class="filter-title-inline">By Genre's Lore:</h3>
+        <div class="filter-section-inline genre-filter-section">
+          <h3 class="filter-title-inline">按類型甄选：</h3>
           <div class="genre-filter-wrapper">
-            <input type="text" v-model="genreSearchTerm" placeholder="Search genres..." class="genre-search-input" />
+            <input type="text" v-model="genreSearchTerm" placeholder="搜索類型..." class="genre-search-input" />
             <div class="genre-pill-container">
               <span v-for="genre in filteredAvailableGenres" :key="genre" class="genre-filter-pill"
                 :class="{ 'is-selected': selectedGenres.includes(genre) }" @click="toggleGenre(genre)">
                 {{ genre }}
+                <div class="info-bubble top-center" v-if="showGenreTip && genre === 'Fiction'">
+                  点击類型即可筛选结果！
+                </div>
               </span>
               <span v-if="filteredAvailableGenres.length === 0 && availableGenres.length > 0"
-                class="no-options-message">No matching genres.</span>
-              <span v-else-if="availableGenres.length === 0" class="no-options-message">No genres discovered.</span>
+                class="no-options-message">无匹配類型。</span>
+              <span v-else-if="availableGenres.length === 0" class="no-options-message">暂无已发现類型。</span>
             </div>
             <button v-if="availableGenres.length > maxDisplayedGenres && !showAllGenres" @click="showAllGenres = true"
               class="toggle-genre-button">Show All ({{ availableGenres.length - maxDisplayedGenres }} More)</button>
@@ -31,64 +36,64 @@
         </div>
 
         <div class="filter-section-inline">
-          <h3 class="filter-title-inline">By Celestial Judgement (Rating):</h3>
+          <h3 class="filter-title-inline">按星评等级：</h3>
           <select v-model="selectedRating" @change="applyFilters" class="filter-select-inline">
-            <option value="">Any Appraisal</option>
-            <option value="4">4 Stars & Above</option>
-            <option value="3">3 Stars & Above</option>
-            <option value="2">2 Stars & Above</option>
-            <option value="1">1 Star & Above</option>
+            <option value="">不限星评</option>
+            <option value="4">4星及以上</option>
+            <option value="3">3星及以上</option>
+            <option value="2">2星及以上</option>
+            <option value="1">1星及以上</option>
           </select>
-        </div>
-
-        <div class="filter-section-inline price-filter-group">
-          <h3 class="filter-title-inline">By Scrivener's Price:</h3>
-          <input type="number" v-model.number="minPrice" @input="applyFiltersDebounced" placeholder="Min."
-            class="filter-input-inline" />
-          <span> — </span>
-          <input type="number" v-model.number="maxPrice" @input="applyFiltersDebounced" placeholder="Max."
-            class="filter-input-inline" />
         </div>
 
         <div class="filter-section-inline">
-          <h3 class="filter-title-inline">By Inscription Year:</h3>
+          <h3 class="filter-title-inline">按典籍定价：</h3>
+          <div class="price-input-wrapper">
+            <input type="number" v-model.number="minPrice" @input="applyFiltersDebounced" placeholder="最低"
+              class="filter-input-inline" />
+            <span> — </span>
+            <input type="number" v-model.number="maxPrice" @input="applyFiltersDebounced" placeholder="最高"
+              class="filter-input-inline" />
+          </div>
+        </div>
+        <div class="filter-section-inline">
+          <h3 class="filter-title-inline">按刊印年份：</h3>
           <select v-model="selectedYear" @change="applyFilters" class="filter-select-inline">
-            <option value="">All Epochs</option>
+            <option value="">所有年代</option>
             <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
           </select>
         </div>
-
-        <button @click="resetFilters" class="reset-filters-button-inline">Clear All Astrolabe Settings</button>
       </div>
+
+      <button @click="resetFilters" class="reset-filters-button-inline">重置所有筛选条件</button>
     </div>
 
     <div class="parchment-scroll-wrapper">
       <main class="catalogue-of-works">
-        <p v-if="loading" class="scribe-message">The Scribe is diligently turning pages...</p>
-        <p v-else-if="!paginatedBooks || paginatedBooks.length === 0" class="scribe-message">Alas, no such tome matches
-          these refined criteria.</p>
+        <p v-if="loading" class="scribe-message">典籍官正在勤勉检索...稍候</p>
+        <p v-else-if="!paginatedBooks || paginatedBooks.length === 0" class="scribe-message">暂无符合此条件的典籍。</p>
         <transition-group name="book-fade" tag="div" class="tome-collection" v-else>
           <div v-for="book in paginatedBooks" :key="book.bookId" class="tome-folio">
             <div class="illumination-plate">
               <img :src="book.coverImg" :alt="book.title" class="tome-cover-art" />
             </div>
             <div class="tome-inscriptions">
-              <!-- 新增：@click 事件来触发日志记录 -->
-              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"  @click="handleBookClick(book)">
+              <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"
+                @click="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
-              <h3 v-if="book.series" class="tome-series">A Chapter in the Chronicle of {{ book.series }}</h3>
-              <p class="tome-author">Penned by {{ book.author }}</p>
+              <h3 v-if="book.series" class="tome-series"> {{ book.series }} 系列篇章</h3>
+              <p class="tome-author">著者： {{ book.author }}</p>
               <div class="celestial-guidance">
                 <span class="stars-illuminated">{{ '★'.repeat(Math.round(book.rating)) }}{{
                   '☆'.repeat(5 - Math.round(book.rating)) }}</span>
-                <span class="whispers-of-critics">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
+                <span class="whispers-of-critics">({{ book.rating }} 分 {{ book.numRatings }} 条评价)</span>
               </div>
               <p class="tome-summary">{{ truncateDescription(book.description) }}</p>
               <div class="tome-provenance">
-                <span><strong>Incepted:</strong> {{ book.publishDate }}</span>
-                <span><strong>Folios:</strong> {{ book.pages }}</span>
-                <span><strong>Appraisal:</strong> ${{ book.price }}</span>
+                <span><strong>刊印日期：</strong> {{ book.publishDate }}</span>
+                <span><strong>页数：</strong> {{ book.pages }}</span>
+                <span><strong>定价：</strong> ${{ book.price }}</span>
               </div>
               <div class="scholarly-genres">
                 <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
@@ -101,7 +106,7 @@
 
         <div v-if="totalPages > 1" class="pagination-controls">
           <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-button">
-            &laquo; Prior Folio
+            &laquo; 上一页
           </button>
           <span v-for="page in paginationPages" :key="page" class="page-number"
             :class="{ 'is-current': page === currentPage, 'is-ellipsis': page === '...' }"
@@ -109,7 +114,7 @@
             {{ page }}
           </span>
           <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="pagination-button">
-            Next Folio &raquo;
+            下一页 &raquo;
           </button>
         </div>
 
@@ -117,23 +122,30 @@
 
       <aside class="oracle-sidebar">
         <div class="oracle-header">
-          <h3 class="oracle-title">Whispers from the Oracle</h3>
-          <p class="oracle-subtitle">Guided by the Constellations of Thy Past Readings</p>
+          <h3 class="oracle-title">智者私语</h3>
+          <p class="oracle-subtitle">为您量身定制的卷轴 (实时推荐)</p>
         </div>
         <div class="oracle-list">
-          <transition-group name="recommendation-slide" tag="div">
-            <div v-for="(rec, index) in recommendations" :key="index" class="oracle-insight">
-              <div class="oracle-effigy">
-                <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
-              </div>
-              <div class="oracle-details">
-                <h4 class="oracle-insight-title">{{ rec.title }}</h4>
-                <p class="oracle-insight-author">{{ rec.author }}</p>
-                <div class="oracle-celestial-guidance">
-                  <span class="stars-illuminated-small">{{ '★'.repeat(Math.round(rec.rating)) }}</span>
-                  <span class="whispers-of-critics-small">({{ rec.rating }})</span>
+          <p v-if="loadingRecommendations" class="scribe-message">
+            正在为您生成实时推荐...
+          </p>
+          <p v-else-if="realtimeRecommendations.length === 0" class="no-recommendations-message">
+            尚无实时推荐。探索更多书籍以生成个性化推荐！
+          <div class="info-bubble bottom-left" v-if="showRecommendationTip">
+            点击书籍可优化您的"智者私语"推荐！
+          </div>
+          </p>
+          <transition-group name="recommendation-slide" tag="div" v-else>
+            <div v-for="(rec, index) in realtimeRecommendations" :key="rec.bookId || index" class="oracle-insight">
+              <router-link :to="{ name: 'BookDetails', params: { bookId: rec.bookId } }" class="oracle-insight-link">
+                <div class="oracle-effigy">
+                  <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
                 </div>
-              </div>
+                <div class="oracle-details">
+                  <h4 class="oracle-insight-title">{{ rec.title }}</h4>
+                  <p class="oracle-insight-author">{{ rec.author }}</p>
+                </div>
+              </router-link>
             </div>
           </transition-group>
         </div>
@@ -144,9 +156,21 @@
 
 <script>
 import axios from 'axios';
+import { trackBookClick, trackPageView } from '../services/logger';
 
-//新增 导入我们创建的日志函数
-import { trackBookClick } from '../services/logger.js';
+// Helper function to get user data from localStorage
+const getParsedUserData = () => {
+  const storedUserData = localStorage.getItem('user_data');
+  if (storedUserData) {
+    try {
+      return JSON.parse(storedUserData);
+    } catch (e) {
+      console.error("Error parsing user_data from localStorage:", e);
+      return null;
+    }
+  }
+  return null;
+};
 
 export default {
   name: 'BookListWithRecommendation',
@@ -158,11 +182,20 @@ export default {
   },
   data() {
     return {
+      user: {
+        user_id: '',
+        nickname: '',
+        email: '',
+        avatar_url: '',
+        is_profile_complete: false,
+      },
+
       inputSearchKeyword: '',
       initialSearchKeyword: '',
       allBooks: [], // This will hold ALL fetched books
-      recommendations: [],
-      loading: true,
+      realtimeRecommendations: [],
+      loadingRecommendations: false, // 新增：实时推荐的加载状态
+      loading: true, // 这是主列表的加载状态
 
       // Filter states
       availableGenres: [], // All unique genres found in books
@@ -182,6 +215,15 @@ export default {
       currentPage: 1,
       itemsPerPage: 5, // Number of books per page
       pageRange: 2, // Number of pages to show around the current page
+
+      pageViewStartTime: 0,
+      pageUrlOnMount: '', // 【新增】记录页面加载时的URL
+
+      // --- 气泡提示状态 ---
+      showSearchTip: false,
+      showGenreTip: false,
+      showRecommendationTip: false,
+      // --- 气泡提示状态结束 ---
     };
   },
   computed: {
@@ -286,9 +328,27 @@ export default {
   created() {
     this.initialSearchKeyword = this.searchKeyword;
     this.inputSearchKeyword = this.initialSearchKeyword;
-    this.fetchRecommendations();
     this.fetchBooks(); // Fetch all books initially
+    this.fetchUserData();
+    this.fetchRealtimeRecommendationsForList(); // <--- 调用新的实时推荐方法
+
+    // 初始化时显示提示气泡
+    this.showTipsInitially();
   },
+  //埋点
+  mounted() {
+    this.pageViewStartTime = Date.now();
+    this.pageUrlOnMount = window.location.href;
+  },
+
+  beforeUnmount() {
+    const endTime = Date.now();
+    const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
+
+    // 【修改】调用 logger.js 中的函数，显式传递页面名称和捕获的URL
+    trackPageView('BookList', dwellTimeInSeconds, this.pageUrlOnMount);
+  },
+
   watch: {
     // Watch filteredBooks to reset currentPage when filters change
     filteredBooks() {
@@ -299,13 +359,98 @@ export default {
     },
   },
   methods: {
-     // 新增：处理书籍点击事件的方法
+    // --- 气泡提示相关方法 ---
+    showTipsInitially() {
+      // 搜索框提示在页面加载后几秒显示，然后自动隐藏
+      setTimeout(() => {
+        this.showSearchTip = true;
+      }, 1500); // 1.5秒后显示
+      setTimeout(() => {
+        this.showSearchTip = false;
+      }, 6500); // 6.5秒后隐藏（显示5秒）
+
+      // 流派筛选提示在页面加载后稍晚显示，然后自动隐藏
+      setTimeout(() => {
+        this.showGenreTip = true;
+      }, 3000); // 3秒后显示
+      setTimeout(() => {
+        this.showGenreTip = false;
+      }, 8000); // 8秒后隐藏（显示5秒）
+
+      // 实时推荐提示在没有推荐时显示，然后自动隐藏
+      // 这将在 fetchRealtimeRecommendationsForList 结束后根据 realtimeRecommendations.length 判断
+      // 如果没有实时推荐，且用户在侧边栏，则显示
+      setTimeout(() => {
+        if (this.realtimeRecommendations.length === 0) {
+          this.showRecommendationTip = true;
+        }
+      }, 5000); // 5秒后检查并显示
+      setTimeout(() => {
+        this.showRecommendationTip = false;
+      }, 10000); // 10秒后隐藏（显示5秒）
+    },
+    // --- 气泡提示相关方法结束 ---
+
     handleBookClick(book) {
-      // 在导航前记录点击事件
-      trackBookClick(book.bookId);
+      // 调用埋点函数，发送用户点击事件
+      trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
+      console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId})`);
+
+      // 【新增】在点击后主动刷新实时推荐
+      this.fetchRealtimeRecommendationsForList();
+      // 用户点击书籍后，可以隐藏推荐气泡
+      this.showRecommendationTip = false;
+    },
+    async fetchUserData() {
+      const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
+
+      if (!currentStoredUserData || !currentStoredUserData.user_id) {
+        console.error('UserView: User data not found in localStorage. Redirecting to login.');
+        this.$router.push({ name: 'auth' }); // 注意这里使用了 $router 而不是 this.router
+        return;
+      }
+
+      this.user.user_id = currentStoredUserData.user_id;
+      // 优先从 localStorage 获取，减少 API 调用
+      this.user.nickname = currentStoredUserData.nickname || '';
+      this.user.email = currentStoredUserData.email || '';
+      this.user.avatar_url = currentStoredUserData.avatar_url || '';
+      this.user.is_profile_complete = currentStoredUserData.is_profile_complete || false;
+      this.editableNickname = this.user.nickname;
+
+      try {
+        const response = await axios.get(`/service-a/api/users/${this.user.user_id}`);
+        const userDataFromBackend = response.data; // 从后端获取的最新资料
+
+        // **核心修改：更新 localStorage 中的 user_data，但保留 auth_token**
+        // 合并后端返回的资料，并保留 auth_token
+        const updatedUserData = {
+          ...currentStoredUserData, // 保留所有现有字段，包括 auth_token
+          ...userDataFromBackend,   // 合并后端返回的最新资料
+          // 确保 is_profile_complete 字段也被正确更新
+          is_profile_complete: userDataFromBackend.is_profile_complete !== undefined ? userDataFromBackend.is_profile_complete : currentStoredUserData.is_profile_complete
+        };
+        localStorage.setItem('user_data', JSON.stringify(updatedUserData));
+        console.log('UserView: fetchUserData updated localStorage with:', updatedUserData);
+
+        // 更新组件的 user data
+        this.user = updatedUserData; // 直接使用合并后的数据更新组件状态
+        this.editableNickname = this.user.nickname;
+
+      } catch (error) {
+        console.error('UserView: Error fetching user data from API:', error);
+        if (error.response && error.response.status === 401) {
+          alert('会话已过期，请重新登录。');
+          this.$router.push({ name: 'auth' }); // 注意这里使用了 $router
+        } else if (!currentStoredUserData) {
+          this.$router.push({ name: 'auth' }); // 注意这里使用了 $router
+        }
+      }
     },
     handleSearch() {
       this.applyFilters();
+      // 用户搜索后，可以隐藏搜索提示气泡
+      this.showSearchTip = false;
     },
     async fetchBooks() {
       this.loading = true;
@@ -322,13 +467,42 @@ export default {
         this.loading = false;
       }
     },
-    async fetchRecommendations() {
+    // 【修改】获取实时更新的推荐数据的方法，用于书籍列表页
+    async fetchRealtimeRecommendationsForList() {
+      const loggedInUser = getParsedUserData();
+      const userId = loggedInUser ? loggedInUser.user_id : null;
+
+      if (!userId) {
+        console.log("用户未登录，无法获取实时推荐。");
+        this.realtimeRecommendations = []; // 清空推荐
+        this.showRecommendationTip = true; // 用户未登录时显示推荐气泡
+        return;
+      }
+
+      this.loadingRecommendations = true; // 显示加载状态
       try {
-        const response = await axios.get('/service-b/api/recommendations');
-        this.recommendations = response.data;
+        // 调用实时推荐的接口
+        const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
+        this.realtimeRecommendations = response.data.recommendations || [];
+        console.log("实时推荐数据 (BookList):", this.realtimeRecommendations);
+
+        // 如果没有实时推荐，显示提示气泡
+        if (this.realtimeRecommendations.length === 0) {
+          this.showRecommendationTip = true;
+        } else {
+          this.showRecommendationTip = false; // 有推荐时隐藏
+        }
+
       } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        this.recommendations = [];
+        console.error('Error fetching realtime recommendations for book list:', error);
+        this.realtimeRecommendations = []; // 出错时清空推荐
+        this.showRecommendationTip = true; // 出错时也显示提示气泡
+
+        if (error.response && error.response.data && error.response.data.message === "Redis 中没有实时更新的推荐数据。") {
+          console.log("Redis 中当前没有该用户的实时推荐数据。");
+        }
+      } finally {
+        this.loadingRecommendations = false; // 隐藏加载状态
       }
     },
     extractFilterOptions() {
@@ -354,6 +528,8 @@ export default {
         this.selectedGenres.push(genre);
       }
       this.applyFilters();
+      // 用户点击流派后，可以隐藏流派提示气泡
+      this.showGenreTip = false;
     },
     applyFilters() {
       // Re-evaluates computed properties `filteredBooks` and `paginatedBooks`
@@ -397,6 +573,142 @@ export default {
 <style scoped>
 /* A Font of Ages: Evoking the Scribe's Hand */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+/* --- 新增：气泡提示样式 --- */
+.info-bubble {
+  position: absolute;
+  background-color: #795548;
+  /* 深棕色背景 */
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  z-index: 999;
+  /* 确保在其他内容之上 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  /* 让气泡不阻碍下方的点击事件 */
+  opacity: 0;
+  /* 默认隐藏 */
+  animation: fadeInOut 5s forwards;
+  /* 动画持续5秒，结束后保持状态 */
+}
+
+/* 气泡箭头 */
+.info-bubble::after {
+  content: '';
+  position: absolute;
+  border-width: 6px;
+  border-style: solid;
+}
+
+/* 搜索按钮气泡位置 */
+.seek-button {
+  position: relative;
+  /* 使气泡相对于按钮定位 */
+}
+
+.info-bubble.bottom-right {
+  top: 100%;
+  /* 位于父元素底部 */
+  left: 50%;
+  transform: translate(-10%, 10px);
+  /* 稍微偏右，并向下移动 */
+}
+
+.info-bubble.bottom-right::after {
+  top: -6px;
+  left: 20%;
+  border-color: transparent transparent #795548 transparent;
+  /* 向上箭头 */
+}
+
+/* 流派筛选气泡位置 */
+.genre-filter-pill {
+  position: relative;
+  /* 使气泡相对于 pill 定位 */
+}
+
+.info-bubble.top-center {
+  bottom: 100%;
+  /* 位于父元素顶部 */
+  left: 50%;
+  transform: translate(-50%, -10px);
+  /* 水平居中，并向上移动 */
+}
+
+.info-bubble.top-center::after {
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-color: #795548 transparent transparent transparent;
+  /* 向下箭头 */
+}
+
+/* 实时推荐气泡位置 */
+.no-recommendations-message {
+  position: relative;
+  /* 使气泡相对于消息定位 */
+  display: inline-block;
+  /* 确保 position: relative 生效 */
+}
+
+.info-bubble.bottom-left {
+  top: 100%;
+  /* 位于父元素底部 */
+  right: 0;
+  transform: translate(0, 10px);
+  /* 与父元素右侧对齐，并向下移动 */
+}
+
+.info-bubble.bottom-left::after {
+  top: -6px;
+  right: 15px;
+  /* 箭头位置 */
+  border-color: transparent transparent #795548 transparent;
+  /* 向上箭头 */
+}
+
+
+/* 气泡动画 */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  /* 动画开始后很快完全显示 */
+  90% {
+    opacity: 1;
+  }
+
+  /* 保持完全显示大部分时间 */
+  100% {
+    opacity: 0;
+  }
+
+  /* 动画结束时完全隐藏 */
+}
+
+/* 确保现有样式兼容 */
+.top-folio-controls {
+  position: relative;
+  /* 确保气泡可以在此范围内定位 */
+}
+
+.genre-filter-section {
+  position: relative;
+  /* 确保气泡可以在此范围内定位 */
+}
+
+.oracle-sidebar {
+  position: relative;
+  /* 确保气泡可以在此范围内定位 */
+}
 
 /* The Grand Container of Lore */
 .ancient-tome-container {

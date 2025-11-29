@@ -13,7 +13,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- ClickHouse 数据库配置 (新增) ---
-    CH_HOST = os.getenv("CH_HOST", "clickhouse") # 你的ClickHouse服务地址
+    CH_HOST = os.getenv("CH_HOST", "clickhouse_db") # 你的ClickHouse服务地址
     CH_PORT = int(os.getenv("CH_PORT", 8123)) # ClickHouse HTTP 端口，通常是8123
     CH_USER = os.getenv("CH_USER", "default")
     CH_PASSWORD = os.getenv("CH_PASSWORD", "") # 如果有密码，请设置
@@ -26,7 +26,7 @@ class Config:
     )
 
     # --- Redis 配置 (重点修改) ---
-    REDIS_HOST = os.getenv("REDIS_HOST", "redis")
+    REDIS_HOST = os.getenv("REDIS_HOST", "redis_cache")
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
     REDIS_DB = int(os.getenv("REDIS_DB", 0))
     # ---> 新增或修改：添加 REDIS_PASSWORD <---

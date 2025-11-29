@@ -1,3 +1,4 @@
+import pandas as pd
 import redis
 import json
 import logging
@@ -53,7 +54,13 @@ class RedisClient:
             key = f"{Config.REDIS_RECOMMENDATIONS_PREFIX}{user_id}" 
             # 将推荐列表（可能包含字典）序列化为 JSON 字符串
             # ensure_ascii=False 以便正确存储中文字符
-            value = json.dumps(recommendations, ensure_ascii=False) 
+            # 检查 recommendations 是否是 Pandas Series，并将其转换为 list
+            if isinstance(recommendations, pd.Series):
+                data_to_store = recommendations.tolist()
+            else:
+                data_to_store = recommendations
+                
+            value = json.dumps(data_to_store, ensure_ascii=False)
 
             if expire_time_seconds is None:
                 # 默认从 Config 中获取过期时间，使用 OFFLINE_RECOMMENDATION_CACHE_EXPIRE_SECONDS

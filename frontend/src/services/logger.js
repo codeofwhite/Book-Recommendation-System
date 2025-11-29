@@ -1,65 +1,86 @@
 import { useUserStore } from '../stores/userStore';
+import axios from 'axios';
 
-// 注意：我们暂时让 LOG_API_ENDPOINT 为空，来激活“仅前端输出”模式
-const LOG_API_ENDPOINT = null; // import.meta.env.VITE_LOG_API_URL;
+const LOG_API_ENDPOINT = import.meta.env.VITE_LOG_API_URL || '/service-e/api/log';
 
 /**
- * 格式化并处理用户行为日志。
- * 如果 LOG_API_ENDPOINT 未配置，日志将直接打印到浏览器控制台，而不会发送到后端。
- * @param {string} eventType - 事件类型 (例如: 'click_book', 'view_detail', 'search')
- * @param {object} payload - 与事件相关的具体数据 (例如: { bookId: '123' })
+ * 核心的日志跟踪函数。它负责构建日志对象，并根据 LOG_API_ENDPOINT 的设置
+ * 将日志打印到控制台或发送到后端服务器。
+ * @param {string} eventType - 事件的类型 (例如: 'page_view', 'button_click')。
+ * @param {object} payload - 与事件相关的具体数据 (例如: { pageName: 'BookDetails' })。
+ * @param {string | null} customPageUrl - (可选) 显式指定的页面URL，优先于 window.location.href。
  */
-export async function trackEvent(eventType, payload = {}) {
-  // 1. 获取用户状态 (例如从 Pinia Store)
+export async function trackEvent(eventType, payload = {}, customPageUrl = null) {
+  // 1. 从 Pinia store 中获取用户和会话信息
   const userStore = useUserStore();
-  const userId = userStore.isLoggedIn ? userStore.user.id : null; // 获取用户ID，如果未登录则为 null
-  const sessionId = userStore.sessionId; // 也可以跟踪会话ID
+  console.log('userStore.isLoggedIn:', userStore.isLoggedIn);
+  console.log('userStore.user:', userStore.user);
+  const userId = userStore.isLoggedIn ? userStore.user.user_id : null; // <--- 保持这里不变，但现在会正确获取到值
+  const sessionId = userStore.sessionId; // <--- 确保 sessionId 能正确获取
 
   // 2. 构建标准化的日志数据结构
   const logData = {
     userId: userId,
     sessionId: sessionId,
     eventType: eventType,
-    timestamp: new Date().toISOString(), // 使用 ISO 8601 标准时间格式
-    pageUrl: window.location.href,     // 当前页面 URL
-    payload: payload                   // 具体的事件数据
+    timestamp: new Date().toISOString(),
+    // **【优化】** 优先使用传入的URL，如果未提供，再使用全局的 window.location.href
+    pageUrl: customPageUrl || window.location.href,
+    payload: payload,
   };
 
-  // 3. 核心修改：判断是发送到后端还是仅在前端打印
+  // 3. 根据环境决定如何处理日志
   if (!LOG_API_ENDPOINT) {
-    // 如果 API 地址未配置，则进入“前端调试模式”
-    console.groupCollapsed(`[EVENT LOG] => ${eventType}`); // 使用可折叠的组，让控制台更整洁
+    console.groupCollapsed(`[EVENT LOG] => ${eventType}`);
     console.log('Timestamp:', new Date().toLocaleTimeString());
-    console.log('Log Data:', logData); // 打印完整的日志对象
+    console.log('Log Data:', logData);
     console.groupEnd();
-    return; // 直接返回，不执行后续的 axios 调用
+    return;
   }
 
-  // --- 以下是原始的后端发送逻辑，在调试模式下不会被执行 ---
   try {
     await axios.post(LOG_API_ENDPOINT, logData, {
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
-    // 在开发模式下可以打印日志，方便调试
     if (import.meta.env.DEV) {
-      console.log('Log sent to backend:', logData);
+      console.log('Log successfully sent to backend:', logData);
     }
   } catch (error) {
-    console.error('Failed to send log:', error);
+    console.error('Failed to send log to backend:', error);
   }
 }
 
-// 导出的具体埋点函数保持不变，组件中的调用也无需任何改动
+// --- 以下是导出的、供组件使用的具体事件跟踪函数 ---
+
 export const trackBookClick = (bookId) => {
-  trackEvent('click_book', { bookId: bookId });
+  trackEvent('click_book_in_list', { bookId: bookId });
 };
 
-export const trackBookView = (bookId, dwellTime) => {
-  trackEvent('view_book_detail', { bookId: bookId, dwellTime: dwellTime });
+/**
+ * 跟踪页面浏览事件和停留时长。
+ * @param {string} pageName - 被浏览页面的名称 (例如: 'BookList', 'BookDetails')。
+ * @param {number} dwellTimeInSeconds - 用户在该页面的总停留时长（单位：秒）。
+ * @param {string} pageUrl - 【新增】事件发生时页面的确切URL。
+ */
+export const trackPageView = (pageName, dwellTimeInSeconds, pageUrl) => {
+  // 事件1: 发送“浏览次数”事件 (Page View)
+  trackEvent('page_view', { pageName: pageName }, pageUrl);
+
+  // 事件2: 只有在停留时长有效时，才发送“浏览时长”事件
+  if (dwellTimeInSeconds > 0) {
+    trackEvent('page_view_duration', {
+      pageName: pageName,
+      dwellTime: dwellTimeInSeconds,
+    }, pageUrl);
+  }
 };
 
-export const trackSearch = (query) => {
-  trackEvent('search', { query: query });
+export const trackButtonClick = (buttonName, pageName, context = {}) => {
+  trackEvent('button_click', {
+    buttonName: buttonName,
+    pageName: pageName,
+    ...context,
+  });
 };

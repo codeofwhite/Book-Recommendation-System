@@ -1,13 +1,13 @@
 # flink_py_image/Dockerfile
 # 基于官方 Flink Java/Scala 镜像
-FROM apache/flink:1.17.1-scala_2.12-java11
+FROM apache/flink:1.17.1-scala_2.12
 
 # 安装 Python 和 pip
 RUN apt-get update && \
     apt-get install -y python3 python3-pip && \
     rm -rf /var/lib/apt/lists/*
 
-# **重要：添加这一行，创建 'python' 命令的软链接**
+# 创建 'python' 命令的软链接
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 # 设置 Python 路径
@@ -15,7 +15,6 @@ ENV PATH="/usr/bin:${PATH}"
 ENV PYTHONIOENCODING="UTF-8"
 
 # --- 使用清华大学 PyPI 镜像源安装 Python 包 ---
-# 清华源地址：https://pypi.tuna.tsinghua.edu.cn/simple/
 
 # 安装 PyFlink
 RUN pip3 install apache-flink==1.17.1 -i https://pypi.tuna.tsinghua.edu.cn/simple/

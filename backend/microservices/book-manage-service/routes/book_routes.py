@@ -216,10 +216,8 @@ def get_daily_book_route():
         return jsonify({"error": "Daily book not found"}), 404
 
 
-# ==================== 新增：EPUB 文件上传和提供服务路由 ====================
 
-
-# ==================== MinIO EPUB 文件上传路由 (修改) ====================
+# ==================== MinIO EPUB 文件上传路由 ====================
 
 @book_bp.route('/books/<book_id>/upload_epub', methods=['POST'])
 def upload_epub_for_book(book_id):

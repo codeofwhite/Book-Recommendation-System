@@ -25,6 +25,9 @@
             <button @click="toggleCollect" :class="{ 'action-button': true, 'collected': isCollected }">
               <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
             </button>
+            <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
+              <span class="icon">📖</span> Read Online
+            </button>
           </div>
           <div class="tome-provenance-details-grid">
             <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
@@ -62,7 +65,7 @@
           <h3 class="section-heading">Notable Figures Within</h3>
           <div class="characters-of-note">
             <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
-              }}</span>
+            }}</span>
           </div>
         </div>
 
@@ -77,8 +80,10 @@
           <h3 class="section-heading">Laurels & Distinctions Awarded</h3>
           <ul class="laurels-list">
             <li v-for="(award, index) in displayAwards" :key="index">{{ award }}</li>
-            <li v-if="shouldShowAwardsToggle" @click="toggleAwards" class="toggle-list-item">
-              <a href="#" class="toggle-text-button">{{ showAllAwards ? 'Show Less' : 'Show More' }}</a>
+            <li v-if="shouldShowAwardsToggle" class="toggle-list-item">
+              <a href="#" @click.prevent="toggleAwards" class="toggle-text-button">
+                {{ showAllAwards ? 'Show Less' : 'Show More' }}
+              </a>
             </li>
           </ul>
         </div>
@@ -126,9 +131,18 @@
           <p v-if="bookReviews.length === 0" class="no-reviews-message">No reflections penned yet. Be the first!</p>
           <div v-for="review in bookReviews" :key="review.id" class="review-entry">
             <div class="review-header">
-              <span class="reviewer-name">{{ review.reviewerName }}</span>
-              <span class="review-date">{{ new Date(review.datePosted).toLocaleDateString() }}</span>
+              <img :src="review.reviewerAvatarUrl" alt="Reviewer Avatar" class="reviewer-avatar" />
+              <span class="reviewer-name">{{ review.reviewerNickname }}</span>
+              <span class="review-date">
+                {{ review.post_time instanceof Date && !isNaN(review.post_time.getTime())
+                  ? review.post_time.toLocaleDateString()
+                  : '日期无效' }}
+              </span>
               <span class="review-stars">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
+              <button v-if="currentUserId === review.userId" @click="deleteReview(review.id)"
+                class="delete-review-button">
+                Delete
+              </button>
             </div>
             <p class="review-content">{{ review.content }}</p>
             <div class="review-actions">
@@ -141,10 +155,46 @@
                 <span class="icon">{{ review.isCollectedByCurrentUser ? '✅' : '➕' }}</span> Collect ({{
                   review.collectCount }})
               </button>
+              <button @click="toggleCommentInput(review.id)" class="review-action-button">
+                <span class="icon">💬</span> Comments
+              </button>
+            </div>
+
+            <div v-if="showCommentInput === review.id" class="comments-section">
+              <div class="comment-submission-form">
+                <textarea v-model="newCommentContent" placeholder="Add your comment..." rows="3"
+                  class="comment-textarea"></textarea>
+                <button @click="submitComment(review.id)" class="submit-comment-button">Post Comment</button>
+              </div>
+
+              <div class="existing-comments-list">
+                <p v-if="!commentsByReview[review.id] || commentsByReview[review.id].length === 0"
+                  class="no-comments-message">
+                  No comments yet. Be the first to comment!
+                </p>
+                <div v-for="comment in commentsByReview[review.id]" :key="comment.id" class="comment-entry">
+                  <div class="comment-header">
+                    <img :src="comment.commenterAvatarUrl || 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV'"
+                      alt="Commenter Avatar" class="commenter-avatar" />
+                    <span class="commenter-name">{{ comment.commenterNickname || comment.userId }}</span>
+                    <span class="comment-date">
+                      {{ comment.commentTime instanceof Date && !isNaN(comment.commentTime.getTime())
+                        ? comment.commentTime.toLocaleDateString()
+                        : '日期无效' }}
+                    </span>
+                    <button v-if="currentUserId === comment.userId" @click="deleteComment(comment.id, review.id)"
+                      class="delete-comment-button">Delete</button>
+                  </div>
+                  <p class="comment-content">{{ comment.content }}</p>
+                </div>
+                <button v-if="commentsByReview[review.id] && commentsByReview[review.id].length >= commentsPerPage"
+                  @click="loadMoreComments(review.id)" class="load-more-comments-button">Load More Comments</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
       <div class="tome-actions">
         <button @click="goBack" class="return-to-catalogue-button">Return to the Grand Catalogue</button>
       </div>
@@ -176,9 +226,34 @@
         </transition>
       </div>
 
+      ---
+
+      <div class="realtime-recommendations-section">
+        <h3 class="sidebar-section-title">实时推荐：为您量身定制的卷轴</h3>
+        <p v-if="realtimeRecommendations.length === 0 && !loadingRecommendations" class="no-recommendations-message">
+          尚无实时推荐。探索更多书籍以生成个性化推荐！
+        </p>
+        <p v-else-if="loadingRecommendations" class="loading-message">
+          正在为您生成实时推荐...
+        </p>
+        <ul v-else class="recommendations-list">
+          <li v-for="recBook in realtimeRecommendations" :key="recBook.bookId" class="recommendation-item">
+            <router-link :to="`/books/${recBook.bookId}`" class="recommendation-link">
+              <img :src="recBook.coverImg" :alt="recBook.title" class="recommendation-cover" />
+              <div class="recommendation-info">
+                <span class="recommendation-title">{{ recBook.title }}</span>
+                <span class="recommendation-author">作者: {{ recBook.author }}</span>
+              </div>
+            </router-link>
+          </li>
+        </ul>
+      </div>
+
+      ---
+
       <div class="scribe-notes-section">
         <h3 class="sidebar-section-title">Further Recommendations</h3>
-        <p class="sidebar-text">More recommended chronicles to behold...</p>
+        <p class="sidebar-text">更多推荐典籍待您细品...</p>
       </div>
     </div>
   </div>
@@ -193,8 +268,21 @@
 
 <script>
 import axios from 'axios';
-// 新增：导入日志函数
-import { trackBookView } from '../services/logger.js';
+import { trackPageView, trackButtonClick } from '../services/logger.js';
+
+// Helper function to get user data from localStorage
+const getParsedUserData = () => {
+  const storedUserData = localStorage.getItem('user_data');
+  if (storedUserData) {
+    try {
+      return JSON.parse(storedUserData);
+    } catch (e) {
+      console.error("Error parsing user_data from localStorage:", e);
+      return null;
+    }
+  }
+  return null;
+};
 
 export default {
   name: 'BookDetails',
@@ -205,35 +293,39 @@ export default {
       doubanSearchResults: [],
       searched: false,
       showDoubanResults: true,
-      // 书籍的“喜欢”状态和数量
       isLiked: false,
       likeCount: 0,
-      // 书籍的“收藏”状态
       isCollected: false,
-      bookReviews: [], // 存储书评列表
-      newReviewContent: '',
-      newReviewRating: 0,
+      bookReviews: [], // 现在存储的是针对这本书的“书评”
+      newReviewContent: '', // 用于撰写新书评的内容
+      newReviewRating: 0, // 用于撰写新书评的评分
       showFullDescription: false,
       descriptionLimit: 300,
       showAllAwards: false,
       awardsLimit: 3,
-      currentUserNickname: '', // To display current user's nickname
-      currentUserAvatar: '' // To display current user's avatar
+      realtimeRecommendations: [],
+      loadingRecommendations: false,
+
+      // 评论相关数据属性
+      showCommentInput: null, // 用于控制哪个书评的评论输入框显示 (存储 review.id)
+      newCommentContent: '', // 存储新评论的内容
+      commentsByReview: {}, // 存储每个书评的评论列表，键为 reviewId
+      commentsPage: {}, // 存储每个书评当前评论的页码
+      commentsPerPage: 5, // 每页显示的评论数量
     };
   },
   computed: {
-    // A computed property to get the userId from localStorage
-    // This makes it reactive if localStorage were to change (though usually not for userId)
-    // Or just use a method or direct localStorage access in methods
     currentUserId() {
-      return localStorage.getItem('user_id');
+      const userData = getParsedUserData();
+      return userData ? userData.user_id : null;
     },
-    // Also useful to get the nickname for displaying reviews
     getCurrentUserNickname() {
-      return localStorage.getItem('user_nickname') || 'Guest'; // Fallback to 'Guest'
+      const userData = getParsedUserData();
+      return userData ? (userData.nickname || userData.email || '访客') : '访客';
     },
     getCurrentUserAvatar() {
-      return localStorage.getItem('user_avatar_url') || 'https://via.placeholder.com/150'; // Fallback to default
+      const userData = getParsedUserData();
+      return userData ? (userData.avatar_url || 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV') : 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV';
     },
     displayDescription() {
       if (!this.book || !this.book.description) return '';
@@ -256,21 +348,283 @@ export default {
       return this.book && this.book.awards && this.book.awards.length > this.awardsLimit;
     }
   },
-  async created() {
-    await this.fetchBookDetails();
-    if (this.book && this.book.bookId) {
-      // 新增：在获取到书籍详情后，记录浏览事件
-      console.log("在获取到书籍详情后，记录浏览事件")
-      trackBookView(this.book.bookId);
-
-      await this.fetchBookReviews();
-      await this.fetchUserEngagementStatus(); // 获取书籍的“喜欢”和“收藏”状态
-      await this.performDoubanSearch(this.book.title);
+  //埋点
+  mounted() {
+    this.pageViewStartTime = Date.now();
+    this.pageUrlOnMount = window.location.href;
+  },
+  beforeUnmount() {
+    const endTime = Date.now();
+    const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
+    trackPageView('BookDetails', dwellTimeInSeconds, this.pageUrlOnMount);
+  },
+  // 监听路由参数变化，当 bookId 变化时重新加载数据
+  watch: {
+    '$route.params.bookId': {
+      handler(newBookId, oldBookId) {
+        // 只有当 bookId 实际发生变化时才重新加载，避免不必要的调用
+        if (newBookId !== oldBookId) {
+          this.loadBookData();
+        }
+      },
+      immediate: true // 立即执行一次，确保组件初始化时加载数据
     }
   },
   methods: {
-    async fetchBookDetails() {
+    /**
+    * 切换评论输入框的显示/隐藏状态
+    * @param {string} reviewId - 要切换评论的 reviewId
+    */
+    toggleCommentInput(reviewId) {
+      this.showCommentInput = this.showCommentInput === reviewId ? null : reviewId;
+      if (this.showCommentInput === reviewId && (!this.commentsByReview[reviewId] || this.commentsByReview[reviewId].length === 0)) {
+        // 如果显示评论输入框且尚未加载评论，则加载评论
+        this.loadCommentsForReview(reviewId);
+      }
+    },
+
+    /**
+     * 加载指定书评的评论
+     * @param {string} reviewId - 书评ID
+     * @param {number} page - 要加载的页码
+     */
+    async loadCommentsForReview(reviewId, page = 1) {
+      try {
+        // 初始化评论列表和页码
+        if (!this.commentsByReview[reviewId]) {
+          this.commentsByReview[reviewId] = []; // 直接赋值即可
+        }
+        if (!this.commentsPage[reviewId]) {
+          this.commentsPage[reviewId] = 1;
+        }
+
+        const response = await fetch(`/service-c/api/reviews/${reviewId}/comments?page=${page}&per_page=${this.commentsPerPage}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to fetch comments for review ${reviewId}`);
+        }
+        const result = await response.json();
+
+        // 关键修改：更稳健地检查 result.comments
+        // 确保 result 存在，result.comments 存在，并且 result.comments 是一个数组
+        if (!result || !result.comments || !Array.isArray(result.comments)) {
+          console.warn(`API response for review ${reviewId} comments is invalid or missing 'comments' array. Full response:`, result);
+          // 如果数据结构不符合预期，将其设置为一个空数组以防止后续错误
+          this.commentsByReview[reviewId] = [];
+          return; // 提前返回，避免对一个不存在的数组进行 map 操作
+        }
+
+        // 现在可以安全地对 result.comments 进行 map 操作
+        const commentsWithUserDetails = await Promise.all(result.comments.map(async comment => {
+          // ... 你的现有逻辑，用于获取评论者的昵称和头像，并处理时间 ...
+          let commenterNickname = '匿名用户';
+          let commenterAvatarUrl = 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV';
+          try {
+            const userProfile = await axios.get(`/service-a/api/users/${comment.userId}`);
+            commenterNickname = userProfile.data.nickname || '匿名用户';
+            commenterAvatarUrl = userProfile.data.avatar_url || 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV';
+          } catch (userError) {
+            console.warn(`Could not fetch user info for comment userId ${comment.userId}:`, userError);
+          }
+
+          let parsedDate = null;
+          if (typeof comment.commentTime === 'string') { // 将 postTime 改为 commentTime
+            parsedDate = new Date(comment.commentTime);
+            if (isNaN(parsedDate.getTime())) {
+              console.error('Date parsing failed for commentTime:', comment.commentTime); // 错误信息也同步修改
+              parsedDate = null;
+            }
+          } else if (comment.commentTime instanceof Date) { // 将 postTime 改为 commentTime
+            parsedDate = comment.commentTime;
+          }
+
+          return {
+            ...comment,
+            commenterNickname,
+            commenterAvatarUrl,
+            commentTime: parsedDate // 将 post_time 改为 commentTime
+          };
+        }));
+
+
+        // 如果是加载第一页，则直接赋值；否则追加
+        if (page === 1) {
+          this.commentsByReview[reviewId] = commentsWithUserDetails;
+        } else {
+          this.commentsByReview[reviewId] = [...this.commentsByReview[reviewId], ...commentsWithUserDetails];
+        }
+        this.commentsPage[reviewId] = page; // 更新当前页码
+      } catch (error) {
+        console.error("Error loading comments:", error);
+        alert(`Failed to load comments: ${error.message}`);
+      }
+    },
+
+    /**
+     * 提交新评论
+     * @param {string} reviewId - 书评ID
+     */
+    async submitComment(reviewId) {
+      if (!this.newCommentContent.trim()) {
+        alert("评论内容不能为空！");
+        return;
+      }
+
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能提交评论！');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/service-c/api/reviews/${reviewId}/comments`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: userId,
+            content: this.newCommentContent, // 这里发送了 content
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "提交评论失败");
+        }
+
+        const backendResponse = await response.json(); // 后端返回的是 { message, commentId }
+
+        // 获取当前时间作为评论时间，因为后端没有返回
+        const currentCommentTime = new Date();
+
+        // 立即获取新评论的作者信息
+        let commenterNickname = this.getCurrentUserNickname;
+        let commenterAvatarUrl = this.getCurrentUserAvatar;
+
+        // ***关键修改：手动构造完整的评论对象***
+        const processedNewComment = {
+          // 后端返回的只有 commentId
+          id: backendResponse.commentId, // 使用后端返回的 commentId 作为唯一标识
+          reviewId: reviewId, // 添加 reviewId
+          userId: userId, // 添加 userId
+          content: this.newCommentContent, // 从输入框中获取 content
+          commentTime: currentCommentTime, // 使用前端获取的当前时间
+          likeCount: 0, // 新评论通常默认点赞数为0
+          commenterNickname,
+          commenterAvatarUrl,
+        };
+
+        // 将新评论添加到对应的书评评论列表中
+        if (!this.commentsByReview[reviewId]) {
+          this.$set(this.commentsByReview, reviewId, []);
+        }
+        this.commentsByReview[reviewId].unshift(processedNewComment); // 添加到评论列表的开头
+
+        this.newCommentContent = ''; // 清空输入框
+        alert("评论发布成功！");
+      } catch (error) {
+        console.error("提交评论时出错:", error);
+        alert(`发布评论失败: ${error.message}`);
+      }
+    },
+
+    /**
+     * 加载更多评论
+     * @param {string} reviewId - 书评ID
+     */
+    loadMoreComments(reviewId) {
+      const nextPage = this.commentsPage[reviewId] + 1;
+      this.loadCommentsForReview(reviewId, nextPage);
+    },
+
+    /**
+     * 删除评论
+     * @param {string} commentId - 评论ID
+     * @param {string} reviewId - 评论所属的书评ID
+     */
+    async deleteComment(commentId, reviewId) {
+      if (!confirm("Are you sure you want to delete this comment?")) {
+        return;
+      }
+
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能删除评论！');
+        return;
+      }
+
+      try {
+        // 确保后端有权限验证：即只有评论作者或管理员才能删除
+        const response = await fetch(`/service-c/api/comments/${commentId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: userId }) // 将 userId 放在 body 中，如果后端需要
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete comment");
+        }
+
+        // 从本地评论列表中移除已删除的评论
+        this.commentsByReview[reviewId] = this.commentsByReview[reviewId].filter(
+          (comment) => comment.id !== commentId
+        );
+        alert("Comment deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting comment:", error);
+        alert(`Failed to delete comment: ${error.message}`);
+      }
+    },
+
+    // 统一的加载数据方法
+    async loadBookData() {
       this.loading = true;
+      try {
+        await this.fetchBookDetails(); // 获取书籍详情
+        if (this.book && this.book.bookId) {
+          await Promise.all([
+            this.fetchBookReviews(), // 获取书评
+            this.fetchUserEngagementStatus(), // 获取用户对书籍的点赞收藏状态
+            this.performDoubanSearch(this.book.title), // 执行豆瓣搜索
+            this.fetchRealtimeRecommendations() // 获取实时推荐
+          ]);
+        } else {
+          // 如果 book 为空，清空相关数据，防止显示旧数据或残留状态
+          this.bookReviews = [];
+          this.doubanSearchResults = [];
+          this.realtimeRecommendations = [];
+          this.isLiked = false;
+          this.likeCount = 0;
+          this.isCollected = false;
+          // 清空评论相关数据
+          this.showCommentInput = null;
+          this.newCommentContent = '';
+          this.commentsByReview = {};
+          this.commentsPage = {};
+        }
+      } catch (error) {
+        console.error('Error loading book data:', error);
+        this.book = null;
+        this.bookReviews = [];
+        this.doubanSearchResults = [];
+        this.realtimeRecommendations = [];
+        this.isLiked = false;
+        this.likeCount = 0;
+        this.isCollected = false;
+        // 清空评论相关数据
+        this.showCommentInput = null;
+        this.newCommentContent = '';
+        this.commentsByReview = {};
+        this.commentsPage = {};
+      } finally {
+        this.loading = false;
+      }
+    },
+    async fetchBookDetails() {
       try {
         const bookId = this.$route.params.bookId;
         const response = await axios.get(`/service-b/api/books/${bookId}`);
@@ -278,91 +632,138 @@ export default {
       } catch (error) {
         console.error('Error fetching book details:', error);
         this.book = null;
-      } finally {
-        this.loading = false;
       }
     },
+
+    readOnline() {
+      if (!this.book || !this.book.epubUrl) {
+        console.error("EPUB URL is not available for reading online.");
+        alert("该书籍暂无在线阅读资源。");
+        return;
+      }
+
+      this.$router.push({
+        name: 'EpubReader',
+        params: {
+          bookId: this.book.bookId,
+          epubUrl: encodeURIComponent(this.book.epubUrl)
+        }
+      });
+    },
+
     async fetchUserEngagementStatus() {
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
+      const userId = this.currentUserId;
+      const bookId = this.book.bookId;
 
       try {
-        // 获取书籍的“喜欢”状态和数量
-        const likeResponse = await axios.get(`/service-c/api/books/${this.book.bookId}/like_status`, {
-          params: { userId }
-        });
-        this.isLiked = likeResponse.data.isLiked;
-        this.likeCount = likeResponse.data.likeCount;
-
-        // 获取书籍的“收藏”状态和数量
-        const collectResponse = await axios.get(`/service-c/api/books/${this.book.bookId}/favorite_status`, {
-          params: { userId }
-        });
-        this.isCollected = collectResponse.data.isFavorited; // 注意这里是 isFavorited
-        this.collectCount = collectResponse.data.favoriteCount; // 如果需要显示收藏数量
-
+        const likeCountResponse = await axios.get(`/service-c/api/books/${bookId}/total_likes`);
+        this.likeCount = likeCountResponse.data.totalLikeCount;
       } catch (error) {
-        console.error('Error fetching user engagement status for book:', error);
+        console.error('Error fetching total like count:', error);
+        this.likeCount = 0;
+      }
+
+      if (!userId) {
+        console.log("User not logged in. Displaying total counts only.");
         this.isLiked = false;
         this.isCollected = false;
-        this.likeCount = 0; // 失败时默认为0
+        return;
+      }
+
+      try {
+        const likeStatusResponse = await axios.get(`/service-c/api/books/${bookId}/like_status`, {
+          params: { userId }
+        });
+        this.isLiked = likeStatusResponse.data.isLiked;
+      } catch (error) {
+        console.error('Error fetching user like status:', error);
+        this.isLiked = false;
+      }
+
+      try {
+        const collectStatusResponse = await axios.get(`/service-c/api/books/${bookId}/favorite_status`, {
+          params: { userId }
+        });
+        this.isCollected = collectStatusResponse.data.isFavorited;
+      } catch (error) {
+        console.error('Error fetching user collect status:', error);
+        this.isCollected = false;
       }
     },
     async toggleLike() {
+      trackButtonClick('LikeButton', 'BookDetails', { bookId: this.book?.bookId });
+
       if (!this.book || !this.book.bookId) return;
 
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
-      const endpoint = `/service-c/api/books/${this.book.bookId}/like`; // 调用新的点赞 API
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能点赞！');
+        return;
+      }
+      const endpoint = `/service-c/api/books/${this.book.bookId}/like`;
 
       try {
         const response = await axios.post(endpoint, { userId });
         this.isLiked = response.data.isLiked;
         this.likeCount = response.data.likeCount;
         console.log(`Book ${this.isLiked ? 'liked' : 'unliked'}! Current likes: ${this.likeCount}`);
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling book like status:', error);
         alert('Failed to update book like status. Please try again.');
       }
     },
     async toggleCollect() {
+      trackButtonClick('CollectButton', 'BookDetails', { bookId: this.book?.bookId });
       if (!this.book || !this.book.bookId) return;
 
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
-      const endpoint = `/service-c/api/books/${this.book.bookId}/favorite`; // 调用收藏 API
+      const userId = this.currentUserId;
+      if (!userId) {
+        alert('请先登录才能收藏！');
+        return;
+      }
+      const endpoint = `/service-c/api/books/${this.book.bookId}/favorite`;
 
       try {
         const response = await axios.post(endpoint, { userId });
-        this.isCollected = response.data.isFavorited; // 注意这里是 isFavorited
-        // this.collectCount = response.data.favoriteCount; // 如果需要更新收藏数量
+        this.isCollected = response.data.isFavorited;
         console.log(`Book ${this.isCollected ? 'collected' : 'uncollected'}!`);
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling book collect status:', error);
         alert('Failed to update book collection status. Please try again.');
       }
     },
     async fetchBookReviews() {
-      // 确保 book.bookId 存在，因为 URL 中需要用到
-      if (!this.book || !this.book.bookId) return;
-      const bookId = this.book.bookId; // 从 this.book 获取 bookId
-
-      // userId 仅用于获取当前用户对书评的点赞/收藏状态，
-      // 获取书评列表本身不需要 userId 过滤
+      if (!this.book || !this.book.bookId) {
+        console.warn('Book data or bookId is missing. Cannot fetch reviews.');
+        return;
+      }
+      const bookId = this.book.bookId;
       const userId = this.currentUserId;
 
       try {
-        // 获取书评列表 (现在由 service-c 处理)
+        // 这是获取某本书的所有书评的正确接口
         const reviewsResponse = await axios.get(`/service-c/api/books/${bookId}/reviews`);
 
-        // 使用 Promise.all 并行请求每条书评的点赞/收藏状态
         this.bookReviews = await Promise.all(reviewsResponse.data.map(async review => {
           let isLikedByCurrentUser = false;
-          let likeCount = 0;
-          let isCollectedByCurrentUser = false;
-          let collectCount = 0;
+          let likeCount = review.likeCount || 0;
+          let isCollectedByCurrentUser = false; // 书评是否可收藏？如果不能，可以移除
+          let collectCount = review.collectCount || 0; // 书评是否可收藏？如果不能，可以移除
 
-          // 只有当用户登录时才查询其个人状态
+          let reviewerNickname = '匿名用户';
+          let reviewerAvatarUrl = 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV'; // 统一默认头像
+
+          // 获取书评作者的昵称和头像
+          try {
+            const userProfile = await axios.get(`/service-a/api/users/${review.userId}`);
+            reviewerNickname = userProfile.data.nickname || '匿名用户';
+            reviewerAvatarUrl = userProfile.data.avatar_url || 'https://via.placeholder.com/50/CCCCCC/FFFFFF?text=AV';
+          } catch (userError) {
+            console.warn(`Could not fetch user info for review userId ${review.userId}:`, userError);
+          }
+
           if (userId) {
             try {
               const reviewLikeStatus = await axios.get(`/service-c/api/reviews/${review.id}/like_status`, {
@@ -374,6 +775,7 @@ export default {
               console.warn(`Could not fetch like status for review ${review.id}:`, likeError);
             }
 
+            // 如果书评有收藏功能，保留此段
             try {
               const reviewFavoriteStatus = await axios.get(`/service-c/api/reviews/${review.id}/favorite_status`, {
                 params: { userId }
@@ -384,30 +786,44 @@ export default {
               console.warn(`Could not fetch favorite status for review ${review.id}:`, favError);
             }
           }
-          // 如果后端返回的 review 对象里本身就包含了 likeCount，这里就直接用 review.likeCount
-          // 如果后端不返回，你需要确保上面的 likeCount = reviewLikeStatus.data.likeCount; 能够正确赋值
-          // 确保后端返回的 review 包含 user_id 和 post_time, content, rating 等
-          // 如果后端能额外返回 reviewerNickname 和 reviewerAvatarUrl，就更好了
+
+          let parsedDate = null;
+          if (typeof review.postTime === 'string') {
+            parsedDate = new Date(review.postTime);
+            if (isNaN(parsedDate.getTime())) {
+              console.error('Date parsing failed for postTime:', review.postTime);
+              parsedDate = null;
+            }
+          } else if (review.postTime instanceof Date) {
+            parsedDate = review.postTime;
+          }
+
           return {
             ...review,
-            // 假设后端返回的 review 对象已经有 likeCount，如果没有则用上面查询到的
-            likeCount: review.likeCount !== undefined ? review.likeCount : likeCount,
+            reviewerNickname,
+            reviewerAvatarUrl,
+            likeCount,
             isLikedByCurrentUser,
-            // 假设后端返回的 review 对象不包含 collectCount，则用上面查询到的
-            collectCount: collectCount,
+            collectCount,
             isCollectedByCurrentUser,
+            post_time: parsedDate,
+            // 确保 rating 字段存在，如果后端不提供，默认为0
+            rating: review.rating || 0
           };
         }));
-        console.log('Fetched reviews:', this.bookReviews);
+        console.log('Fetched reviews with parsed dates:', this.bookReviews);
       } catch (error) {
         console.error('Error fetching book reviews:', error);
         this.bookReviews = [];
       }
     },
     async submitReview() {
-      // 确保 book.bookId 存在
-      if (!this.book || !this.book.bookId) return;
-      const bookId = this.book.bookId; // 从 this.book 获取 bookId
+      trackButtonClick('SubmitReview', 'BookDetails', { bookId: this.book?.bookId });
+      if (!this.book || !this.book.bookId) {
+        alert('书籍信息缺失，无法提交评论。');
+        return;
+      }
+      const bookId = this.book.bookId;
 
       const userId = this.currentUserId;
       if (!userId) {
@@ -421,53 +837,49 @@ export default {
       }
 
       try {
+        // 这是为书本提交新书评的正确接口
         const response = await axios.post(`/service-c/api/books/${bookId}/reviews`, {
           userId: userId,
           content: this.newReviewContent,
           rating: this.newReviewRating,
-          // reviewerNickname 和 reviewerAvatarUrl 不直接传递给后端存储评论内容，
-          // 而是由后端根据 userId 去用户服务查询或前端自行处理展示。
-          // 如果你的后端需要这些信息来存储在 Review 表中，那么你的 Review 表需要有这些字段。
         });
         console.log('Review submitted:', response.data);
         alert('评论提交成功！');
-        this.newReviewContent = ''; // 清空评论内容
-        this.newReviewRating = 0; // 重置评分
-        this.fetchBookReviews(); // 重新加载书评列表
+        this.newReviewContent = '';
+        this.newReviewRating = 0;
+        await this.fetchBookReviews(); // 重新加载书评列表以显示新提交的书评
+        this.fetchRealtimeRecommendations(); // 刷新实时推荐
       } catch (error) {
         console.error('Error submitting review:', error);
         alert('提交评论失败，请重试。');
       }
     },
-    // 新增：删除评论方法
     async deleteReview(reviewId) {
-      const userId = this.currentUserId; // 获取当前用户ID
+      const userId = this.currentUserId;
 
       if (!userId) {
         alert('请先登录才能删除评论！');
         return;
       }
 
-      // ⚠️ 实际应用中，你还需要一个机制来验证当前用户是否是这条评论的作者
-      // 或者是一个拥有删除权限的管理员。这里为了演示简化，直接发送删除请求。
       if (!confirm('确定要删除这条评论吗？')) {
         return;
       }
 
       try {
-        // 删除评论 (由 service-c 处理)
+        // 确保后端有权限验证：即只有书评作者或管理员才能删除
         const response = await axios.delete(`/service-c/api/reviews/${reviewId}`, {
-          params: { userId: userId } // 如果后端需要 userId 来验证删除权限
+          params: { userId: userId } // 将 userId 作为查询参数传递，后端用于验证
         });
         console.log('Review deleted:', response.data);
         alert('评论删除成功！');
-        this.fetchBookReviews(); // 刷新书评列表
+        await this.fetchBookReviews(); // 重新加载书评列表
+        this.fetchRealtimeRecommendations(); // 刷新实时推荐
       } catch (error) {
         console.error('Error deleting review:', error);
         alert('删除评论失败，请重试。');
       }
     },
-
     async toggleReviewLike(review) {
       const userId = this.currentUserId;
       if (!userId) {
@@ -480,12 +892,12 @@ export default {
         const response = await axios.post(endpoint, { userId });
         review.isLikedByCurrentUser = response.data.isLiked;
         review.likeCount = response.data.likeCount;
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling review like status:', error);
         alert('更新评论点赞状态失败，请重试。');
       }
     },
-
     async toggleReviewCollect(review) {
       const userId = this.currentUserId;
       if (!userId) {
@@ -498,63 +910,10 @@ export default {
         const response = await axios.post(endpoint, { userId });
         review.isCollectedByCurrentUser = response.data.isFavorited;
         review.collectCount = response.data.favoriteCount;
+        this.fetchRealtimeRecommendations();
       } catch (error) {
         console.error('Error toggling review collect status:', error);
         alert('更新评论收藏状态失败，请重试。');
-      }
-    },
-    // 你可能还需要一个方法来提交对评论的评论 (子评论)
-    async submitCommentToReview(reviewId) {
-      // 类似 submitReview，但目标是 /api/reviews/<review_id>/comments
-      // 这里只是一个占位符，需要根据你的 UI 和需求实现
-      alert(`对书评 ${reviewId} 提交评论的功能待实现。`);
-    },
-    // 你可能还需要一个方法来删除子评论
-    async deleteComment(commentId) {
-      // 类似 deleteReview，但目标是 /api/comments/<comment_id>
-      // 这里只是一个占位符，需要根据你的 UI 和需求实现
-      if (!confirm('确定要删除这条子评论吗？')) {
-        return;
-      }
-      try {
-        const response = await axios.delete(`/service-c/api/comments/${commentId}`, {
-          params: { userId: this.currentUserId } // 如果后端需要 userId
-        });
-        console.log('Comment deleted:', response.data);
-        alert('子评论删除成功！');
-        // 刷新评论或移除被删除的评论
-        this.fetchBookReviews(); // 简单粗暴地刷新所有书评来更新子评论
-      } catch (error) {
-        console.error('Error deleting comment:', error);
-        alert('删除子评论失败，请重试。');
-      }
-    },
-    async toggleReviewLike(review) {
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
-      const endpoint = `/service-c/api/reviews/${review.id}/like`; // 调用书评点赞 API
-
-      try {
-        const response = await axios.post(endpoint, { userId });
-        review.isLikedByCurrentUser = response.data.isLiked;
-        review.likeCount = response.data.likeCount;
-      } catch (error) {
-        console.error('Error toggling review like status:', error);
-        alert('Failed to update review like status. Please try again.');
-      }
-    },
-    async toggleReviewCollect(review) {
-      const userId = this.currentUserId; // Get userId from computed property
-      if (!userId) return; // Don't proceed if no user is logged in
-      const endpoint = `/service-c/api/reviews/${review.id}/favorite`; // 调用书评收藏 API
-
-      try {
-        const response = await axios.post(endpoint, { userId });
-        review.isCollectedByCurrentUser = response.data.isFavorited; // 注意这里是 isFavorited
-        review.collectCount = response.data.favoriteCount; // 更新收藏数量
-      } catch (error) {
-        console.error('Error toggling review collect status:', error);
-        alert('Failed to update review collection status. Please try again.');
       }
     },
     goBack() {
@@ -584,14 +943,182 @@ export default {
     },
     toggleAwards() {
       this.showAllAwards = !this.showAllAwards;
-    }
-  }
+    },
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    },
+    async fetchRealtimeRecommendations() {
+      const userId = this.currentUserId;
+      if (!userId) {
+        console.log("用户未登录，无法获取实时推荐。");
+        this.realtimeRecommendations = [];
+        return;
+      }
+
+      this.loadingRecommendations = true;
+      try {
+        const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
+        this.realtimeRecommendations = response.data.recommendations || [];
+        console.log("实时推荐数据:", this.realtimeRecommendations);
+
+      } catch (error) {
+        console.error('Error fetching realtime recommendations:', error);
+        this.realtimeRecommendations = [];
+      } finally {
+        this.loadingRecommendations = false;
+      }
+    },
+  },
 };
 </script>
 
 <style scoped>
 /* A Font of Ages: Evoking the Scribe's Hand */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+/* 评论区样式 */
+.comments-section {
+  margin-top: 15px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+  background-color: #fcfcfc;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.comment-submission-form {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.comment-textarea {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  margin-bottom: 10px;
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.submit-comment-button {
+  align-self: flex-end;
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 0;
+  /* 确保不被前面的 margin-right 影响 */
+}
+
+.submit-comment-button:hover {
+  background-color: #45a049;
+}
+
+.existing-comments-list {
+  margin-top: 15px;
+}
+
+.no-comments-message {
+  font-style: italic;
+  color: #777;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.comment-entry {
+  border: 1px solid #eee;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  color: #555;
+  flex-wrap: wrap;
+  /* 允许换行 */
+}
+
+.commenter-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 8px;
+  object-fit: cover;
+}
+
+.commenter-name {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #333;
+}
+
+.comment-date {
+  color: #999;
+  font-size: 0.8em;
+  margin-left: auto;
+  /* 将日期推到右边 */
+}
+
+.comment-content {
+  margin-left: 38px;
+  /* 与头像对齐 */
+  line-height: 1.5;
+  color: #444;
+}
+
+.delete-comment-button,
+.delete-review-button {
+  background-color: #dc3545;
+  /* Red */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8em;
+  margin-left: 10px;
+  /* 与日期等元素保持距离 */
+}
+
+.delete-comment-button:hover,
+.delete-review-button:hover {
+  background-color: #c82333;
+}
+
+.load-more-comments-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.load-more-comments-button:hover {
+  background-color: #0056b3;
+}
 
 /* Add some basic styling for the new buttons */
 .tome-interactive-actions {
@@ -1479,5 +2006,104 @@ export default {
   background-color: #e8f5e9;
   border-color: #27ae60;
   color: #27ae60;
+}
+
+/* 这里可以添加针对实时推荐区域的样式 */
+.realtime-recommendations-section {
+  background-color: #fcf8e3;
+  border: 1px solid #d4c8a2;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.realtime-recommendations-section .sidebar-section-title {
+  color: #8b4513;
+  font-family: 'Georgia', serif;
+  font-size: 1.3em;
+  margin-bottom: 15px;
+  text-align: center;
+  border-bottom: 1px dashed #d4c8a2;
+  padding-bottom: 10px;
+}
+
+.recommendations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px;
+  border-bottom: 1px dashed #e0d8c2;
+  transition: background-color 0.3s ease;
+}
+
+.recommendation-item:last-child {
+  border-bottom: none;
+}
+
+.recommendation-item:hover {
+  background-color: #f5f0d9;
+}
+
+.recommendation-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+}
+
+.recommendation-cover {
+  width: 50px;
+  height: 75px;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 1px solid #d4c8a2;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.recommendation-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.recommendation-title {
+  font-weight: bold;
+  color: #5a3d2b;
+  font-size: 1em;
+  line-height: 1.3;
+}
+
+.recommendation-author {
+  font-size: 0.85em;
+  color: #7b6d5f;
+  margin-top: 3px;
+}
+
+.no-recommendations-message,
+.loading-message {
+  text-align: center;
+  color: #7b6d5f;
+  font-style: italic;
+  padding: 10px;
+}
+
+.reviewer-avatar {
+  width: 30px;
+  /* Adjust size as needed */
+  height: 30px;
+  border-radius: 50%;
+  /* Make it round */
+  margin-right: 10px;
+  /* Space from name */
+  object-fit: cover;
+  /* Ensure image covers the area */
 }
 </style>

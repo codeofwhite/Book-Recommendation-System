@@ -6,7 +6,7 @@ WORKDIR /app
 
 # 复制 requirements.txt 并安装依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
 # 复制整个应用代码
 COPY . .
@@ -20,7 +20,4 @@ ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5005
 
 # 启动 Flask 应用
-# 这里的 command 假设 app.py 中有 Flask app 的入口
-# 如果你是通过 Flask run 启动，可以是：CMD ["flask", "run"]
-# 但由于我们有定时任务，直接运行 app.py 脚本更合适
 CMD ["python", "app.py"]
