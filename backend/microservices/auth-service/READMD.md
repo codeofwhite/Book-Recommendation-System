@@ -1,1 +1,9 @@
-Dockerfile  __pycache__/  app.py  config.py  models.py  mysql/  requirements.txt
+## 用户认证与管理微服务 (User Authentication and Management Service)
+
+该微服务是系统的核心入口之一，专注于处理所有与用户身份和会话相关的逻辑。
+
+### 核心功能
+
+* **用户生命周期管理：** 负责普通用户和管理员 (Admin) 的账户创建（注册）和身份验证（登录）。
+* **会话与状态记录：** 负责管理和记录用户的会话信息、登录状态以及基本的账户数据。
+* **权限基础支持：** 为其他服务提供基础的用户身份识别，是后续权限控制的基础。

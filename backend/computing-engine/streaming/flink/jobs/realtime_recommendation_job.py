@@ -70,7 +70,7 @@ class FlinkJobConfig:
     # 此参数用于融合“离线混合分数”和“综合内容分数”
     SIMILARITY_FUSION_ALPHA = float(os.getenv("SIMILARITY_FUSION_ALPHA", 0.5))
 
-    # 新增：实时内容相似度融合权重
+    # 实时内容相似度融合权重
     # 用于融合用户画像与推荐物品的相似度，以及当前点击物品与推荐物品的相似度
     # 1.0 意味着只考虑用户画像相似度，0.0 意味着只考虑当前点击物品相似度
     REALTIME_CONTENT_FUSION_ALPHA = float(
@@ -621,7 +621,6 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
             )
 
 
-### `main` 函数
 def main():
     # 设置 Flink 作业为流处理模式
     env.set_runtime_mode(RuntimeExecutionMode.STREAMING)

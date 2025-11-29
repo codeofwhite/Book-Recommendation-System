@@ -1,7 +1,6 @@
 # config.py
 
 class Config:
-    # ... (其他现有配置) ...
 
     # Redis Keys
     REDIS_RECOMMENDATIONS_KEY_PREFIX = "user_recommendations:" # 离线推荐存储的 Key 前缀
