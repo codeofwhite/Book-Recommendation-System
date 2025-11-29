@@ -1,20 +1,20 @@
-MySQL
-auth_db
+## MySQL
+- auth_db
 ```bash
 curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\mysql_connector.json http://localhost:8083/connectors
 ```
 
-mysql_user_engagement_connector:
+- mysql_user_engagement_connector:
 ```bash
 curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\mysql_user_engagement_connector.json http://localhost:8083/connectors
 ```
 
-MongoDB
+## MongoDB
 ```bash
 curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\mongodb_connector.json http://localhost:8083/connectors
 ```
 
-ClickHouse
+## ClickHouse
 ```bash
 curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\clickhouse_user_behavior_sink_connector.json http://localhost:8083/connectors
 ```

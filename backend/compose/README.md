@@ -4,3 +4,8 @@
 ```bash
 docker-compose -f auth-service.yml -f base.yml -f book-service.yml -f data-pipeline.yml -f recommendation.yml -f storage.yml -f user-engagement.yml up -d
 ```
+
+- 启动命令（如果改了代码没生效就用这个）
+```bash
+docker-compose -f auth-service.yml -f base.yml -f book-service.yml -f data-pipeline.yml -f recommendation.yml -f storage.yml -f user-engagement.yml up -d --build --force-recreate
+```

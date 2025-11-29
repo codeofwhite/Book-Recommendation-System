@@ -115,7 +115,7 @@ class RecommendationTrainer:
             interactions_from_logs = pd.DataFrame(columns=['user_id', 'item_id', 'timestamp', 'interaction_value'])
             if not behavior_logs.empty:
                 behavior_logs['item_id'] = behavior_logs['item_id'].astype(str)
-                behavior_logs['user_id'] = behavior_logs['user_id'].astype(str)
+                behavior_logs['user_id'] = behavior_logs['userId'].astype(str)
                 interactions_from_logs = behavior_logs[['user_id', 'item_id', 'timestamp', 'interaction_value']]
             
             interactions_from_favorites = pd.DataFrame(columns=['user_id', 'item_id', 'timestamp', 'interaction_value'])
@@ -538,8 +538,8 @@ class RecommendationTrainer:
                 book_info = books_df_str_id.loc[item_id]
                 final_recommendations.append({
                     'book_id': item_id,
-                    'title': book_info['title'],
-                    'score': float(mixed_scores[idx]), 
+                    'title': str(book_info['title']), # 强制转换为字符串
+                    'score': float(mixed_scores[idx]), # 确保分数是 float
                     'raw_cf_score': current_raw_cf_score, 
                     'raw_popularity_score': current_raw_popularity_score 
                 })

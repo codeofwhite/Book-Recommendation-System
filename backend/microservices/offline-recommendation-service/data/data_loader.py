@@ -42,53 +42,55 @@ class DataLoader:
 
     def load_user_behavior_logs(self):
         """
-        从 ClickHouse 的 default.user_behavior_logs_raw 表加载用户行为日志数据。
+        从 ClickHouse 的 default.user_behavior_logs 表加载用户行为日志数据。
         根据提供的字段示例，提取 user_id, book_id (作为 item_id), event_type, 和交互强度。
         """
         
         print(
-            "Loading user behavior logs from ClickHouse default.user_behavior_logs_raw..."
+            "Loading user behavior logs from ClickHouse default.user_behavior_logs..."
         )
 
         query = """
-        SELECT
-            user_id,
-            -- 使用 regexpExtract 解析 page_url 获取 book_id
-            extract(
-                page_url,
-                '/books/([^/]+)' -- 匹配 /books/ 后面到下一个斜杠或字符串末尾的内容
-            ) AS item_id, -- 将提取到的完整 book_id 命名为 item_id
-            
-            event_time AS timestamp, -- 行为时间戳
-            event_type,              -- 保留 event_type 字段
+                SELECT
+                    -- 【修正】使用 CamelCase 字段名
+                    userId,
+                    -- 【修正】使用 CamelCase 字段名
+                    extract(
+                        pageUrl,
+                        '/books/([^/]+)' 
+                    ) AS item_id, 
+                    
+                    -- 【修正】使用 CamelCase 字段名 (您在表中可能使用的是 timestamp)
+                    timestamp, 
+                    -- 【修正】使用 CamelCase 字段名
+                    eventType,              
 
-            -- 根据 event_type 和 dwellTime/buttonName/bookId (from payload) 计算交互值
-            CASE
-                WHEN event_type = 'page_view_duration' AND JSONHas(payload, 'dwellTime') THEN
-                    toInt32(JSONExtractString(payload, 'dwellTime')) + 1 
-                WHEN event_type = 'button_click' THEN
-                    CASE JSONExtractString(payload, 'buttonName')
-                        WHEN 'LikeButton' THEN 10 -- 点赞视为强交互
-                        WHEN 'CollectButton' THEN 15 -- 收藏视为更强交互
-                        WHEN 'SubmitReview' THEN 20 -- 提交评论视为最强交互
-                        ELSE 5 -- 其他点击行为
-                    END
-                WHEN event_type = 'page_view' AND JSONExtractString(payload, 'pageName') = 'BookDetails' THEN
-                    -- 精确到图书详情页的 page_view
-                    2
-                WHEN event_type = 'page_view' AND JSONExtractString(payload, 'pageName') = 'BookList' THEN
-                    -- 列表页浏览，权重可以更低，或者不计入核心交互
-                    1
-                ELSE
-                    0 
-            END AS interaction_value
-        FROM default.user_behavior_logs_raw
-        WHERE
-            (page_url LIKE '%%/books/%%' OR event_type = 'button_click')
-            AND user_id IS NOT NULL
-            AND user_id != 0 
-            AND extract(page_url, '/books/([^/]+)') != '' 
-        ORDER BY user_id, timestamp
+                    -- 计算交互值 (字段名也必须修正)
+                    CASE
+                        WHEN eventType = 'page_view_duration' AND JSONHas(payload, 'dwellTime') THEN
+                            toInt32(JSONExtractString(payload, 'dwellTime')) + 1 
+                        WHEN eventType = 'button_click' THEN
+                            CASE JSONExtractString(payload, 'buttonName')
+                                WHEN 'LikeButton' THEN 10 
+                                WHEN 'CollectButton' THEN 15 
+                                WHEN 'SubmitReview' THEN 20 
+                                ELSE 5 
+                            END
+                        WHEN eventType = 'page_view' AND JSONExtractString(payload, 'pageName') = 'BookDetails' THEN
+                            2
+                        WHEN eventType = 'page_view' AND JSONExtractString(payload, 'pageName') = 'BookList' THEN
+                            1
+                        ELSE
+                            0 
+                    END AS interaction_value
+                -- 确保您的表名是正确的 (user_behavior_logs 或 user_behavior_logs_raw)
+                FROM default.user_behavior_logs 
+                WHERE
+                    (pageUrl LIKE '%%/books/%%' OR eventType = 'button_click')
+                    AND userId IS NOT NULL
+                    AND userId != 0 
+                    AND extract(pageUrl, '/books/([^/]+)') != '' 
+                ORDER BY userId, timestamp
         """
 
         df = pd.read_sql(query, self.clickhouse_engine)

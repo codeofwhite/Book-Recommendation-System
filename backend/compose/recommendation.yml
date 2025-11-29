@@ -36,6 +36,8 @@ services:
         condition: service_healthy 
       redis:
         condition: service_healthy 
+    networks:
+      - book-recommend-network  # 接入公共网络
 
   # Flink JobManager
   flink-jobmanager:

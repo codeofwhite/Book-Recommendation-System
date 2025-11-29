@@ -63,8 +63,8 @@
         <ul>
           <li v-for="(log, index) in latestUserBehaviorLogs" :key="index">
             <span class="log-timestamp">{{ log.timestamp }}:</span>
-            <span class="log-event">{{ log.event_type }}</span>
-            by user <span class="log-user">{{ log.user_id }}</span>
+            <span class="log-event">{{ log.eventType }}</span>
+            by user <span class="log-user">{{ log.userId }}</span>
             on book <span class="log-item">{{ log.item_id }}</span>
           </li>
         </ul>
@@ -96,7 +96,7 @@ import {
   LegendComponent,
   GridComponent
 } from 'echarts/components';
-import { graphic } from 'echarts/core'; // <--- 新增这行，导入 graphic 对象
+import { graphic } from 'echarts/core'; 
 
 // 注册 ECharts 必要的组件
 use([
@@ -212,12 +212,6 @@ const fetchUserBehaviorLogs = async () => {
   }
 }
 
-// -----------------------------------------------------------
-// 新增可视化逻辑
-// -----------------------------------------------------------
-
-// ... (其他代码)
-
 // 计算属性：事件类型分布图的 ECharts 配置
 const eventTypeChartOptions = computed(() => {
   if (!userBehaviorLogs.value || userBehaviorLogs.value.length === 0) {
@@ -226,7 +220,7 @@ const eventTypeChartOptions = computed(() => {
 
   const eventCounts = {};
   userBehaviorLogs.value.forEach(log => {
-    eventCounts[log.event_type] = (eventCounts[log.event_type] || 0) + 1;
+    eventCounts[log.eventType] = (eventCounts[log.eventType] || 0) + 1;
   });
 
   const categories = Object.keys(eventCounts);
