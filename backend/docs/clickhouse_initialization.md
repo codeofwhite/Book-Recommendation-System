@@ -1,4 +1,7 @@
-# 用下面这个可以，创建这个表
+1. ClickHouse 目标表创建
+
+为了接收用户行为数据流，必须在 ClickHouse 中手动创建 user_behavior_logs 表。请执行以下 SQL 语句：
+
 ```sql
 DROP TABLE IF EXISTS user_behavior_logs; 
 
@@ -17,12 +20,12 @@ PARTITION BY toYYYYMM(event_date)
 ORDER BY (event_date, userId);
 ```
 
-- 删除 connector 操作
+- 删除现有 Sink Connector
 ```bash
 curl -X DELETE http://localhost:8083/connectors/clickhouse-user-behavior-logs-sink
 ```
 
-- 添加 connecotr 操作
+- 部署新的 Sink Connector
 ```bash
 curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\clickhouse_user_behavior_sink_connector.json http://localhost:8083/connectors
 ```
