@@ -12,7 +12,7 @@ services:
       redis:
         condition: service_healthy # Ensure Redis is up before starting
       flink-job-submitter: # Ensure Flink job potentially started before this service
-        condition: service_completed_successfully # Or service_healthy if job is long-running
+        condition: service_healthy # service_healthy if job is long-running
     networks:
       - book-recommend-network  # 接入公共网络
 
@@ -108,6 +108,13 @@ services:
       flink-jobmanager:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      # 检查 flink 进程是否在运行（流处理作业），或检查作业提交日志是否存在
+      test: ["CMD-SHELL", "ps aux | grep realtime_recommendation_job.py || grep 'JobManager is ready. Submitting PyFlink Job...' /var/log/flink-job-submit.log"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s  # 延长启动周期，给作业提交足够时间
     networks:
       - book-recommend-network  # 接入公共网络
 
