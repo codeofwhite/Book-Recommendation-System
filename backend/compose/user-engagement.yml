@@ -4,17 +4,17 @@ services:
     image: mysql:8.0
     container_name: user_engagement_mysql_db
     environment:
-      MYSQL_ROOT_PASSWORD: your_engagement_root_password # Set a strong password
+      MYSQL_ROOT_PASSWORD: your_engagement_root_password 
       MYSQL_DATABASE: book_engagement
       MYSQL_USER: engagement_user
       MYSQL_PASSWORD: engagement_password
-      MYSQL_DEBEZIUM_USER: debezium # Re-use or create new for this DB
-      MYSQL_DEBEZIUM_PASSWORD: dbz # Re-use or create new for this DB
+      MYSQL_DEBEZIUM_USER: debezium 
+      MYSQL_DEBEZIUM_PASSWORD: dbz 
     command:
       - --default-authentication-plugin=mysql_native_password
       - --binlog-format=ROW
       - --log-bin=mysql-bin
-      - --server-id=2 # IMPORTANT: Must be a unique server-id for Debezium across all MySQL instances
+      - --server-id=2 # Must be a unique server-id for Debezium across all MySQL instances
     ports:
       - "3309:3306" # Map to a new host port
     volumes:

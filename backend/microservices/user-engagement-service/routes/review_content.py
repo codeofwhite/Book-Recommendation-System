@@ -1,4 +1,4 @@
-# user_profile_service/routes/review_content.py
+# user-engagement-service/routes/review_content.py
 
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
@@ -10,7 +10,7 @@ from models import (
     db,
     Review,
     Comment,
-)  # 导入 Review 和 Comment 模型
+)  
 import uuid
 from datetime import datetime
 
@@ -39,8 +39,6 @@ def submit_review(book_id):
     user_id = data.get("userId")
     content = data.get("content")
     rating = data.get("rating")
-    # reviewerNickname = data.get('reviewerNickname') # 这些信息不直接存入Review表
-    # reviewerAvatarUrl = data.get('reviewerAvatarUrl') # 通常是从用户服务获取或前端展示
 
     if not all([user_id, content, rating is not None]):
         return (
@@ -83,8 +81,6 @@ def submit_review(book_id):
 def delete_review(review_id):
     # 通常需要验证用户身份，确保只有书评的作者或管理员才能删除
     # 这里为了简化，只实现删除功能，实际应用中需添加认证逻辑
-    # 例如：user_id = request.args.get('userId') 或从token获取
-    # review_to_delete = Review.query.filter_by(review_id=review_id, user_id=user_id).first()
 
     review_to_delete = Review.query.get(review_id)
     if not review_to_delete:

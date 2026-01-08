@@ -1,7 +1,7 @@
 services:
   # --- Book Management Service (MongoDB) ---
   book_db_mongo:
-    build: ../infrastructure/storage/mongo/custom-image # 指向你的自定义镜像 Dockerfile 路径
+    build: ../infrastructure/storage/mongo/custom-image # 指向自定义镜像 Dockerfile 路径
     container_name: book_mongo_db
     environment:
       MONGO_INITDB_ROOT_USERNAME: book_user

@@ -1,4 +1,4 @@
-# routes/review_routes.py
+# routes/review_admin_routes.py
 from flask import Blueprint, jsonify, request
 from models import ReviewModel, CommentModel
 
@@ -160,9 +160,8 @@ def get_review_stats():
         return jsonify({"error": f"Failed to retrieve review stats: {str(e)}"}), 500
 
 
-# 书评
 
-
+# 评论相关路由
 @review_bp.route("/reviews/<review_id>/comments", methods=["POST"])
 def create_comment(review_id):
     """为书评创建新评论"""

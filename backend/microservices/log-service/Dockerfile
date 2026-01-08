@@ -1,8 +1,6 @@
-# log_service/Dockerfile
-# 使用轻量级的 Python 官方镜像作为基础
+# log-service/Dockerfile
 FROM python:3.9-slim-buster
 
-# 设置工作目录
 WORKDIR /app
 
 # 复制 requirements.txt 到容器，并安装依赖

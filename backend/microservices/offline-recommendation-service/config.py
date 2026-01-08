@@ -2,7 +2,7 @@
 import os
 
 class Config:
-    # --- MySQL/通用数据库配置 (保留现有，以防其他部分仍需) ---
+    # --- MySQL 数据库配置 ---
     REC_DB_HOST = os.getenv("REC_DB_HOST", "recommendation_db")
     REC_DB_USER = os.getenv("REC_DB_USER", "rec_user")
     REC_DB_PASSWORD = os.getenv("REC_DB_PASSWORD", "rec_password")
@@ -12,37 +12,32 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # --- ClickHouse 数据库配置 (新增) ---
-    CH_HOST = os.getenv("CH_HOST", "clickhouse_db") # 你的ClickHouse服务地址
-    CH_PORT = int(os.getenv("CH_PORT", 8123)) # ClickHouse HTTP 端口，通常是8123
+    # --- ClickHouse 数据库配置 ---
+    CH_HOST = os.getenv("CH_HOST", "clickhouse_db") 
+    CH_PORT = int(os.getenv("CH_PORT", 8123)) 
     CH_USER = os.getenv("CH_USER", "default")
-    CH_PASSWORD = os.getenv("CH_PASSWORD", "") # 如果有密码，请设置
-    CH_DB_NAME = os.getenv("CH_DB_NAME", "default") # 你的数据库名
+    CH_PASSWORD = os.getenv("CH_PASSWORD", "") 
+    CH_DB_NAME = os.getenv("CH_DB_NAME", "default") 
 
     # ClickHouse SQLAlchemy 连接 URI
-    # 'clickhouse://user:password@host:port/database'
     CLICKHOUSE_DATABASE_URI = (
         f"clickhouse://{CH_USER}:{CH_PASSWORD}@{CH_HOST}:{CH_PORT}/{CH_DB_NAME}"
     )
 
-    # --- Redis 配置 (重点修改) ---
+    # --- Redis 配置 ---
     REDIS_HOST = os.getenv("REDIS_HOST", "redis_cache")
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
     REDIS_DB = int(os.getenv("REDIS_DB", 0))
-    # ---> 新增或修改：添加 REDIS_PASSWORD <---
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "") # 如果Redis没有密码，设置为空字符串 ''
-                                                     # 如果有密码，请替换为你的实际密码
-    # ---> 新增：推荐结果缓存过期时间 <---
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "") 
     RECOMMENDATION_CACHE_EXPIRE_SECONDS = 3600 * 24 # 推荐结果在 Redis 中缓存一天 (秒)
 
     # Redis Key 前缀
     REDIS_RECOMMENDATIONS_PREFIX = "recommendations:user:" # 离线推荐结果
     REDIS_BOOK_FEATURES_PREFIX = "book_features:" # 物品特征向量
-    REDIS_USER_PROFILE_PREFIX = "user_profile:" # 离线用户画像向量 (新增，如果需要)
+    REDIS_USER_PROFILE_PREFIX = "user_profile:" # 离线用户画像向量
     REDIS_REALTIME_UPDATED_RECOMMENDATIONS_PREFIX = "realtime_updated_recommendations:user:" # Flink 实时更新后的推荐列表
     REDIS_USER_RECENT_VIEWS_HASH_KEY = "user_recent_views_hash:" # Flink 存储用户最近浏览的 hash key
 
-    # --- 推荐系统相关配置 (不变) ---
     TOP_N_RECOMMENDATIONS = 400
     
     # 协同过滤与流行度混合的权重
@@ -62,8 +57,16 @@ class Config:
     OFFLINE_CRON_SCHEDULE = "0 2 * * *"
     
     # 物品特征向量的维度 (假设 TF-IDF 向量的维度)
-    # 实际维度会根据语料库的词汇量动态变化，但你可以取一个上限或通过 tfidf_vectorizer.vocabulary_size 来获取
+    # 实际维度会根据语料库的词汇量动态变化，但可以取一个上限或通过 tfidf_vectorizer.vocabulary_size 来获取
     # 这个值在 TF-IDF 的情况下其实是词汇表的大小，在实际使用时可能需要动态获取
-    # 这里只是一个占位符，如果你的模型输出是固定维度的嵌入，这个就很重要
+    # 这里只是一个占位符，如果模型输出是固定维度的嵌入，这个就很重要
     # For TF-IDF, it's typically derived from the vocabulary size after fitting
     ITEM_EMBEDDING_DIMENSION = 20000 
+
+    # Deep & Wide 模型相关配置
+    EMBEDDING_DIM = 16
+    DEEP_HIDDEN_UNITS = [128, 64, 32]
+    BATCH_SIZE = 256
+    EPOCHS = 10
+    LEARNING_RATE = 0.001
+    MODEL_SAVE_PATH = "./deep_wide_model_pytorch.pt"  # PyTorch模型后缀用.pt

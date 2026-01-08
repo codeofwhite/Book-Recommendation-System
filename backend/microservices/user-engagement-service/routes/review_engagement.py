@@ -113,14 +113,13 @@ def get_user_favorite_reviews():
 
     # 查询该用户收藏的所有书评
     favorite_entries = ReviewFavorite.query.filter_by(user_id=user_id).all()
-    # 提取所有收藏书评的 review_id
-    # 注意：这里只返回了 review_id。前端可能需要根据这些 review_id 再去 Review Content Service (service-c) 获取书评的详细信息。
+
+    # 这里只返回了 review_id。前端需要根据这些 review_id 再去 Review Content Service (service-c) 获取书评的详细信息。
     review_ids = [entry.review_id for entry in favorite_entries]
 
     return jsonify(review_ids)  # 返回一个书评ID的列表
 
 
-# 新增 API 路由：批量获取书评详情 (从 SQLAlchemy/数据库)
 # 批量获取书评详情，并包含点赞和收藏计数
 @review_engagement_bp.route("/batch", methods=["GET"])
 def get_reviews_batch():
@@ -149,10 +148,9 @@ def get_reviews_batch():
                 "content": review.content,
                 "rating": review.rating,
                 "postTime": review.post_time.isoformat() if review.post_time else None,
-                "likeCount": like_count,  # **这里是修改点：包含点赞计数**
-                "collectCount": collect_count,  # **这里是修改点：包含收藏计数**
-                "status": review.status,  # 根据你的表结构添加
-                # ... 其他你希望返回的字段
+                "likeCount": like_count,  
+                "collectCount": collect_count,  
+                "status": review.status,  
             }
             serialized_reviews.append(review_dict)
 

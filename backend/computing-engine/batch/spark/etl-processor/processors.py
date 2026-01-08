@@ -59,7 +59,7 @@ def process_user_data(df, epoch_id, spark):
     print(f"Processing user data in batch {epoch_id}...")
 
     # 过滤操作类型并提取数据
-    # 注意：这里先将 raw_registration_date 和 raw_last_login_date 提取为 LongType
+    # 这里先将 raw_registration_date 和 raw_last_login_date 提取为 LongType
     raw_users_df = (
         df.select(
             from_json(col("value").cast("string"), mysql_record_schema).alias("data")

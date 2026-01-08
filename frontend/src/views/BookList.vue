@@ -172,6 +172,11 @@ const getParsedUserData = () => {
   return null;
 };
 
+// 定义定时器变量（放在方法外，全局作用域，避免重复创建）
+let recommendationRefreshTimer = null;
+// 防抖标记（避免短时间内重复请求）
+let isRefreshing = false;
+
 export default {
   name: 'BookListWithRecommendation',
   props: {
@@ -194,7 +199,7 @@ export default {
       initialSearchKeyword: '',
       allBooks: [], // This will hold ALL fetched books
       realtimeRecommendations: [],
-      loadingRecommendations: false, // 新增：实时推荐的加载状态
+      loadingRecommendations: false, // 实时推荐的加载状态
       loading: true, // 这是主列表的加载状态
 
       // Filter states
@@ -217,7 +222,7 @@ export default {
       pageRange: 2, // Number of pages to show around the current page
 
       pageViewStartTime: 0,
-      pageUrlOnMount: '', // 【新增】记录页面加载时的URL
+      pageUrlOnMount: '', // 记录页面加载时的URL
 
       // --- 气泡提示状态 ---
       showSearchTip: false,
@@ -339,13 +344,17 @@ export default {
   mounted() {
     this.pageViewStartTime = Date.now();
     this.pageUrlOnMount = window.location.href;
+    // 页面加载时先手动获取一次，再启动定时
+    this.fetchRealtimeRecommendationsForList();
+    this.startRecommendationRefresh();
   },
 
   beforeUnmount() {
     const endTime = Date.now();
     const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
-
-    // 【修改】调用 logger.js 中的函数，显式传递页面名称和捕获的URL
+    // 页面销毁时停止定时
+    this.stopRecommendationRefresh();
+    // 调用 logger.js 中的函数，显式传递页面名称和捕获的URL
     trackPageView('BookList', dwellTimeInSeconds, this.pageUrlOnMount);
   },
 
@@ -396,7 +405,7 @@ export default {
       trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
       console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId})`);
 
-      // 【新增】在点击后主动刷新实时推荐
+      // 在点击后主动刷新实时推荐
       this.fetchRealtimeRecommendationsForList();
       // 用户点击书籍后，可以隐藏推荐气泡
       this.showRecommendationTip = false;
@@ -422,7 +431,7 @@ export default {
         const response = await axios.get(`/service-a/api/users/${this.user.user_id}`);
         const userDataFromBackend = response.data; // 从后端获取的最新资料
 
-        // **核心修改：更新 localStorage 中的 user_data，但保留 auth_token**
+        // 更新 localStorage 中的 user_data，但保留 auth_token
         // 合并后端返回的资料，并保留 auth_token
         const updatedUserData = {
           ...currentStoredUserData, // 保留所有现有字段，包括 auth_token
@@ -467,8 +476,11 @@ export default {
         this.loading = false;
       }
     },
-    // 【修改】获取实时更新的推荐数据的方法，用于书籍列表页
+    // 获取实时更新的推荐数据的方法，用于书籍列表页
     async fetchRealtimeRecommendationsForList() {
+      // 防抖判断，如果正在请求，直接返回
+      if (isRefreshing) return;
+      
       const loggedInUser = getParsedUserData();
       const userId = loggedInUser ? loggedInUser.user_id : null;
 
@@ -476,10 +488,15 @@ export default {
         console.log("用户未登录，无法获取实时推荐。");
         this.realtimeRecommendations = []; // 清空推荐
         this.showRecommendationTip = true; // 用户未登录时显示推荐气泡
+        // 用户未登录时，清空定时器
+        this.stopRecommendationRefresh();
         return;
       }
 
       this.loadingRecommendations = true; // 显示加载状态
+      // 标记正在请求
+      isRefreshing = true;
+      
       try {
         // 调用实时推荐的接口
         const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
@@ -503,6 +520,28 @@ export default {
         }
       } finally {
         this.loadingRecommendations = false; // 隐藏加载状态
+        // 取消请求标记
+        isRefreshing = false;
+      }
+    },
+
+    // 启动推荐定时刷新的方法
+    startRecommendationRefresh() {
+      // 先停止原有定时器，避免重复
+      this.stopRecommendationRefresh();
+      // 每5秒刷新一次（可根据需求调整，比如3秒）
+      recommendationRefreshTimer = setInterval(() => {
+        this.fetchRealtimeRecommendationsForList();
+      }, 5000); // 5000毫秒 = 5秒
+      console.log("推荐数据定时刷新已启动（每5秒）");
+    },
+
+    // 停止推荐定时刷新的方法
+    stopRecommendationRefresh() {
+      if (recommendationRefreshTimer) {
+        clearInterval(recommendationRefreshTimer);
+        recommendationRefreshTimer = null;
+        console.log("推荐数据定时刷新已停止");
       }
     },
     extractFilterOptions() {
@@ -574,7 +613,7 @@ export default {
 /* A Font of Ages: Evoking the Scribe's Hand */
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
 
-/* --- 新增：气泡提示样式 --- */
+/* --- 气泡提示样式 --- */
 .info-bubble {
   position: absolute;
   background-color: #795548;

@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <nav class="main-nav">
-      <div class="project-title">书语相拥（BookHug）</div>
+      <div class="project-title">书语相拥</div>
       <router-link to="/" class="nav-item">主页</router-link>
       <router-link to="/books" class="nav-item">书库</router-link>
       <template v-if="isLoggedIn">

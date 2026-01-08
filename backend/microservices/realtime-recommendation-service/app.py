@@ -7,8 +7,6 @@ import requests
 app = Flask(__name__)
 
 # --- Redis 配置 ---
-# 从环境变量获取 Redis 连接信息
-# REDIS_HOST 应该与 docker-compose.yaml 中 Redis 服务的名称一致
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
@@ -21,7 +19,6 @@ r = None
 def setup_redis_client():
     """
     初始化 Redis 客户端。
-    这个函数会在 Flask 应用启动时被调用一次。
     """
     global r
     try:
@@ -168,26 +165,26 @@ def get_realtime_recommendations(user_id):
     for rec_item in raw_recommendations_list:
         # 从原始推荐数据中获取 book_id (Redis可能存储的是book_id, 但前端需要bookId)
         book_id = rec_item.get('book_id')
+
         if not book_id: # 检查是否存在 book_id
             continue # 如果没有 book_id，跳过此项
 
         try:
             # 调用 service-b 的书籍详情接口
             book_details_url = f"{SERVICE_B_BASE_URL}/api/books/{book_id}"
-            print(f"Attempting to fetch book details from: {book_details_url}") # 新增：打印正在请求的URL
+            print(f"Attempting to fetch book details from: {book_details_url}") # 打印正在请求的URL
             response = requests.get(book_details_url)
 
             if response.status_code == 200:
-                # 【修正：先赋值，再打印】
                 book_data = response.json()
                 print(f"Successfully fetched book data for {book_id}: {book_data}") # 打印Service B返回的完整JSON
                 # 整合推荐分数和书籍详情
                 detailed_rec = {
-                    "bookId": book_data.get("bookId"), # 确保使用 "bookId" 字段
+                    "bookId": book_data.get("bookId"),
                     "title": book_data.get("title"),
-                    "author": book_data.get("author"), # 【新增】获取作者信息
-                    "coverImg": book_data.get("coverImg"), # 【新增】获取封面图片信息
-                    "score": rec_item.get("score") # 保留推荐分数
+                    "author": book_data.get("author"), 
+                    "coverImg": book_data.get("coverImg"), 
+                    "score": rec_item.get("score") 
                 }
                 detailed_recommendations.append(detailed_rec)
             else:

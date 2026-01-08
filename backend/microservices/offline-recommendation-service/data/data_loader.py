@@ -14,12 +14,10 @@ class DataLoader:
     def load_user_profiles(self):
         """从 rec_user_profiles 表加载用户数据 (使用 MySQL)"""
         print("Loading user profiles from rec_user_profiles (MySQL)...")
-        # 确保这里查询的是你的用户表实际名称，例如 rec_user_profiles 或直接是 user 表
         df = pd.read_sql(
             "SELECT id, username, email, age, gender, location, interest_tags, preferred_book_types, preferred_authors, preferred_genres FROM rec_user_profiles",
             self.mysql_engine,
         )
-        # 注意：如果 interest_tags, preferred_book_types, preferred_authors, preferred_genres 是字符串，可能需要进一步处理（如分割成列表）
         print(f"Loaded {len(df)} user profiles.")
         return df
 
@@ -147,50 +145,3 @@ class DataLoader:
         else:
             print("No book review data loaded.")
         return df
-
-
-if __name__ == "__main__":
-    # 简单测试所有数据加载
-    loader = DataLoader()
-    users_df = loader.load_user_profiles()
-    books_df = loader.load_book_data()
-    user_behavior_logs_df = loader.load_user_behavior_logs()
-    book_favorites_df = loader.load_book_favorites()
-    book_likes_df = loader.load_book_likes()
-    book_reviews_df = loader.load_book_reviews()
-
-    print("\nUsers Head:")
-    print(users_df.head())
-    print("\nBooks Head:")
-    print(books_df.head())
-    print("\nUser Behavior Logs Head (from ClickHouse):")
-    print(user_behavior_logs_df.head())
-    print("\nBook Favorites Head (from MySQL):")
-    print(book_favorites_df.head())
-    print("\nBook Likes Head (from MySQL):")
-    print(book_likes_df.head())
-    print("\nBook Reviews Head (from MySQL):")
-    print(book_reviews_df.head())
-
-    # 示例：合并所有交互数据
-    all_interactions = pd.concat(
-        [
-            user_behavior_logs_df[
-                ["user_id", "item_id", "timestamp", "interaction_value"]
-            ],
-            book_favorites_df[
-                ["user_id", "book_id", "timestamp", "interaction_value"]
-            ].rename(columns={"book_id": "item_id"}),
-            book_likes_df[
-                ["user_id", "book_id", "timestamp", "interaction_value"]
-            ].rename(columns={"book_id": "item_id"}),
-            book_reviews_df[
-                ["user_id", "book_id", "timestamp", "interaction_value"]
-            ].rename(columns={"book_id": "item_id"}),
-        ],
-        ignore_index=True,
-    )
-
-    print("\nAll Interactions Head (Combined):")
-    print(all_interactions.head())
-    print(f"Total interactions loaded: {len(all_interactions)}")

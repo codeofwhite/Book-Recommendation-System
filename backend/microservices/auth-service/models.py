@@ -69,7 +69,6 @@ class User(db.Model):
         }
     # --- to_dict 方法结束 ---
 
-# --- 添加 ADMIN 模型 ---
 class Admin(db.Model):
     __tablename__ = 'ADMIN' # 确保表名与你的SQL创建语句一致
     admin_id = db.Column(db.String(20), primary_key=True, comment='管理员账号')

@@ -2,11 +2,12 @@ Flask
 redis
 pandas
 numpy
-scikit-learn  # 示例：如果使用传统机器学习模型
-pymysql       # 或者 mysql-connector-python，用于连接MySQL
-sqlalchemy    # 数据库抽象层，方便操作MySQL
+scikit-learn  
+pymysql   
+sqlalchemy
 schedule
 clickhouse-driver
 sqlalchemy-clickhouse
 cryptography
 requests
+torch

@@ -2,14 +2,12 @@ import json
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np # 保持 NumPy 导入，因为它是其他库的基础
+import numpy as np 
 import logging
 import traceback
 from sklearn.feature_extraction.text import TfidfVectorizer 
 import math
-# import pickle # 移除 pickle 导入，因为不再用于 Redis 向量存储，只在 Flink 状态中使用
 
-# 确保导入路径正确
 from data.data_loader import DataLoader
 from utils.redis_utils import RedisClient
 from config import Config
@@ -25,6 +23,7 @@ class RecommendationTrainer:
         self.books_df = None
         self.interactions_df = None 
 
+        # 矩阵
         self.user_item_matrix = None
         self.item_cf_similarity_matrix = None 
         self.item_content_similarity_matrix = None 
@@ -35,6 +34,7 @@ class RecommendationTrainer:
         self.item_to_idx = {}
         self.idx_to_item = {}
 
+        # 计算结果
         self.popular_books_list = []
         self.tfidf_vectorizer = None 
         self.content_matrix = None 
@@ -42,8 +42,6 @@ class RecommendationTrainer:
     def get_book_feature_vector_from_redis(self, book_id: str):
         """
         从 Redis 获取指定图书的特征向量。
-        注意：此方法用于调试或特殊场景，实际训练时通常直接使用 self.content_matrix。
-        如果需要从 Redis 读取，需要适配 Redis 中存储的 JSON 格式。
         """
         key = f"{Config.REDIS_BOOK_FEATURES_PREFIX}{book_id}"
         # 从 Redis 获取的是字节串
@@ -60,7 +58,8 @@ class RecommendationTrainer:
     def store_item_feature_vectors(self):
         """
         将物品特征向量存储到 Redis。
-        关键修改：将 NumPy 数组转换为 Python 列表，再序列化为 JSON 字符串。
+        
+        将 NumPy 数组转换为 Python 列表，再序列化为 JSON 字符串。
         """
         logging.info("Storing item feature vectors to Redis...")
         if self.content_matrix is None or self.books_df.empty:
@@ -336,7 +335,8 @@ class RecommendationTrainer:
         """
         计算用户画像向量，并存储到 Redis。
         这里使用用户交互过的物品的特征向量的加权平均作为用户画像。
-        关键修改：将 NumPy 数组转换为 Python 列表，再序列化为 JSON 字符串。
+        
+        将 NumPy 数组转换为 Python 列表，再序列化为 JSON 字符串。
         """
         logging.info("Calculating user profiles...")
         if self.user_item_matrix is None or self.content_matrix is None or not self.idx_to_user or not self.idx_to_item:
@@ -353,7 +353,7 @@ class RecommendationTrainer:
             interacted_item_indices = user_interactions_sparse.nonzero()[0] 
             
             # .size 是 NumPy 数组的属性，对于 Python 列表需要用 len()
-            if not interacted_item_indices.size: # 保持 .size 是因为它是 NumPy 数组
+            if not interacted_item_indices.size: 
                 logging.info(f"User {user_id} has no interactions, skipping profile calculation.")
                 continue
 
@@ -414,10 +414,10 @@ class RecommendationTrainer:
             logging.warning("No item similarity matrix could be calculated after all attempts. Model training might be incomplete.")
             return
         
-        # 新增：保存物品特征向量到 Redis
+        # 保存物品特征向量到 Redis
         self.store_item_feature_vectors() 
         
-        # 新增：保存用户画像向量到 Redis
+        # 保存用户画像向量到 Redis
         self.calculate_user_profiles()
 
         logging.info("Model training completed.")
@@ -507,18 +507,14 @@ class RecommendationTrainer:
         else:
             logging.info("popular_books_list is empty. Popularity scores will remain zero.")
         
-        # NumPy 数组操作，保持
         mixed_scores = cf_weight * normalized_pred_scores + (1 - cf_weight) * popular_scores
 
-        # NumPy 数组操作，保持
         mixed_scores[interacted_item_indices] = -np.inf
 
-        # np.argsort 仍然是 NumPy 操作，保持
         recommended_item_indices = np.argsort(mixed_scores)[::-1]
         
         final_top_n_item_indices = []
         for idx in recommended_item_indices:
-            # np.inf 仍然是 NumPy 常量，保持
             if mixed_scores[idx] != -np.inf: 
                 final_top_n_item_indices.append(idx)
                 if len(final_top_n_item_indices) >= n:

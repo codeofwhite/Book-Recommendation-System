@@ -1,8 +1,8 @@
-# log_service/app.py (假设你的 Flask 日志服务文件)
+# log-service/app.py
 import os
 import json
 from flask import Blueprint, request, jsonify
-from kafka import KafkaProducer # <-- 新增
+from kafka import KafkaProducer 
 
 # 创建蓝图
 log_bp = Blueprint('log', __name__)
@@ -13,7 +13,7 @@ os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
 
 # 初始化 Kafka Producer
 # 这里的 KAFKA_BROKER_URL 应该指向 Kafka 服务地址
-KAFKA_BROKER_URL = os.environ.get('KAFKA_BROKER_URL', 'kafka:29092') # 确保你的Docker Compose网络中Kafka是可达的
+KAFKA_BROKER_URL = os.environ.get('KAFKA_BROKER_URL', 'kafka:29092') # 确保Docker Compose网络中Kafka是可达的
 producer = KafkaProducer(
     bootstrap_servers=[KAFKA_BROKER_URL],
     value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode('utf-8')
@@ -26,8 +26,8 @@ def receive_frontend_log():
         if not log_data:
             return jsonify({"error": "No log data received"}), 400
 
-        # **发送日志到 Kafka Topic**
-        topic_name = "user_behavior_logs" # 定义一个专门用于用户行为日志的 Topic
+        # 发送日志到 Kafka Topic
+        topic_name = "user_behavior_logs" 
         producer.send(topic_name, log_data)
         producer.flush() # 确保消息被发送
 

@@ -79,7 +79,7 @@ comment_stream = create_kafka_stream("user_engagement_db_cdc.book_engagement.COM
 
 # --- 启动流式查询 ---
 # 用户数据流
-# 注意：这里将 spark 对象作为额外参数传递给 foreachBatch 函数
+# 我这里将 spark 对象作为额外参数传递给 foreachBatch 函数
 user_query = (
     user_stream.writeStream.foreachBatch(
         lambda df, epoch_id: process_user_data(df, epoch_id, spark)
@@ -90,7 +90,6 @@ user_query = (
 )
 
 # 图书数据流
-# 注意：这里将 spark 对象作为额外参数传递给 foreachBatch 函数
 book_query = (
     book_stream.writeStream.foreachBatch(
         lambda df, epoch_id: process_book_data(df, epoch_id, spark)

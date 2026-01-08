@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 
-# db 实例将在 app.py 中创建并传入
 db = SQLAlchemy()
 
 
@@ -81,7 +80,7 @@ class ReviewLike(db.Model):
         return f"<ReviewLike like_id={self.like_id} user_id={self.user_id} review_id={self.review_id}>"
 
 
-# 新增：书评表 (REVIEW)
+# 书评表 (REVIEW)
 class Review(db.Model):
     __tablename__ = "REVIEW"
     review_id = db.Column(
@@ -114,7 +113,7 @@ class Review(db.Model):
         }
 
 
-# 新增：评论表 (COMMENT) - 这是对书评的评论
+# 评论表 (COMMENT) - 这是对书评的评论
 class Comment(db.Model):
     __tablename__ = "COMMENT"
     comment_id = db.Column(
@@ -406,7 +405,7 @@ class ReviewModel:
         status_map = {0: "approved", 1: "pending", 2: "rejected"}
         return status_map.get(status_code, "unknown")
     
-    # --- 新增方法：根据用户ID获取书评 ---
+    # --- 根据用户ID获取书评 ---
     @classmethod
     def get_reviews_by_user(cls, user_id, page=1, per_page=10):
         """根据用户ID获取其发布的所有书评，支持分页"""
@@ -613,7 +612,7 @@ class CommentModel:
             print(f"Error fetching all comments: {e}")
             return None, str(e)
         
-# --- 新增方法：根据用户ID获取评论 ---
+    # --- 根据用户ID获取评论 ---
     @classmethod
     def get_comments_by_user(cls, user_id, page=1, per_page=10):
         """根据用户ID获取其发布的所有评论，支持分页"""

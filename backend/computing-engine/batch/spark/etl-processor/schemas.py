@@ -3,7 +3,6 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType, 
 
 # --- 定义 Kafka 消息的 Schema ---
 # Debezium 产生的 MySQL binlog 事件通常包含 'before' 和 'after' 字段
-# 根据 auth_db.users 表结构进行调整
 mysql_record_schema = StructType([
     StructField("schema", StringType(), True),
     StructField("payload", StructType([
@@ -28,14 +27,14 @@ mysql_record_schema = StructType([
             StructField("is_profile_complete", BooleanType(), True)
         ]), True),
         StructField("after", StructType([
-            StructField("id", IntegerType(), True),         # 匹配 MySQL 的 'id' 字段
-            StructField("username", StringType(), True),     # 匹配 MySQL 的 'username' 字段
-            StructField("email", StringType(), True),        # 匹配 MySQL 的 'email' 字段
-            StructField("password_hash", StringType(), True),# 匹配 MySQL 的 'password_hash' 字段
-            StructField("avatar_url", StringType(), True),    # 新增字段
-            # 新增字段 - 将 TimestampType() 改为 LongType()
-            StructField("registration_date", LongType(), True), # 预期 Debezium 发送毫秒时间戳
-            StructField("last_login_date", LongType(), True),   # 预期 Debezium 发送毫秒时间戳
+            StructField("id", IntegerType(), True),         
+            StructField("username", StringType(), True),     
+            StructField("email", StringType(), True),       
+            StructField("password_hash", StringType(), True),
+            StructField("avatar_url", StringType(), True),   
+            # 将 TimestampType() 改为 LongType()
+            StructField("registration_date", LongType(), True), 
+            StructField("last_login_date", LongType(), True),   
             StructField("age", IntegerType(), True),
             StructField("gender", StringType(), True),
             StructField("location", StringType(), True),
@@ -54,7 +53,6 @@ mysql_record_schema = StructType([
 ])
 
 # MongoDB Debezium 消息的 Schema - payload.after 是一个JSON字符串
-# 我们需要定义这个JSON字符串内部的Schema
 actual_mongodb_data_schema = StructType([
     StructField("_id", StructType([StructField("oid", StringType(), True)]), True),
     StructField("bookId", StringType(), True), # 注意：这里是 "bookId" (驼峰命名)
@@ -96,8 +94,6 @@ mongodb_kafka_envelope_schema = StructType([
         StructField("source", StringType(), True)
     ]), True)
 ])
-
-# schemas.py (新增部分)
 
 # BookFavorite 表的 Schema
 book_favorite_schema = StructType([

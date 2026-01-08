@@ -169,8 +169,8 @@ services:
     deploy:
       resources:
         limits: # 硬限制（超限时服务会被杀死）
-          cpus: '2.0'  # 正确缩进：在 limits 内部，比 limits 多 2 个空格
-          memory: 4G   # 正确缩进
+          cpus: '2.0'  
+          memory: 4G   
         reservations:  # 最小保障（启动时至少分配）
           cpus: '1.0'
           memory: 2G

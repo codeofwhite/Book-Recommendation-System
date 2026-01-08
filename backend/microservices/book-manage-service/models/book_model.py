@@ -531,7 +531,7 @@ class BookModel:
             print(f"Error fetching daily book from MongoDB: {e}")
             return None, "Failed to retrieve daily book"
 
-    # --- MinIO 文件处理方法 (替换之前的 save_epub_file) ---
+    # --- MinIO 文件处理方法 ---
     @classmethod
     def upload_epub_to_minio(cls, file, book_id):
         """
