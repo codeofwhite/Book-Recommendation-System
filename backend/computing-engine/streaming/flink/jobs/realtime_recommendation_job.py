@@ -223,7 +223,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
         self.last_process_time_state = runtime_context.get_state(
             ValueStateDescriptor("last_process_time", Types.LONG())
         )
-        self.debounce_seconds = int(os.getenv("DEBOUNCE_SECONDS", 10))  # 10秒内同一用户只处理一次
+        self.debounce_seconds = int(os.getenv("DEBOUNCE_SECONDS", 30))  # 10秒内同一用户只处理一次
 
     def _get_user_profile_vector(self, user_id):
         """从 Redis 或缓存获取用户画像向量 (返回纯 Python 列表)。"""
