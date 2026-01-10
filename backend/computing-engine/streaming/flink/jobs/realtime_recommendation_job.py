@@ -2,9 +2,9 @@ import os
 import json
 from datetime import datetime
 import logging
-import pickle  # 导入 pickle 模块用于状态的序列化/反序列化 (注意：这里仍然用于 Flink 状态的序列化，而不是 Redis 中的向量)
-import redis  # 在 Flink Job 内部也需要这个库来连接 Redis
-import math  # 新增：导入 math 模块用于纯 Python 的数学运算
+import pickle  # 导入 pickle 模块用于状态的序列化/反序列化 (这里仍然用于 Flink 状态的序列化，而不是 Redis 中的向量)
+import redis  
+import math  
 
 from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
 from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer
@@ -23,7 +23,7 @@ class FlinkJobConfig:
     REDIS_HOST = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
     REDIS_DB = int(os.getenv("REDIS_DB", 0))
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")  # 新增：Redis 密码
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")  
 
     # --- Redis 键和前缀配置 ---
     # Flink 实时任务存储最近浏览的 Hash Key
@@ -220,7 +220,6 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
         self.user_profile_cache = {}  # {user_id: list_of_floats}
         self.book_features_cache = {}  # {book_id: list_of_floats}
 
-        # 新增状态
         self.last_process_time_state = runtime_context.get_state(
             ValueStateDescriptor("last_process_time", Types.LONG())
         )
