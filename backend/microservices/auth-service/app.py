@@ -172,7 +172,7 @@ def get_user_info(user_id):
     )
 
 
-# --- 新增：更新用户资料接口 (用于问卷提交) ---
+# --- 更新用户资料接口 (用于问卷提交) ---
 @app.route("/api/users/<int:user_id>/profile", methods=["PUT"])
 def update_user_profile(user_id):
     """

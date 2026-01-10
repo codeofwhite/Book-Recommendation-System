@@ -362,7 +362,6 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                     f"Error: {e}. Using current UTC time as fallback."
                 )
 
-            # ========== 核心修改：扩展item_id提取逻辑 ==========
             # 只要是图书详情页的事件（无论event_type是什么），都提取item_id
             if isinstance(page_name, str) and page_name == "BookDetails":
                 page_url = value.pageUrl

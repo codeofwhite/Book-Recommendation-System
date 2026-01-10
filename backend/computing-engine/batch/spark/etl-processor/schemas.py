@@ -12,7 +12,7 @@ mysql_record_schema = StructType([
             StructField("email", StringType(), True),
             StructField("password_hash", StringType(), True),
             StructField("avatar_url", StringType(), True),
-            # 新增字段 - 将 TimestampType() 改为 LongType()
+            # 将 TimestampType() 改为 LongType()
             StructField("registration_date", LongType(), True), # 预期 Debezium 发送毫秒时间戳
             StructField("last_login_date", LongType(), True),   # 预期 Debezium 发送毫秒时间戳
             StructField("age", IntegerType(), True),

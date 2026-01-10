@@ -13,7 +13,6 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False) # 存储哈希后的密码
     avatar_url = db.Column(db.String(255), nullable=True, default='https://th.bing.com/th/id/OIP.cTPVthB0oT1RXrEcSHaaTwHaHa?w=191&h=191&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3')
 
-    # --- 新增字段 ---
     registration_date = db.Column(db.DateTime, nullable=False, default=func.now()) # 注册时间，自动设置为当前时间
     last_login_date = db.Column(db.DateTime, nullable=True) # 最后登录时间，首次登录时可为空
     
@@ -32,7 +31,6 @@ class User(db.Model):
 
     # 标记用户是否已完成资料填写 (用于引导问卷)
     is_profile_complete = db.Column(db.Boolean, nullable=False, default=False)
-    # --- 新增字段结束 ---
      
     def __init__(self, username, email, password):
         self.username = username

@@ -92,7 +92,7 @@ class Review(db.Model):
     rating = db.Column(db.FLOAT(2, 1), nullable=False)
     like_count = db.Column(db.Integer, default=0)
     post_time = db.Column(db.DATETIME, nullable=False, default=datetime.utcnow)
-    # 将 db.TINYINT 修改为 db.SmallInteger
+    # db.TINYINT 修改为 db.SmallInteger
     status = db.Column(
         db.SmallInteger, default=0
     )  # 0: 正常, 1: 待审核, 2: 已删除/封禁等

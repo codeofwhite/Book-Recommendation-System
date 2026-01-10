@@ -8,7 +8,7 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # 新增：实时层Redis键前缀配置
+      # 实时层Redis键前缀配置
       REDIS_REALTIME_RECS_PREFIX: "realtime_rec:user:"
       REDIS_BOOK_SIMILAR_PREFIX: "book_similar:"
     depends_on:
@@ -16,7 +16,7 @@ services:
         condition: service_healthy # Ensure Redis is up before starting
       flink-job-submitter: # Ensure Flink job potentially started before this service
         condition: service_healthy # service_healthy if job is long-running
-      # 新增：依赖实时层Flink Job提交完成
+      # 依赖实时层Flink Job提交完成
       flink-job-submitter-realtime:
         condition: service_healthy
     networks:
