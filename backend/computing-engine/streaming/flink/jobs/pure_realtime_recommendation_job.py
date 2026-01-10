@@ -78,6 +78,7 @@ class JsonParser(FlatMapFunction):
 
             page_name = payload_data.get("pageName")
             dwell_time = payload_data.get("dwellTime")
+            book_id = payload_data.get("bookId") # 获取前端传来的 bookId
 
             if not isinstance(page_name, str):
                 page_name = None
@@ -90,7 +91,11 @@ class JsonParser(FlatMapFunction):
                 eventType=str(event_type),
                 timestamp=str(timestamp),
                 pageUrl=str(page_url),
-                payload=Row(pageName=page_name, dwellTime=int(dwell_time) if dwell_time is not None else None,),
+                payload=Row(
+                    pageName=page_name,
+                    dwellTime=int(dwell_time) if dwell_time is not None else None,
+                    bookId=str(book_id) if book_id is not None else None, # <-- 新增这一行
+                ),
             )
 
         except json.JSONDecodeError as e:
@@ -138,25 +143,29 @@ class PureRealtimeFilterProcessFunction(KeyedProcessFunction):
             return
 
         try:
+            logger.info(value)
             user_id = value.userId
             page_name = getattr(value.payload, "pageName", None)
             page_url = value.pageUrl
 
             # 只处理【图书详情页】的事件
-            if not (isinstance(page_name, str) and page_name == "BookDetails"):
+            if not (isinstance(page_name, str)):
                 return
 
-            # 提取当前浏览的图书ID
+            # ============ 核心修复 START (只改这里！！！2行代码根治嵌套问题) ============
             current_book_id = None
-            if page_url:
-                parts = page_url.split("/")
-                valid_parts = [p for p in parts if p.strip()]
-                if len(valid_parts) >= 2 and valid_parts[-2] == "books" and valid_parts[-1]:
-                    current_book_id = valid_parts[-1]
-            
-            if not current_book_id:
-                logger.info(f"用户 {user_id} 无有效图书ID，跳过")
-                return
+
+            raw_book_id = getattr(value.payload, "bookId", None)
+
+            # 2. 只有当 raw_book_id 既不是 None 也不是空字符串时才 strip
+            if raw_book_id:
+                book_id_from_payload = str(raw_book_id).strip()
+                if book_id_from_payload:
+                    current_book_id = book_id_from_payload
+
+            # 3. 打印日志（仅当有 ID 时），避免干扰
+            if current_book_id:
+                logger.info(f"监听到有效图书ID: {current_book_id}")
 
             # 更新用户【最近浏览的图书ID列表】+ 去重
             current_books_pickled = self.recent_books_state.value()
@@ -240,7 +249,18 @@ def main():
 
     json_row_type_info = Types.ROW_NAMED(
         ["userId", "sessionId", "eventType", "timestamp", "pageUrl", "payload"],
-        [Types.INT(),Types.STRING(),Types.STRING(),Types.STRING(),Types.STRING(),Types.ROW_NAMED(["pageName", "dwellTime"], [Types.STRING(), Types.INT()]),],
+        [
+            Types.INT(),
+            Types.STRING(),
+            Types.STRING(),
+            Types.STRING(),
+            Types.STRING(),
+            # ✅ 修正：在这里增加 "bookId" 及其类型 Types.STRING()
+            Types.ROW_NAMED(
+                ["pageName", "dwellTime", "bookId"], 
+                [Types.STRING(), Types.INT(), Types.STRING()]
+            ),
+        ],
     )
 
     data_stream = env.from_source(

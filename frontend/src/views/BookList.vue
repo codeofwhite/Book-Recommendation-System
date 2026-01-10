@@ -79,7 +79,7 @@
             </div>
             <div class="tome-inscriptions">
               <router-link :to="{ name: 'BookDetails', params: { bookId: book.bookId } }" class="tome-title-link"
-                @click="handleBookClick(book)">
+                @click.native="handleBookClick(book)">
                 <h2 class="tome-title">{{ book.title }}</h2>
               </router-link>
               <h3 v-if="book.series" class="tome-series"> {{ book.series }} 系列篇章</h3>
@@ -137,7 +137,8 @@
           </p>
           <transition-group name="recommendation-slide" tag="div" v-else>
             <div v-for="(rec, index) in realtimeRecommendations" :key="rec.bookId || index" class="oracle-insight">
-              <router-link :to="{ name: 'BookDetails', params: { bookId: rec.bookId } }" class="oracle-insight-link">
+              <router-link :to="{ name: 'BookDetails', params: { bookId: rec.bookId } }" class="oracle-insight-link"
+                @click.native="handleBookClick(rec)">
                 <div class="oracle-effigy">
                   <img :src="rec.coverImg" :alt="rec.title" class="oracle-cover-mini" />
                 </div>
@@ -156,7 +157,7 @@
 
 <script>
 import axios from 'axios';
-import { trackBookClick, trackPageView } from '../services/logger';
+import { trackBookClick, trackPageView, trackBookDetailView } from '../services/logger';
 
 // Helper function to get user data from localStorage
 const getParsedUserData = () => {
@@ -228,7 +229,8 @@ export default {
       showSearchTip: false,
       showGenreTip: false,
       showRecommendationTip: false,
-      // --- 气泡提示状态结束 ---
+
+      editableNickname: ''
     };
   },
   computed: {
@@ -366,6 +368,13 @@ export default {
     inputSearchKeyword() {
       this.applyFilters();
     },
+    // 监听user.user_id变化，用户信息加载完成后自动加载推荐
+    'user.user_id'(newVal) {
+      if (newVal) {
+        this.fetchRealtimeRecommendationsForList();
+        this.startRecommendationRefresh();
+      }
+    }
   },
   methods: {
     // --- 气泡提示相关方法 ---
@@ -398,18 +407,18 @@ export default {
         this.showRecommendationTip = false;
       }, 10000); // 10秒后隐藏（显示5秒）
     },
-    // --- 气泡提示相关方法结束 ---
 
-    handleBookClick(book) {
-      // 调用埋点函数，发送用户点击事件
-      trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
-      console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId})`);
+    async handleBookClick(book) {
+      await trackBookDetailView(book.bookId, window.location.href);
+      console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId}) → 已上报有效事件，pure_realtime立即处理`);
 
-      // 在点击后主动刷新实时推荐
-      this.fetchRealtimeRecommendationsForList();
-      // 用户点击书籍后，可以隐藏推荐气泡
+      // 3. 主动刷新推荐列表，拿到过滤后的数据
+      await this.fetchRealtimeRecommendationsForList();
+
+      // 隐藏气泡提示
       this.showRecommendationTip = false;
     },
+
     async fetchUserData() {
       const currentStoredUserData = getParsedUserData(); // 获取当前 localStorage 中的完整数据
 
@@ -480,7 +489,7 @@ export default {
     async fetchRealtimeRecommendationsForList() {
       // 防抖判断，如果正在请求，直接返回
       if (isRefreshing) return;
-      
+
       const loggedInUser = getParsedUserData();
       const userId = loggedInUser ? loggedInUser.user_id : null;
 
@@ -496,7 +505,7 @@ export default {
       this.loadingRecommendations = true; // 显示加载状态
       // 标记正在请求
       isRefreshing = true;
-      
+
       try {
         // 调用实时推荐的接口
         const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);

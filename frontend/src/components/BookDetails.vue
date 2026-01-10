@@ -237,7 +237,8 @@
           正在为您生成实时推荐...
         </p>
         <ul v-else class="recommendations-list">
-          <li v-for="recBook in realtimeRecommendations" :key="recBook.bookId" class="recommendation-item">
+          <li v-for="recBook in realtimeRecommendations" :key="recBook.bookId" class="recommendation-item"
+            @click="handleBookDetailClick(recBook)">
             <router-link :to="`/books/${recBook.bookId}`" class="recommendation-link">
               <img :src="recBook.coverImg" :alt="recBook.title" class="recommendation-cover" />
               <div class="recommendation-info">
@@ -268,7 +269,7 @@
 
 <script>
 import axios from 'axios';
-import { trackPageView, trackButtonClick } from '../services/logger.js';
+import { trackPageView, trackButtonClick, trackBookClick, trackBookDetailView } from '../services/logger.js';
 
 // Helper function to get user data from localStorage
 const getParsedUserData = () => {
@@ -349,28 +350,54 @@ export default {
     }
   },
   //埋点
-  mounted() {
+  async mounted() {
     this.pageViewStartTime = Date.now();
     this.pageUrlOnMount = window.location.href;
+    await this.fetchRealtimeRecommendations();
+    this.start5sAutoRefresh();
+    console.log("已开启实时推荐列表【每5秒自动刷新】模式");
   },
   beforeUnmount() {
     const endTime = Date.now();
     const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
     trackPageView('BookDetails', dwellTimeInSeconds, this.pageUrlOnMount);
+
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    console.log("已关闭5秒自动刷新定时器");
   },
   // 监听路由参数变化，当 bookId 变化时重新加载数据
   watch: {
     '$route.params.bookId': {
-      handler(newBookId, oldBookId) {
+      async handler(newBookId, oldBookId) {
         // 只有当 bookId 实际发生变化时才重新加载，避免不必要的调用
         if (newBookId !== oldBookId) {
           this.loadBookData();
         }
+        if (this.book && this.book.bookId) {
+          trackBookDetailView(this.book.bookId, window.location.href);
+        }
+        await this.fetchRealtimeRecommendations(); // 上报后立即刷新推荐列表
       },
       immediate: true // 立即执行一次，确保组件初始化时加载数据
     }
   },
   methods: {
+    async handleBookDetailClick(book) {
+      const userId = this.currentUserId;
+      if (!userId || !book || !book.bookId) {
+        console.log("用户未登录/图书信息不全，跳过埋点上报");
+        return;
+      }
+      trackBookClick(userId, book.bookId, new Date().toISOString(), window.location.href);
+      console.log(`【详情页埋点】用户 ${userId} 点击了书籍: ${book.title} (${book.bookId})`);
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        await this.fetchRealtimeRecommendations();
+      }
+    },
     /**
     * 切换评论输入框的显示/隐藏状态
     * @param {string} reviewId - 要切换评论的 reviewId
@@ -964,14 +991,42 @@ export default {
       try {
         const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
         this.realtimeRecommendations = response.data.recommendations || [];
-        console.log("实时推荐数据:", this.realtimeRecommendations);
+        console.log("实时推荐数据已自动刷新(每5秒):", this.realtimeRecommendations);
 
       } catch (error) {
         console.error('Error fetching realtime recommendations:', error);
         this.realtimeRecommendations = [];
       } finally {
         this.loadingRecommendations = false;
+        this.isRefreshing = false; // 请求完成，释放防抖锁
       }
+    },
+
+    async handleBookClick(book) {
+      trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
+      console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId})`);
+      this.showRecommendationTip = false;
+      // 点击时立即刷新一次，无需等5秒，体验更好
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        await this.fetchRealtimeRecommendations();
+      }
+    },
+
+    start5sAutoRefresh() {
+      // 先清除旧定时器，防止重复开启
+      if (this.refreshTimer) clearInterval(this.refreshTimer);
+      // 设置：每5000毫秒 = 5秒 执行一次刷新
+      this.refreshTimer = setInterval(async () => {
+        // 防抖逻辑：如果上一次请求还没完成，就跳过本次刷新
+        if (!this.isRefreshing && this.currentUserId) {
+          this.isRefreshing = true;
+          await this.fetchRealtimeRecommendations();
+        }
+      }, 5000);
+    },
+    async refreshRecommendList() {
+      await this.fetchRealtimeRecommendations();
     },
   },
 };

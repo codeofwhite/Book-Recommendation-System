@@ -494,7 +494,6 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
 
             # 如果当前是图书详情页浏览事件，且停留时间超过阈值，则提升 CF 权重
             if (
-                # event_type == "page_view"
                 is_page_view
                 and page_name == "BookDetails"
                 and current_dwell_time is not None
