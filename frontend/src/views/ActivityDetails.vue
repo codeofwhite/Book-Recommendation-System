@@ -1,83 +1,95 @@
 <template>
   <div class="activity-details-page">
-    <p v-if="loading" class="loading-message">
-      <div class="spinner"></div> 正在加载活动详情，请稍候...
-    </p>
-
-    <div v-else-if="activity" class="activity-content-wrapper">
-      <button @click="router.back()" class="back-to-list-button">
-        <i class="fas fa-arrow-left"></i> 返回活动列表
-      </button>
-
-      <div class="activity-header">
-        <h1 class="activity-detail-title">{{ activity.title }}</h1>
-        <p class="activity-subtitle">{{ activity.description }}</p>
-      </div>
-
-      <img :src="activity.image" :alt="activity.title" class="activity-detail-image" />
-
-      <div class="activity-meta-grid">
-        <div class="meta-item-card">
-          <i class="fas fa-calendar-alt meta-icon"></i>
-          <div class="meta-info">
-            <strong>日期：</strong>
-            <span>{{ activity.date }}</span>
-          </div>
-        </div>
-        <div class="meta-item-card">
-          <i class="fas fa-map-marker-alt meta-icon"></i>
-          <div class="meta-info">
-            <strong>地点：</strong>
-            <span>{{ activity.location || (activity.type === 'online' ? '线上活动' : '待定') }}</span>
-          </div>
-        </div>
-        <div class="meta-item-card">
-          <i class="fas fa-tag meta-icon"></i>
-          <div class="meta-info">
-            <strong>类型：</strong>
-            <span>{{ formatActivityType(activity.type) }}</span>
-          </div>
-        </div>
-        <div class="meta-item-card">
-          <i class="fas fa-info-circle meta-icon"></i>
-          <div class="meta-info">
-            <strong>状态：</strong>
-            <span>{{ formatActivityStatus(activity.status) }}</span>
-          </div>
-        </div>
-        <div v-if="activity.organizer" class="meta-item-card">
-          <i class="fas fa-users meta-icon"></i>
-          <div class="meta-info">
-            <strong>主办方：</strong>
-            <span>{{ activity.organizer }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="activity-description-full">
-        <h2>活动介绍</h2>
-        <div class="description-content" v-html="formattedFullDescription"></div>
-      </div>
-
-      <div class="action-buttons-wrapper">
-        <button v-if="activity.status === 'upcoming'" class="action-button primary" @click="handleJoinActivity">
-          <i class="fas fa-clipboard-check"></i> 立即报名
-        </button>
-        <button v-else-if="activity.status === 'ended'" class="action-button secondary" disabled>
-          <i class="fas fa-hourglass-end"></i> 活动已结束
-        </button>
-        <button v-else class="action-button secondary" disabled>
-          <i class="fas fa-question-circle"></i> {{ formatActivityStatus(activity.status) }}
-        </button>
-      </div>
-
-      <div class="related-content-section">
-        </div>
+    <div v-if="loading" class="loading-state">
+      <div class="custom-spinner"></div>
+      <p>正在为您呈上雅集详情...</p>
     </div>
 
-    <div v-else class="no-activity-found">
-      <p>抱歉，未找到该活动详情。</p>
-      <router-link to="/activities" class="back-link-bottom">返回活动列表</router-link>
+    <div v-else-if="activity" class="activity-container">
+      <nav class="detail-nav">
+        <button @click="router.back()" class="back-btn">
+          <span class="icon">⇠</span> 返回列表
+        </button>
+        <div class="nav-share">
+          <span class="badge" :class="activity.type">{{ formatActivityType(activity.type) }}</span>
+        </div>
+      </nav>
+
+      <header class="activity-hero">
+        <div class="hero-text">
+          <h1 class="activity-title">{{ activity.title }}</h1>
+          <p class="activity-intro">{{ activity.description }}</p>
+        </div>
+        <div class="image-frame">
+          <img :src="activity.image" :alt="activity.title" class="hero-image" />
+          <div class="image-decoration"></div>
+        </div>
+      </header>
+
+      <div class="content-layout">
+        <main class="main-content">
+          <section class="description-section">
+            <h2 class="section-label"><span>雅集详情</span></h2>
+            <div class="rich-text-content" v-html="formattedFullDescription"></div>
+          </section>
+        </main>
+
+        <aside class="info-sidebar">
+          <div class="sticky-card">
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-icon">📅</div>
+                <div class="info-body">
+                  <label>活动时间</label>
+                  <span>{{ activity.date }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-icon">📍</div>
+                <div class="info-body">
+                  <label>雅集地点</label>
+                  <span>{{ activity.location || '线上雅集' }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-icon">🏛️</div>
+                <div class="info-body">
+                  <label>主办方</label>
+                  <span>{{ activity.organizer }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-icon">⏳</div>
+                <div class="info-body">
+                  <label>当前状态</label>
+                  <span class="status-text">{{ formatActivityStatus(activity.status) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-zone">
+              <button 
+                v-if="activity.status === 'upcoming'" 
+                class="join-btn" 
+                @click="handleJoinActivity"
+              >
+                立即预约席位
+              </button>
+              <button v-else class="join-btn disabled" disabled>
+                {{ formatActivityStatus(activity.status) }}
+              </button>
+              <p class="join-note" v-if="activity.status === 'upcoming'">* 预约成功后，我们将通过邮件发送回执</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div v-else class="error-state">
+      <div class="error-icon">🍂</div>
+      <h2>雅集信息已逸散</h2>
+      <p>抱歉，未找到该活动的详细记载</p>
+      <button @click="router.push('/activities')" class="back-link">寻找其他雅集</button>
     </div>
   </div>
 </template>
@@ -232,316 +244,226 @@ const formattedFullDescription = computed(() => {
 </script>
 
 <style scoped>
-/* 引入 Font Awesome 样式 */
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
-
 .activity-details-page {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: var(--color-background-card);
-  border-radius: var(--border-radius-large);
-  box-shadow: var(--shadow-medium);
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* 使用更现代的字体栈 */
-  color: var(--color-text);
+  --ink: #3A2E26;
+  --wood: #8B6B4D;
+  --paper: #FDFBFA;
+  --accent-light: #F4EEE7;
+  --font-serif: 'Noto Serif SC', serif;
+  
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: 80vh;
+}
+
+/* 导航 */
+.detail-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--wood);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease;
+}
+
+.back-btn:hover { transform: translateX(-5px); }
+
+/* 头部设计 */
+.activity-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+  margin-bottom: 60px;
+}
+
+.activity-title {
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+
+.activity-intro {
+  font-size: 1.2rem;
+  color: #665a52;
   line-height: 1.6;
 }
 
-/* 返回按钮 */
-.back-to-list-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  margin-bottom: 2rem;
-  background-color: var(--color-background-soft);
-  color: var(--color-text-light);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-small);
-  font-size: var(--font-size-medium);
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+.image-frame {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
-.back-to-list-button:hover {
-  background-color: var(--color-hover);
-  color: var(--color-heading);
-  border-color: var(--color-primary);
-}
-
-.back-to-list-button .fas {
-  font-size: 1rem;
-}
-
-/* 页面顶部标题和副标题 */
-.activity-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.activity-detail-title {
-  font-size: var(--font-size-hero-title); /* 保持大标题，但调整行高 */
-  color: var(--color-heading);
-  line-height: 1.2;
-  margin-bottom: 0.8rem;
-  font-weight: 700;
-}
-
-.activity-subtitle {
-  font-size: var(--font-size-large);
-  color: var(--color-text-light);
-  max-width: 700px;
-  margin: 0 auto;
-  line-height: 1.5;
-}
-
-.activity-detail-image {
+.hero-image {
   width: 100%;
-  max-height: 450px; /* 稍微增加图片高度 */
-  object-fit: cover;
-  border-radius: var(--border-radius-medium);
-  margin-bottom: 3rem; /* 增加图片与下方信息的间距 */
-  box-shadow: var(--shadow-medium); /* 提升阴影效果 */
+  display: block;
+  transition: transform 0.5s ease;
 }
 
-/* 元信息网格布局 */
-.activity-meta-grid {
+.image-decoration {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin: 15px;
+  pointer-events: none;
+}
+
+/* 布局控制 */
+.content-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 更灵活的列数 */
-  gap: 1.5rem; /* 增加间距 */
-  margin-bottom: 3rem;
-  background-color: var(--color-background-soft); /* 保持背景色 */
-  padding: 1.8rem; /* 增加内边距 */
-  border-radius: var(--border-radius-large); /* 更大的圆角 */
-  box-shadow: var(--shadow-small); /* 细微的阴影 */
+  grid-template-columns: 1.8fr 1fr;
+  gap: 60px;
 }
 
-.meta-item-card {
+/* 正文内容 */
+.section-label {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  margin-bottom: 30px;
   display: flex;
-  align-items: flex-start; /* 顶部对齐图标和文本 */
-  gap: 1rem;
-  font-size: var(--font-size-medium);
-  color: var(--color-text);
-  padding: 0.5rem; /* 微调内边距 */
-  /* border-left: 3px solid var(--color-primary-light); /* 左侧强调线 */
-}
-
-.meta-icon {
-  font-size: 1.8rem; /* 增大图标尺寸 */
-  color: var(--color-primary); /* 使用主题色 */
-  flex-shrink: 0; /* 防止图标被压缩 */
-  margin-top: 0.2rem; /* 微调图标位置 */
-}
-
-.meta-info {
-  display: flex;
-  flex-direction: column; /* 标题和内容垂直排列 */
-}
-
-.meta-info strong {
-  font-size: var(--font-size-medium); /* 加粗标题，保持大小 */
-  color: var(--color-heading);
-  margin-bottom: 0.2rem; /* 标题和内容间距 */
-  font-weight: 600; /* 适度加粗 */
-}
-
-.meta-info span {
-  font-size: var(--font-size-medium);
-  color: var(--color-text);
-}
-
-
-/* 活动介绍部分 */
-.activity-description-full {
-  margin-bottom: 3rem;
-  background-color: var(--color-background-soft);
-  padding: 2rem;
-  border-radius: var(--border-radius-large);
-  box-shadow: var(--shadow-small);
-}
-
-.activity-description-full h2 {
-  font-size: var(--font-size-title);
-  color: var(--color-heading);
-  margin-bottom: 1.5rem; /* 增大标题与内容间距 */
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: 0.8rem;
-  font-weight: 700;
-}
-
-/* fullDescription 的富文本样式 */
-.description-content p {
-  font-size: var(--font-size-large); /* 增大正文行高和字体大小 */
-  color: var(--color-text);
-  margin-bottom: 1.2rem;
-  line-height: 1.8; /* 增加行距 */
-}
-
-.description-content h3 {
-  font-size: var(--font-size-title-small);
-  color: var(--color-heading);
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-}
-
-.description-content ul,
-.description-content ol {
-  margin-left: 1.5rem;
-  margin-bottom: 1.2rem;
-  list-style-position: inside; /* 让列表标记在文本内部 */
-}
-
-.description-content ul li,
-.description-content ol li {
-  font-size: var(--font-size-medium);
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
-}
-
-.description-content strong {
-  color: var(--color-heading); /* 突出粗体文本 */
-}
-
-/* 报名按钮区域 */
-.action-buttons-wrapper {
-  text-align: center;
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px dashed var(--color-border); /* 增加顶部虚线分隔 */
-}
-
-.action-button {
-  padding: 1.2rem 2.5rem; /* 增大按钮内边距 */
-  font-size: var(--font-size-large);
-  border: none;
-  border-radius: var(--border-radius-medium);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  display: inline-flex;
   align-items: center;
-  gap: 0.8rem; /* 增大图标和文字间距 */
-  font-weight: 600;
-  text-transform: uppercase; /* 按钮文字大写 */
-  letter-spacing: 0.05em; /* 增加字母间距 */
+  gap: 15px;
 }
 
-.action-button .fas {
-  font-size: 1.2rem; /* 增大按钮内图标尺寸 */
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--accent-light);
 }
 
-.action-button.primary {
-  background-color: var(--color-primary);
-  color: rgb(250, 0, 0);
-  box-shadow: var(--shadow-button-primary); /* 增加按钮阴影 */
+.rich-text-content :deep(p) {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  color: var(--ink);
 }
 
-.action-button.primary:hover {
-  background-color: var(--color-primary-dark);
-  transform: translateY(-3px); /* 悬停时向上浮动 */
-  box-shadow: var(--shadow-button-primary-hover);
+.rich-text-content :deep(h3) {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  margin: 40px 0 20px;
+  color: var(--wood);
 }
 
-.action-button.secondary {
-  background-color: var(--color-background-mute);
-  color: var(--color-text-light);
-  cursor: not-allowed;
-  opacity: 0.8; /* 禁用状态略微透明 */
+/* 侧边信息栏 */
+.sticky-card {
+  position: sticky;
+  top: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  border: 1px solid var(--accent-light);
+  box-shadow: 0 10px 30px rgba(58, 46, 38, 0.05);
 }
 
-.no-activity-found,
-.loading-message {
-  text-align: center;
-  padding: 5rem; /* 增加内边距 */
-  font-size: var(--font-size-large);
-  color: var(--color-text-light);
+.info-grid {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  min-height: 400px; /* 确保有足够的显示高度 */
+  gap: 25px;
+  margin-bottom: 35px;
 }
 
-.back-link-bottom {
-  display: inline-block;
-  margin-top: 1.5rem;
-  padding: 0.9rem 1.8rem;
-  background-color: var(--color-primary);
+.info-item {
+  display: flex;
+  gap: 15px;
+}
+
+.info-icon {
+  font-size: 1.5rem;
+  background: var(--accent-light);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.info-body label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--wood);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.info-body span {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* 报名按钮 */
+.join-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: var(--wood);
   color: white;
-  text-decoration: none;
-  border-radius: var(--border-radius-small);
-  transition: background-color 0.2s ease, transform 0.2s ease;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(139, 107, 77, 0.3);
 }
 
-.back-link-bottom:hover {
-  background-color: var(--color-primary-dark);
+.join-btn:hover {
+  background: var(--ink);
   transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(58, 46, 38, 0.4);
 }
 
-/* Loading spinner styles */
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: var(--color-primary);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
+.join-btn.disabled {
+  background: #d1cbc5;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.join-note {
+  font-size: 0.8rem;
+  color: var(--wood);
+  text-align: center;
+  margin-top: 15px;
+  opacity: 0.8;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .activity-details-page {
-    padding: 1rem;
-    margin: 1rem auto;
-  }
-  .activity-detail-title {
-    font-size: var(--font-size-title);
-  }
-  .activity-subtitle {
-    font-size: var(--font-size-medium);
-  }
-  .activity-detail-image {
-    max-height: 250px;
-    margin-bottom: 2rem;
-  }
-  .activity-meta-grid {
-    grid-template-columns: 1fr; /* 小屏幕下堆叠显示 */
-    padding: 1.2rem;
-    gap: 1rem;
-  }
-  .meta-item-card {
-    align-items: center; /* 图标和文本垂直居中 */
-  }
-  .meta-icon {
-    font-size: 1.5rem;
-    margin-top: 0;
-  }
-  .activity-description-full {
-    padding: 1.5rem;
-  }
-  .activity-description-full h2 {
-    font-size: var(--font-size-medium);
-    margin-bottom: 1rem;
-  }
-  .description-content p,
-  .description-content ul li,
-  .description-content ol li {
-    font-size: var(--font-size-medium);
-  }
-  .action-button {
-    width: 100%;
-    padding: 0.8rem 1.5rem;
-    font-size: var(--font-size-medium);
-  }
-  .action-buttons-wrapper {
-    padding-top: 1.5rem;
-  }
+/* 响应式 */
+@media (max-width: 900px) {
+  .activity-hero { grid-template-columns: 1fr; gap: 30px; }
+  .content-layout { grid-template-columns: 1fr; }
+  .info-sidebar { order: -1; } /* 移动端信息栏在前 */
+  .activity-title { font-size: 2.2rem; }
+}
+
+/* 装饰性样式 */
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge.challenge { background: #FDEBD0; color: #E67E22; }
+.badge.online { background: #EBF5FB; color: #3498DB; }
+.badge.offline { background: #EAFAF1; color: #27AE60; }
+
+.loading-state, .error-state {
+  text-align: center;
+  padding: 100px 0;
 }
 </style>

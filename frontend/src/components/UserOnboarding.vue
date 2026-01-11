@@ -6,8 +6,8 @@
           <span class="icon" aria-hidden="true">📖</span>
           <h1>BookHug</h1>
         </div>
-        <h2>西方经典文学阅读档案</h2>
-        <p class="subtitle">让我们了解您的阅读偏好，为您推荐最契合心灵的经典名著</p>
+        <h2>个人专属阅读档案</h2>
+        <p class="subtitle">让我们了解您的阅读偏好，为您推荐最契合心灵的优质好书</p>
       </header>
 
       <form @submit.prevent="submitProfile">
@@ -34,33 +34,33 @@
           <h3 class="section-title" id="background-info-title"><span>背景信息</span></h3>
           <div class="form-group full-width">
             <label for="occupation">职业/身份</label>
-            <input type="text" id="occupation" v-model="profile.occupation" placeholder="例如：文学系学生、教师、研究员" />
+            <input type="text" id="occupation" v-model="profile.occupation" placeholder="例如：学生、职员、自由职业者" />
           </div>
           <div class="form-group full-width">
             <label for="location">所在地区</label>
-            <input type="text" id="location" v-model="profile.location" placeholder="例如：北京、上海、纽约" />
+            <input type="text" id="location" v-model="profile.location" placeholder="例如：北京、上海、广州" />
           </div>
         </section>
 
         <section class="form-section" aria-labelledby="reading-preference-title">
           <h3 class="section-title" id="reading-preference-title"><span>阅读偏好</span></h3>
           <div class="form-group full-width">
-            <label>偏好的文学类型</label>
+            <label>偏好的书籍类型</label>
             <div class="checkbox-group" role="group" aria-labelledby="reading-preference-title">
               <label class="elegant-checkbox">
-                <input type="checkbox" value="fiction" v-model="preferredBookTypesArray"> <span>小说</span>
+                <input type="checkbox" value="fiction" v-model="preferredBookTypesArray"> <span>文学小说</span>
               </label>
               <label class="elegant-checkbox">
-                <input type="checkbox" value="non-fiction" v-model="preferredBookTypesArray"> <span>非小说</span>
+                <input type="checkbox" value="non-fiction" v-model="preferredBookTypesArray"> <span>人文社科</span>
               </label>
               <label class="elegant-checkbox">
-                <input type="checkbox" value="biography" v-model="preferredBookTypesArray"> <span>传记</span>
+                <input type="checkbox" value="biography" v-model="preferredBookTypesArray"> <span>人物传记</span>
               </label>
               <label class="elegant-checkbox">
-                <input type="checkbox" value="poetry" v-model="preferredBookTypesArray"> <span>诗歌</span>
+                <input type="checkbox" value="sci-tech" v-model="preferredBookTypesArray"> <span>科普科技</span>
               </label>
               <label class="elegant-checkbox">
-                <input type="checkbox" value="drama" v-model="preferredBookTypesArray"> <span>戏剧</span>
+                <input type="checkbox" value="lifestyle" v-model="preferredBookTypesArray"> <span>生活艺术</span>
               </label>
             </div>
           </div>
@@ -68,26 +68,26 @@
           <div class="form-group full-width">
             <label for="preferred_authors">喜爱的作家</label>
             <input type="text" id="preferred_authors" v-model="profile.preferred_authors"
-              placeholder="例如：莎士比亚、简·奥斯汀、托尔斯泰" />
+              placeholder="例如：余华、东野圭吾、村上春树" />
           </div>
 
           <div class="form-group full-width">
-            <label for="preferred_genres">偏好的文学流派</label>
+            <label for="preferred_genres">偏好的题材/风格</label>
             <input type="text" id="preferred_genres" v-model="profile.preferred_genres"
-              placeholder="例如：浪漫主义、现实主义、哥特小说" />
+              placeholder="例如：悬疑推理、科幻奇幻、治愈系、历史纪实" />
           </div>
 
           <div class="form-group full-width">
             <label>通常的阅读时长</label>
             <div class="radio-group" role="radiogroup" aria-label="通常的阅读时长">
               <label class="elegant-radio">
-                <input type="radio" value="short" v-model="profile.preferred_reading_duration"> <span>短篇 (1小时内)</span>
+                <input type="radio" value="short" v-model="profile.preferred_reading_duration"> <span>短时 (1小时内)</span>
               </label>
               <label class="elegant-radio">
-                <input type="radio" value="medium" v-model="profile.preferred_reading_duration"> <span>中篇 (1-3小时)</span>
+                <input type="radio" value="medium" v-model="profile.preferred_reading_duration"> <span>适中 (1-3小时)</span>
               </label>
               <label class="elegant-radio">
-                <input type="radio" value="long" v-model="profile.preferred_reading_duration"> <span>长篇 (3小时以上)</span>
+                <input type="radio" value="long" v-model="profile.preferred_reading_duration"> <span>沉浸 (3小时以上)</span>
               </label>
             </div>
           </div>
@@ -96,14 +96,14 @@
         <section class="form-section" aria-labelledby="interests-title">
           <h3 class="section-title" id="interests-title"><span>兴趣与目标</span></h3>
           <div class="form-group full-width">
-            <label for="interest_tags">感兴趣的文学主题</label>
-            <input type="text" id="interest_tags" v-model="profile.interest_tags" placeholder="例如：人性探索、社会批判、爱情、成长" />
+            <label for="interest_tags">感兴趣的图书主题</label>
+            <input type="text" id="interest_tags" v-model="profile.interest_tags" placeholder="例如：心理成长、自我提升、职场技能、历史文化" />
           </div>
         </section>
 
         <div class="form-footer">
           <button type="submit" :disabled="loading" class="submit-btn">
-            {{ loading ? '正在提交...' : '完成我的阅读档案' }}
+            {{ loading ? '正在提交...' : '生成我的阅读档案' }}
             <span v-if="!loading" style="margin-left: 8px; font-size: 1.2em; line-height: 1;">📖</span>
           </button>
           <p v-if="error" class="message error">{{ error }}</p>

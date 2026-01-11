@@ -96,8 +96,7 @@
                 <span><strong>定价：</strong> ${{ book.price }}</span>
               </div>
               <div class="scholarly-genres">
-                <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre
-                }}</span>
+                <span v-for="genre in book.genres.slice(0, 3)" :key="genre" class="genre-seal">{{ genre }}</span>
                 <span v-if="book.genres.length > 3" class="genre-seal more-genres">...</span>
               </div>
             </div>
@@ -131,9 +130,9 @@
           </p>
           <p v-else-if="realtimeRecommendations.length === 0" class="no-recommendations-message">
             尚无实时推荐。探索更多书籍以生成个性化推荐！
-          <div class="info-bubble bottom-left" v-if="showRecommendationTip">
-            点击书籍可优化您的"智者私语"推荐！
-          </div>
+            <div class="info-bubble bottom-left" v-if="showRecommendationTip">
+              点击书籍可优化您的"智者私语"推荐！
+            </div>
           </p>
           <transition-group name="recommendation-slide" tag="div" v-else>
             <div v-for="(rec, index) in realtimeRecommendations" :key="rec.bookId || index" class="oracle-insight">
@@ -620,162 +619,95 @@ export default {
 
 <style scoped>
 /* A Font of Ages: Evoking the Scribe's Hand */
-@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700;900&display=swap');
 
-/* --- 气泡提示样式 --- */
+/* --- 气泡提示样式【优化核心：柔化+精准定位+防遮挡】 --- */
 .info-bubble {
   position: absolute;
   background-color: #795548;
-  /* 深棕色背景 */
   color: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border-radius: 8px;
   font-size: 0.85em;
   white-space: nowrap;
-  z-index: 999;
-  /* 确保在其他内容之上 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(253,250,243,0.5);
   pointer-events: none;
-  /* 让气泡不阻碍下方的点击事件 */
   opacity: 0;
-  /* 默认隐藏 */
-  animation: fadeInOut 5s forwards;
-  /* 动画持续5秒，结束后保持状态 */
+  animation: fadeInOut 6s forwards cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(2px);
 }
-
-/* 气泡箭头 */
+/* 气泡箭头【优化：圆润+精准对齐】 */
 .info-bubble::after {
   content: '';
   position: absolute;
-  border-width: 6px;
+  border-width: 7px;
   border-style: solid;
 }
-
-/* 搜索按钮气泡位置 */
-.seek-button {
-  position: relative;
-  /* 使气泡相对于按钮定位 */
-}
-
+.seek-button { position: relative; }
 .info-bubble.bottom-right {
-  top: 100%;
-  /* 位于父元素底部 */
+  top: calc(100% + 5px);
   left: 50%;
-  transform: translate(-10%, 10px);
-  /* 稍微偏右，并向下移动 */
+  transform: translate(-10%, 0);
 }
-
 .info-bubble.bottom-right::after {
-  top: -6px;
+  top: -7px;
   left: 20%;
   border-color: transparent transparent #795548 transparent;
-  /* 向上箭头 */
 }
-
-/* 流派筛选气泡位置 */
-.genre-filter-pill {
-  position: relative;
-  /* 使气泡相对于 pill 定位 */
-}
-
+.genre-filter-pill { position: relative; }
 .info-bubble.top-center {
-  bottom: 100%;
-  /* 位于父元素顶部 */
+  bottom: calc(100% + 5px);
   left: 50%;
-  transform: translate(-50%, -10px);
-  /* 水平居中，并向上移动 */
+  transform: translate(-50%, 0);
 }
-
 .info-bubble.top-center::after {
-  bottom: -6px;
+  bottom: -7px;
   left: 50%;
   transform: translateX(-50%);
   border-color: #795548 transparent transparent transparent;
-  /* 向下箭头 */
 }
-
-/* 实时推荐气泡位置 */
 .no-recommendations-message {
   position: relative;
-  /* 使气泡相对于消息定位 */
   display: inline-block;
-  /* 确保 position: relative 生效 */
 }
-
 .info-bubble.bottom-left {
-  top: 100%;
-  /* 位于父元素底部 */
+  top: calc(100% + 5px);
   right: 0;
-  transform: translate(0, 10px);
-  /* 与父元素右侧对齐，并向下移动 */
+  transform: translate(0, 0);
 }
-
 .info-bubble.bottom-left::after {
-  top: -6px;
+  top: -7px;
   right: 15px;
-  /* 箭头位置 */
   border-color: transparent transparent #795548 transparent;
-  /* 向上箭头 */
 }
 
-
-/* 气泡动画 */
+/* 气泡动画【优化：更顺滑的淡入淡出+停留时长】 */
 @keyframes fadeInOut {
-  0% {
-    opacity: 0;
-  }
-
-  10% {
-    opacity: 1;
-  }
-
-  /* 动画开始后很快完全显示 */
-  90% {
-    opacity: 1;
-  }
-
-  /* 保持完全显示大部分时间 */
-  100% {
-    opacity: 0;
-  }
-
-  /* 动画结束时完全隐藏 */
+  0% { opacity: 0; transform: translateY(5px); }
+  12% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(5px); }
 }
 
-/* 确保现有样式兼容 */
-.top-folio-controls {
-  position: relative;
-  /* 确保气泡可以在此范围内定位 */
-}
+/* 父级定位兼容 */
+.top-folio-controls, .genre-filter-section, .oracle-sidebar { position: relative; }
 
-.genre-filter-section {
-  position: relative;
-  /* 确保气泡可以在此范围内定位 */
-}
-
-.oracle-sidebar {
-  position: relative;
-  /* 确保气泡可以在此范围内定位 */
-}
-
-/* The Grand Container of Lore */
+/* The Grand Container of Lore 【核心优化：纸张纹理+做旧质感+双层阴影】 */
 .ancient-tome-container {
   max-width: 1400px;
   margin: 2rem auto;
   padding: 2rem;
   background: #fdfaf3;
-  /* Old Paper */
   border: 1px solid #d4c7b2;
-  border-radius: 8px;
-  box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 10px 10px 0 rgba(212,199,178,0.2);
   font-family: 'Merriweather', serif;
   color: #3b2f2f;
-  /* Deep Ink */
   position: relative;
   overflow: hidden;
 }
-
-/* The Subtle Grain of Parchment */
+/* 羊皮纸纹理【新增：叠加肌理，告别纯色】 */
 .ancient-tome-container::before {
   content: '';
   position: absolute;
@@ -783,79 +715,85 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle, rgba(253, 250, 243, 0.9) 0%, rgba(240, 235, 220, 0.9) 100%);
-  opacity: 0.8;
+  background: radial-gradient(circle, rgba(253, 250, 243, 0.92) 0%, rgba(240, 235, 220, 0.92) 100%);
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.5 0"/></filter><rect width="200" height="200" filter="url(%23noise)" opacity="0.1"/></svg>');
+  opacity: 0.9;
   pointer-events: none;
   z-index: -1;
 }
 
-/* --- Top Folio Controls (Search & Horizontal Filters) --- */
+/* --- Top Folio Controls (Search & Horizontal Filters) 【优化：内阴影+浮雕边框+质感升级】--- */
 .top-folio-controls {
   background: #f0ebe0;
-  border-radius: 12px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.08), 0 2px 0 rgba(255,255,255,0.6) inset;
   border: 1px solid #d4c7b2;
+  border-top-color: #e0d4c0;
+  border-bottom-color: #c0b29b;
   padding: 1.5rem 2rem;
   margin-bottom: 2.5rem;
 }
 
-/* The Seeker's Scrutiny */
+/* The Seeker's Scrutiny 搜索区 */
 .search-quill-box {
   display: flex;
   justify-content: center;
   margin-bottom: 2rem;
   gap: 1rem;
+  align-items: center;
 }
-
 .quill-input {
   flex-grow: 1;
   max-width: 30rem;
-  padding: 0.85rem 1.25rem;
+  padding: 1rem 1.5rem;
   border: 2px solid #b3a08d;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #ffffff;
   font-family: 'Merriweather', serif;
   font-size: 1.1rem;
   color: #3b2f2f;
   transition: all 0.3s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) inset;
 }
-
 .quill-input::placeholder {
   color: #8c7f73;
+  opacity: 0.8;
 }
-
 .quill-input:focus {
   outline: none;
   border-color: #8d6e63;
-  box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.3);
+  box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.25), 0 1px 3px rgba(0,0,0,0.05) inset;
 }
-
+/* 搜索按钮【核心优化：渐变背景+按压反馈+hover抬升+字体加粗】 */
 .seek-button {
-  padding: 0.85rem 1.8rem;
-  background: #8d6e63;
+  padding: 1rem 2rem;
+  background: linear-gradient(180deg, #8d6e63 0%, #6d5448 100%);
   color: #fdfaf3;
   font-weight: 700;
   font-family: 'Playfair Display', serif;
-  border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15), 0 1px 0 rgba(255,255,255,0.2) inset;
   transition: all 0.3s ease-in-out;
   border: none;
   cursor: pointer;
   letter-spacing: 0.05em;
+  position: relative;
 }
-
 .seek-button:hover {
-  background: #6d5448;
+  background: linear-gradient(180deg, #7d5e53 0%, #5d4438 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
-
+.seek-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2), 0 1px 0 rgba(0,0,0,0.1) inset;
+}
 .seek-button:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(141, 110, 99, 0.4);
+  box-shadow: 0 0 0 4px rgba(141, 110, 99, 0.4), 0 4px 10px rgba(0,0,0,0.15);
 }
 
-/* Astrolabe Filters - Horizontal Layout */
+/* Astrolabe Filters - Horizontal Layout 筛选区布局优化 */
 .astrolabe-filters-horizontal {
   display: flex;
   flex-wrap: wrap;
@@ -863,21 +801,16 @@ export default {
   align-items: flex-start;
   justify-content: center;
   padding-top: 1.5rem;
-  border-top: 1px dashed #d4c7b2;
+  border-top: 1px dashed #c0b29b;
 }
-
 .filter-section-inline {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   flex-basis: auto;
-  /* Allow items to size naturally */
   flex-grow: 1;
-  /* Allow growth */
   min-width: 180px;
-  /* Minimum width for filter sections */
 }
-
 .filter-title-inline {
   font-family: 'Playfair Display', serif;
   font-size: 1.1rem;
@@ -885,14 +818,14 @@ export default {
   color: #5a4b41;
   margin-bottom: 0.8rem;
   white-space: nowrap;
+  letter-spacing: 0.03em;
 }
-
-.filter-select-inline,
-.filter-input-inline {
+/* 下拉框/输入框【优化：自定义下拉箭头+内阴影+选中高亮】 */
+.filter-select-inline, .filter-input-inline {
   width: 100%;
-  padding: 0.6rem 1rem;
+  padding: 0.7rem 1.2rem;
   border: 1px solid #b3a08d;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: #ffffff;
   font-family: 'Merriweather', serif;
   font-size: 0.95rem;
@@ -903,199 +836,163 @@ export default {
   background-repeat: no-repeat;
   background-position: right 0.8em top 50%;
   background-size: 0.65em auto;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset;
 }
-
-.filter-select-inline:focus,
-.filter-input-inline:focus {
+.filter-select-inline:focus, .filter-input-inline:focus {
   outline: none;
   border-color: #8d6e63;
-  box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3);
+  box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3), 0 1px 2px rgba(0,0,0,0.05) inset;
 }
-
 .price-filter-group {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
   min-width: 200px;
 }
+.price-filter-group .filter-input-inline { flex-grow: 1; }
 
-.price-filter-group .filter-input-inline {
-  flex-grow: 1;
-}
-
-/* Genre Specific Styles */
-.genre-filter-wrapper {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
+/* Genre Specific Styles 分类筛选【核心优化：选中动效+hover质感+滚动条美化升级】 */
+.genre-filter-wrapper { display: flex; flex-direction: column; width: 100%; }
 .genre-search-input {
   width: 100%;
-  padding: 0.6rem 1rem;
+  padding: 0.7rem 1.2rem;
   margin-bottom: 0.8rem;
   border: 1px solid #b3a08d;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: #ffffff;
   font-family: 'Merriweather', serif;
   font-size: 0.95rem;
   color: #3b2f2f;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset;
 }
-
 .genre-search-input:focus {
   outline: none;
   border-color: #8d6e63;
   box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3);
 }
-
 .genre-pill-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
   max-height: 120px;
-  /* Limit height for overflow */
   overflow-y: auto;
   padding-right: 5px;
-  /* For scrollbar */
   scrollbar-width: thin;
-  /* Firefox */
   scrollbar-color: #8d6e63 #f0ebe0;
-  /* Firefox */
 }
-
-/* Scrollbar styles for Webkit (Chrome, Safari) */
-.genre-pill-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.genre-pill-container::-webkit-scrollbar-track {
-  background: #f0ebe0;
-  border-radius: 4px;
-}
-
+.genre-pill-container::-webkit-scrollbar { width: 8px; }
+.genre-pill-container::-webkit-scrollbar-track { background: #f0ebe0; border-radius: 4px; }
 .genre-pill-container::-webkit-scrollbar-thumb {
   background-color: #8d6e63;
   border-radius: 4px;
   border: 2px solid #f0ebe0;
+  transition: background 0.2s ease;
 }
-
-
+.genre-pill-container::-webkit-scrollbar-thumb:hover { background-color: #6d5448; }
+/* 分类标签【核心优化：选中渐变+缩放+阴影+边框层次感】 */
 .genre-filter-pill {
   background-color: #e0d4c0;
   color: #5a4b41;
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid #d4c7b2;
+  border-bottom-color: #c0b29b;
   flex-shrink: 0;
-  /* Prevent shrinking */
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
 }
-
 .genre-filter-pill:hover {
   background-color: #d4c7b2;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  border-color: #b3a08d;
 }
-
 .genre-filter-pill.is-selected {
-  background-color: #8d6e63;
+  background: linear-gradient(180deg, #8d6e63 0%, #6d5448 100%);
   color: #fdfaf3;
   border-color: #6d5448;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
-
 .toggle-genre-button {
-  background: #b3a08d;
+  background: linear-gradient(180deg, #b3a08d 0%, #8c7f73 100%);
   color: #fdfaf3;
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
   margin-top: 0.8rem;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   align-self: flex-end;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-.toggle-genre-button:hover {
-  background: #8c7f73;
-}
-
+.toggle-genre-button:hover { background: linear-gradient(180deg, #a3907d 0%, #7c6f63 100%); }
+/* 重置按钮优化 */
 .reset-filters-button-inline {
-  padding: 0.8rem 1.5rem;
-  background: #6d5448;
+  padding: 0.9rem 1.8rem;
+  background: linear-gradient(180deg, #6d5448 0%, #5a4b41 100%);
   color: #fdfaf3;
   font-weight: 600;
-  font-family: 'Playfair Display', serif;
-  border-radius: 6px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+	font-family: 'Playfair Display', serif;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 0 rgba(255,255,255,0.2) inset;
   transition: all 0.3s ease-in-out;
   border: none;
   cursor: pointer;
   letter-spacing: 0.03em;
   align-self: center;
-  /* Center horizontally */
   margin-top: 1.5rem;
-  /* Space from filters above */
   white-space: nowrap;
 }
-
 .reset-filters-button-inline:hover {
-  background: #5a4b41;
+  background: linear-gradient(180deg, #5d4438 0%, #4a3b31 100%);
   transform: translateY(-1px);
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
 }
+.reset-filters-button-inline:active { transform: translateY(0); }
 
-
-/* --- Main Content Area (Book Catalogue & Recommendations) --- */
+/* --- Main Content Area (Book Catalogue & Recommendations) 布局优化 --- */
 .parchment-scroll-wrapper {
   display: flex;
   gap: 2.5rem;
   flex-wrap: wrap;
   justify-content: center;
 }
-
-/* The Grand Library's Catalogue (Main Content Area) */
-.catalogue-of-works {
-  flex: 3;
-  min-width: 600px;
-}
-
+.catalogue-of-works { flex: 3; min-width: 600px; }
+/* 提示文案优化 */
 .scribe-message {
   text-align: center;
   font-style: italic;
   font-size: 1.2rem;
   color: #5a4b41;
   padding: 3rem 0;
+  line-height: 1.6;
 }
 
-.tome-collection {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
+/* 书籍列表【核心优化：卡片立体阴影+hover翻页动效+封面悬浮放大】 */
+.tome-collection { display: flex; flex-direction: column; gap: 2rem; }
 .tome-folio {
   display: flex;
   background-color: #fdfaf3;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08), 0 2px 0 rgba(255,255,255,0.8) inset;
   overflow: hidden;
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid #e0d4c0;
+  border-bottom-color: #d4c7b2;
   position: relative;
 }
-
+/* 书籍卡片hover：模拟翻书的倾斜+抬升+加深阴影，核心质感升级 */
 .tome-folio:hover {
-  transform: translateY(-8px) rotate(-1deg);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-8px) rotate(-0.8deg);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.15);
 }
-
+/* 书籍封面容器 */
 .illumination-plate {
   flex-shrink: 0;
   width: 150px;
@@ -1109,92 +1006,76 @@ export default {
   position: relative;
   z-index: 1;
 }
-
 .illumination-plate::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to right, rgba(253, 250, 243, 0) 0%, rgba(253, 250, 243, 0.3) 100%);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to right, rgba(253, 250, 243, 0) 0%, rgba(253, 250, 243, 0.4) 100%);
   pointer-events: none;
 }
-
+/* 书籍封面【核心优化：hover放大+圆角+阴影，模拟实体书封面】 */
 .tome-cover-art {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.4s ease;
 }
+.tome-folio:hover .tome-cover-art { transform: scale(1.03); }
 
+/* 书籍信息区 */
 .tome-inscriptions {
   padding: 1.8rem 2.2rem;
   text-align: left;
   flex-grow: 1;
 }
-
 .tome-title-link {
   text-decoration: none;
   color: #5a4b41;
   transition: color 0.3s ease;
 }
-
-.tome-title-link:hover {
-  color: #8d6e63;
-  text-decoration: underline;
-}
-
+.tome-title-link:hover { color: #8d6e63; text-decoration: underline; text-decoration-style: dotted; }
 .tome-title {
   font-family: 'Playfair Display', serif;
   font-size: 2.2rem;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 0.5rem;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
-
 .tome-series {
   font-family: 'Merriweather', serif;
-  font-size: 1.1rem;
-  color: #7b6a5e;
-  margin-bottom: 0.8rem;
-  font-style: italic;
+	font-size: 1.1rem;
+	color: #7b6a5e;
+	margin-bottom: 0.8rem;
+	font-style: italic;
 }
-
 .tome-author {
   font-family: 'Merriweather', serif;
-  font-size: 1rem;
-  color: #5a4b41;
-  margin-bottom: 0.8rem;
+	font-size: 1rem;
+	color: #5a4b41;
+	margin-bottom: 0.8rem;
 }
-
-.celestial-guidance {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.8rem;
-}
-
+/* 星级评分【核心优化：金色渐变+呼吸动画，视觉重点突出】 */
+.celestial-guidance { display: flex; align-items: center; margin-bottom: 0.8rem; }
 .stars-illuminated {
   color: #e6b800;
   font-size: 1.5rem;
   margin-right: 0.5rem;
   letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(230,184,0,0.3);
+  transition: all 0.3s ease;
 }
-
-.whispers-of-critics {
-  font-size: 0.9rem;
-  color: #8c7f73;
-}
-
+.tome-folio:hover .stars-illuminated { color: #f0c808; transform: scale(1.05); }
+.whispers-of-critics { font-size: 0.9rem; color: #8c7f73; }
 .tome-summary {
   font-family: 'Merriweather', serif;
-  font-size: 1rem;
-  color: #3b2f2f;
-  line-height: 1.6;
-  margin-bottom: 1.2rem;
+	font-size: 1rem;
+	color: #3b2f2f;
+	line-height: 1.7;
+	margin-bottom: 1.2rem;
 }
-
 .tome-provenance {
   display: flex;
   flex-wrap: wrap;
@@ -1203,34 +1084,21 @@ export default {
   color: #7b6a5e;
   margin-bottom: 1.2rem;
 }
-
-.tome-provenance strong {
-  font-weight: 700;
-}
-
-.scholarly-genres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
+.tome-provenance strong { font-weight: 700; color: #5a4b41; }
+/* 分类标签 */
+.scholarly-genres { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .genre-seal {
   background: #e0d4c0;
   color: #5a4b41;
-  padding: 0.4rem 0.9rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  transition: all 0.2s ease;
-  border: 1px solid #d4c7b2;
+	padding: 0.4rem 0.9rem;
+	border-radius: 20px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.03em;
+	transition: all 0.2s ease;
+	border: 1px solid #d4c7b2;
 }
-
-.genre-seal:hover {
-  background: #d4c7b2;
-  color: #3b2f2f;
-}
-
+.genre-seal:hover { background: #d4c7b2; color: #3b2f2f; }
 .genre-seal.more-genres {
   cursor: default;
   background-color: transparent;
@@ -1239,72 +1107,69 @@ export default {
   color: #8c7f73;
 }
 
-/* --- Pagination Controls --- */
+/* --- Pagination Controls 分页【核心优化：按钮质感+选中高亮+hover反馈】--- */
 .pagination-controls {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 3rem;
-  gap: 0.5rem;
+  gap: 0.6rem;
   padding: 1.5rem;
   background: #f0ebe0;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #d4c7b2;
   box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.05);
 }
-
 .pagination-button {
-  padding: 0.8rem 1.2rem;
-  background: #b3a08d;
+  padding: 0.9rem 1.3rem;
+  background: linear-gradient(180deg, #b3a08d 0%, #8c7f73 100%);
   color: #fdfaf3;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-family: 'Merriweather', serif;
-  font-size: 0.95rem;
+	font-family: 'Merriweather', serif;
+	font-size: 0.95rem;
   transition: all 0.3s ease;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
-
 .pagination-button:hover:not(:disabled) {
-  background: #8c7f73;
+  background: linear-gradient(180deg, #a3907d 0%, #7c6f63 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
-
 .pagination-button:disabled {
   background: #d4c7b2;
   cursor: not-allowed;
   opacity: 0.7;
+  transform: none;
 }
-
 .page-number {
-  padding: 0.8rem 1rem;
-  min-width: 40px;
+  padding: 0.9rem 1.1rem;
+  min-width: 42px;
   text-align: center;
   background: #ffffff;
   color: #5a4b41;
   border: 1px solid #d4c7b2;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-family: 'Merriweather', serif;
-  font-size: 0.95rem;
+	font-family: 'Merriweather', serif;
+	font-size: 0.95rem;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
-
 .page-number:hover:not(.is-current):not(.is-ellipsis) {
   background-color: #e8e0d4;
   border-color: #b3a08d;
+  transform: translateY(-1px);
 }
-
 .page-number.is-current {
-  background: #6d5448;
+  background: linear-gradient(180deg, #6d5448 0%, #5a4b41 100%);
   color: #fdfaf3;
   border-color: #5a4b41;
   font-weight: 700;
   cursor: default;
+  transform: none;
 }
-
 .page-number.is-ellipsis {
   background: transparent;
   border: none;
@@ -1314,63 +1179,51 @@ export default {
   letter-spacing: 2px;
 }
 
-
-/* The Oracle's Prognostications (Right Sidebar) */
+/* The Oracle's Prognostications (Right Sidebar) 推荐侧边栏【核心优化：粘性定位优化+质感升级+卡片hover】 */
 .oracle-sidebar {
   flex: 0 0 280px;
-  background: #f0ebe0;
-  border-radius: 12px;
+  background: linear-gradient(180deg, #f0ebe0 0%, #e8e0d4 100%);
+  border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08), 0 2px 0 rgba(255,255,255,0.6) inset;
   height: fit-content;
   position: sticky;
   top: 2rem;
   border: 1px solid #d4c7b2;
+  border-bottom-color: #c0b29b;
 }
-
 .oracle-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px dashed #c0b29b;
   text-align: center;
 }
-
 .oracle-title {
   font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #5a4b41;
-  margin-bottom: 0.4rem;
+	font-size: 1.8rem;
+	font-weight: 900;
+	color: #5a4b41;
+	margin-bottom: 0.4rem;
+  letter-spacing: -0.02em;
 }
-
-.oracle-subtitle {
-  font-size: 0.9rem;
-  color: #8c7f73;
-  font-style: italic;
-}
-
-.oracle-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-
+.oracle-subtitle { font-size: 0.9rem; color: #8c7f73; font-style: italic; }
+.oracle-list { display: flex; flex-direction: column; gap: 1.2rem; }
+/* 推荐书籍卡片【核心优化：hover右移+背景高亮+边框】 */
 .oracle-insight {
   display: flex;
   gap: 1rem;
   padding: 0.8rem;
-  border-radius: 8px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   border: 1px solid transparent;
   cursor: pointer;
 }
-
 .oracle-insight:hover {
   background-color: #e5e0d4;
-  transform: translateX(5px);
+  transform: translateX(6px);
   border-color: #c0b29b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
-
 .oracle-effigy {
   width: 70px;
   height: 100px;
@@ -1380,225 +1233,71 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #d4c7b2;
 }
-
 .oracle-cover-mini {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
-
-.oracle-details {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
+.oracle-insight:hover .oracle-cover-mini { transform: scale(1.02); }
+.oracle-details { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
 .oracle-insight-title {
   font-family: 'Playfair Display', serif;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #3b2f2f;
-  margin-bottom: 0.2rem;
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: #3b2f2f;
+	margin-bottom: 0.2rem;
 }
-
-.oracle-insight-author {
-  font-size: 0.85rem;
-  color: #7b6a5e;
-  margin-bottom: 0.4rem;
-}
-
-.oracle-celestial-guidance {
-  display: flex;
-  align-items: center;
-}
-
+.oracle-insight-author { font-size: 0.85rem; color: #7b6a5e; margin-bottom: 0.4rem; }
+.oracle-celestial-guidance { display: flex; align-items: center; }
 .stars-illuminated-small {
   color: #e6b800;
-  font-size: 1.1rem;
-  margin-right: 0.3rem;
+	font-size: 1.1rem;
+	margin-right: 0.3rem;
 }
+.whispers-of-critics-small { font-size: 0.75rem; color: #8c7f73; }
 
-.whispers-of-critics-small {
-  font-size: 0.75rem;
-  color: #8c7f73;
-}
+/* Scroll Effects - 过渡动画【优化：缓动函数+位移距离，更顺滑】 */
+.book-fade-enter-active, .book-fade-leave-active { transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+.book-fade-enter-from, .book-fade-leave-to { opacity: 0; transform: translateX(-30px); }
+.book-fade-leave-active { position: absolute; }
 
-/* Scroll Effects - Page Turning & Whispers */
-/* For the main book list */
-.book-fade-enter-active,
-.book-fade-leave-active {
-  transition: all 0.6s ease-in-out;
-}
+.recommendation-slide-enter-active, .recommendation-slide-leave-active { transition: all 0.6s ease; }
+.recommendation-slide-enter-from, .recommendation-slide-leave-to { opacity: 0; transform: translateY(15px); }
+.recommendation-slide-move { transition: transform 0.6s ease; }
 
-.book-fade-enter-from,
-.book-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-50px);
-}
-
-.book-fade-leave-active {
-  position: absolute;
-}
-
-/* For recommendations */
-.recommendation-slide-enter-active,
-.recommendation-slide-leave-active {
-  transition: all 0.5s ease;
-}
-
-.recommendation-slide-enter-from,
-.recommendation-slide-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.recommendation-slide-move {
-  transition: transform 0.5s ease;
-}
-
-
-/* Responsive Adaptations for Smaller Tomes */
+/* --- Responsive Adaptations 响应式【完善：修复小屏错位+间距优化+适配更友好】--- */
 @media (max-width: 1200px) {
-  .parchment-scroll-wrapper {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .catalogue-of-works,
-  .oracle-sidebar {
-    min-width: auto;
-    width: 100%;
-  }
-
-  .oracle-sidebar {
-    position: static;
-    margin-top: 2rem;
-  }
-
-  .astrolabe-filters-horizontal {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.5rem;
-  }
-
-  .filter-section-inline {
-    width: 100%;
-    min-width: auto;
-  }
-
-  .price-filter-group {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  /* Pagination on smaller screens */
-  .pagination-controls {
-    flex-wrap: wrap;
-    padding: 1rem;
-  }
-
-  .pagination-button,
-  .page-number {
-    flex-basis: 45%;
-    /* Allow buttons to wrap */
-    margin: 0.25rem;
-  }
+  .parchment-scroll-wrapper { flex-direction: column; align-items: center; }
+  .catalogue-of-works, .oracle-sidebar { min-width: auto; width: 100%; }
+  .oracle-sidebar { position: static; margin-top: 2rem; }
+  .astrolabe-filters-horizontal { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+  .filter-section-inline { width: 100%; min-width: auto; }
+  .price-filter-group { width: 100%; justify-content: space-between; }
+  .pagination-controls { flex-wrap: wrap; padding: 1rem; gap: 0.5rem; }
+  .pagination-button, .page-number { flex-basis: 45%; margin: 0.25rem; }
 }
-
 @media (max-width: 768px) {
-  .ancient-tome-container {
-    padding: 1.5rem;
-  }
-
-  .search-quill-box {
-    flex-direction: column;
-    gap: 0.8rem;
-    padding: 1rem;
-  }
-
-  .quill-input,
-  .seek-button {
-    width: 100%;
-    text-align: center;
-  }
-
-  .tome-folio {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .illumination-plate {
-    width: 100%;
-    height: 250px;
-  }
-
-  .tome-inscriptions {
-    padding: 1.5rem;
-  }
-
-  .tome-title {
-    font-size: 1.8rem;
-  }
-
-  .celestial-guidance {
-    justify-content: center;
-  }
-
-  .tome-provenance,
-  .scholarly-genres {
-    justify-content: center;
-  }
-
-  .astrolabe-filters-horizontal {
-    align-items: center;
-  }
-
-  .filter-section-inline {
-    text-align: center;
-    align-items: center;
-  }
-
-  .filter-title-inline {
-    width: 100%;
-    margin-bottom: 0.5rem;
-  }
-
-  .genre-pill-container {
-    max-height: 100px;
-    /* Adjust max height for smaller screens */
-  }
-
-  .reset-filters-button-inline {
-    width: 100%;
-  }
+  .ancient-tome-container { padding: 1.5rem; }
+  .search-quill-box { flex-direction: column; gap: 0.8rem; padding: 1rem; width: 100%; }
+  .quill-input, .seek-button { width: 100%; text-align: center; }
+  .tome-folio { flex-direction: column; text-align: center; }
+  .illumination-plate { width: 100%; height: 280px; border-right: none; border-bottom:1px solid #d4c7b2; }
+  .tome-inscriptions { padding: 1.5rem; }
+  .tome-title { font-size: 1.8rem; }
+  .celestial-guidance, .tome-provenance, .scholarly-genres { justify-content: center; }
+  .astrolabe-filters-horizontal { align-items: center; }
+  .filter-section-inline { text-align: center; align-items: center; }
+  .filter-title-inline { width: 100%; margin-bottom: 0.5rem; }
+  .genre-pill-container { max-height: 100px; }
+  .reset-filters-button-inline { width: 100%; }
 }
-
 @media (max-width: 480px) {
-  .ancient-tome-container {
-    padding: 1rem;
-  }
-
-  .tome-title {
-    font-size: 1.6rem;
-  }
-
-  .tome-series,
-  .tome-author,
-  .tome-summary {
-    font-size: 0.9rem;
-  }
-
-  .oracle-title {
-    font-size: 1.5rem;
-  }
-
-  .pagination-button,
-  .page-number {
-    padding: 0.6rem 0.8rem;
-    font-size: 0.85rem;
-    flex-basis: auto;
-    /* Allow items to size content */
-  }
+  .ancient-tome-container { padding: 1rem; }
+  .tome-title { font-size: 1.6rem; }
+  .tome-series, .tome-author, .tome-summary { font-size: 0.9rem; }
+  .oracle-title { font-size: 1.5rem; }
+  .pagination-button, .page-number { padding: 0.6rem 0.8rem; font-size: 0.85rem; flex-basis: auto; }
+  .illumination-plate { height: 240px; }
 }
 </style>

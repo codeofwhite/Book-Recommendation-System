@@ -45,31 +45,6 @@ services:
     networks:
       - book-recommend-network  # 接入公共网络
 
-  # 离线预计算相似图书服务（每天凌晨1点执行）
-  offline-similar-books-precompute:
-    build: ../microservices/offline-similar-books-precompute  
-    container_name: offline_similar_books_precompute
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_DB: 0
-      REDIS_PASSWORD: ""
-      # 从MySQL读取图书数据
-      REC_DB_HOST: recommendation_db
-      REC_DB_USER: rec_user
-      REC_DB_PASSWORD: rec_password
-      REC_DB_NAME: recommendation_db
-      # 定时执行（每天凌晨1点）
-      CRON_SCHEDULE: "0 1 * * *"
-    depends_on:
-      recommendation_db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: always  # 确保服务一直运行，cron生效
-    networks:
-      - book-recommend-network
-
   # Flink JobManager
   flink-jobmanager:
     build: ../computing-engine/streaming/flink/custom-images/py

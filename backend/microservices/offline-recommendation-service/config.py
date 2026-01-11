@@ -2,6 +2,13 @@
 import os
 
 class Config:
+    # Deep & Wide 模型配置【小数据黄金超参，无脑用】
+    EMBEDDING_DIM = 16          # 从32→16，小样本必改，防止过拟合
+    DEEP_LAYER_DIMS = [32, 16]  # 从64,32→32,16，轻量化网络，学核心特征
+    TRAIN_EPOCHS = 80           # 从120→80，训够为止，不训到过拟合
+    BATCH_SIZE = 32             # 从64→32，小批次训练更稳
+    LEARNING_RATE = 0.001       # 从0.0006→0.001，收敛速度适中，不磨洋工
+    
     # --- MySQL 数据库配置 ---
     REC_DB_HOST = os.getenv("REC_DB_HOST", "recommendation_db")
     REC_DB_USER = os.getenv("REC_DB_USER", "rec_user")
@@ -38,7 +45,7 @@ class Config:
     REDIS_REALTIME_UPDATED_RECOMMENDATIONS_PREFIX = "realtime_updated_recommendations:user:" # Flink 实时更新后的推荐列表
     REDIS_USER_RECENT_VIEWS_HASH_KEY = "user_recent_views_hash:" # Flink 存储用户最近浏览的 hash key
 
-    TOP_N_RECOMMENDATIONS = 400
+    TOP_N_RECOMMENDATIONS = 200 # 每个用户推荐的书籍数量
     
     # 协同过滤与流行度混合的权重
     # alpha 越大，越偏向协同过滤；alpha 越小，越偏向流行度

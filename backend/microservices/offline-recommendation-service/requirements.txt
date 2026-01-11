@@ -10,4 +10,4 @@ clickhouse-driver
 sqlalchemy-clickhouse
 cryptography
 requests
-torch
+intel-extension-for-pytorch>=2.8.0
