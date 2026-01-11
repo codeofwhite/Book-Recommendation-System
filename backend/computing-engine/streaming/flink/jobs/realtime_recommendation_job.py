@@ -2,9 +2,9 @@ import os
 import json
 from datetime import datetime
 import logging
-import pickle  # 导入 pickle 模块用于状态的序列化/反序列化 (注意：这里仍然用于 Flink 状态的序列化，而不是 Redis 中的向量)
-import redis  # 在 Flink Job 内部也需要这个库来连接 Redis
-import math  # 新增：导入 math 模块用于纯 Python 的数学运算
+import pickle  # 导入 pickle 模块用于状态的序列化/反序列化 (这里仍然用于 Flink 状态的序列化，而不是 Redis 中的向量)
+import redis  
+import math  
 
 from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
 from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer
@@ -23,7 +23,7 @@ class FlinkJobConfig:
     REDIS_HOST = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
     REDIS_DB = int(os.getenv("REDIS_DB", 0))
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")  # 新增：Redis 密码
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")  
 
     # --- Redis 键和前缀配置 ---
     # Flink 实时任务存储最近浏览的 Hash Key
@@ -126,14 +126,14 @@ class JsonParser(FlatMapFunction):
                     payload_data is not None,
                 ]
             ):
-                logger.debug(
+                logger.info(
                     f"Skipping record: Missing essential fields in JSON: '{json_str}'"
                 )
                 return
 
             # 确保 payload 是字典类型
             if not isinstance(payload_data, dict):
-                logger.debug(
+                logger.info(
                     f"Skipping record: 'payload' is not a dictionary for JSON string: '{json_str}'. "
                     f"Payload content: {payload_data}"
                 )
@@ -215,22 +215,35 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
 
         # 缓存用户画像和物品特征向量 (在 TaskManager 生命周期内复用，避免频繁查询 Redis)
         # 注意：这里仅作示例，如果特征向量经常更新，需要考虑更复杂的缓存策略或定时刷新。
+        # 在UserRecentViewsProcessFunction的open方法中新增缓存过期配置
+        self.cache_expire_seconds = int(os.getenv("VECTOR_CACHE_EXPIRE_SECONDS", 900))  # 15分钟过期
         self.user_profile_cache = {}  # {user_id: list_of_floats}
         self.book_features_cache = {}  # {book_id: list_of_floats}
+
+        self.last_process_time_state = runtime_context.get_state(
+            ValueStateDescriptor("last_process_time", Types.LONG())
+        )
+        self.debounce_seconds = int(os.getenv("DEBOUNCE_SECONDS", 20))  # 20秒内同一用户只处理一次
 
     def _get_user_profile_vector(self, user_id):
         """从 Redis 或缓存获取用户画像向量 (返回纯 Python 列表)。"""
         if user_id in self.user_profile_cache:
-            return self.user_profile_cache[user_id]
+            vec, expire_time = self.user_profile_cache[user_id]
+            if datetime.now().timestamp() < expire_time:
+                return vec
+            else:
+                del self.user_profile_cache[user_id]  # 过期则删除
 
         user_profile_key = f"{FlinkJobConfig.REDIS_USER_PROFILE_PREFIX}{user_id}"
         user_profile_bytes = self.redis_client.get(user_profile_key)
         if user_profile_bytes:
             try:
-                # 假设 Redis 中存储的是 JSON 字符串，需要先解码
+                # Redis 中存储的是 JSON 字符串，需要先解码
                 profile_vector = json.loads(user_profile_bytes.decode("utf-8"))
                 if isinstance(profile_vector, list):
-                    self.user_profile_cache[user_id] = profile_vector
+                    # 缓存用户画像向量，并设置过期时间
+                    expire_time = datetime.now().timestamp() + self.cache_expire_seconds
+                    self.user_profile_cache[user_id] = (profile_vector, expire_time)
                     return profile_vector
                 else:
                     logger.warning(
@@ -244,7 +257,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                 )
                 return None
         else:
-            logger.debug(
+            logger.info(
                 f"User profile not found for {user_id} at key {user_profile_key}."
             )
             return None
@@ -252,7 +265,11 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
     def _get_book_feature_vector(self, book_id):
         """从 Redis 或缓存获取书籍特征向量 (返回纯 Python 列表)。"""
         if book_id in self.book_features_cache:
-            return self.book_features_cache[book_id]
+            vec, expire_time = self.book_features_cache[book_id]
+            if datetime.now().timestamp() < expire_time:
+                return vec 
+            else:
+                del self.book_features_cache[book_id]  # 过期则删除
 
         book_feature_key = f"{FlinkJobConfig.REDIS_BOOK_FEATURES_PREFIX}{book_id}"
         book_features_bytes = self.redis_client.get(book_feature_key)
@@ -261,7 +278,9 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                 # 假设 Redis 中存储的是 JSON 字符串，需要先解码
                 feature_vector = json.loads(book_features_bytes.decode("utf-8"))
                 if isinstance(feature_vector, list):
-                    self.book_features_cache[book_id] = feature_vector
+                    # 增加过期时间缓存
+                    expire_time = datetime.now().timestamp() + self.cache_expire_seconds
+                    self.book_features_cache[book_id] = (feature_vector, expire_time)
                     return feature_vector
                 else:
                     logger.warning(
@@ -275,7 +294,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                 )
                 return None
         else:
-            logger.debug(
+            logger.info(
                 f"Book features not found for {book_id} at key {book_feature_key}."
             )
             return None
@@ -283,7 +302,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
     def _cosine_similarity(self, vec1_list, vec2_list):
         """计算两个向量的余弦相似度（纯 Python 实现）。"""
         if not vec1_list or not vec2_list or len(vec1_list) != len(vec2_list):
-            logger.debug(
+            logger.info(
                 f"Cannot compute cosine similarity: Vectors are empty or have different lengths. Vec1 len: {len(vec1_list) if vec1_list else 0}, Vec2 len: {len(vec2_list) if vec2_list else 0}"
             )
             return 0.0
@@ -293,13 +312,23 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
         norm_b = math.sqrt(sum(b**2 for b in vec2_list))
 
         if norm_a == 0 or norm_b == 0:
-            logger.debug(
+            logger.info(
                 "Cannot compute cosine similarity: One or both vector norms are zero."
             )
             return 0.0
         return dot_product / (norm_a * norm_b)
 
     def process_element(self, value: Row, ctx: "KeyedProcessFunction.Context"):
+        user_id = value.userId
+        last_process_time = self.last_process_time_state.value() or 0
+        current_time = int(datetime.now().timestamp())
+        
+        if current_time - last_process_time < self.debounce_seconds:
+            logger.info(f"User {user_id} processed too recently, skipping (debounce)")
+            return
+        
+        # 更新最后处理时间
+        self.last_process_time_state.update(current_time)
         if self.redis_client is None:
             logger.error(
                 f"Redis client is not initialized for user {value.userId}. Cannot process element: {value}"
@@ -333,24 +362,29 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                     f"Error: {e}. Using current UTC time as fallback."
                 )
 
-            # 提取 item_id，只针对图书详情页的 page_view 事件
-            if (
-                event_type == "page_view"
-                and isinstance(page_name, str)
-                and page_name == "BookDetails"
-            ):
+            # 只要是图书详情页的事件（无论event_type是什么），都提取item_id
+            if isinstance(page_name, str) and page_name == "BookDetails":
                 page_url = value.pageUrl
                 if page_url:
                     parts = page_url.split("/")
-                    if len(parts) >= 2 and parts[-2] == "books" and parts[-1]:
-                        current_item_id = parts[-1]
+                    # 兼容不同的URL格式：比如 /books/123 或 /books/123.Harry_Potter
+                    # 过滤空字符串，确保最后一个部分是有效item_id
+                    valid_parts = [p for p in parts if p.strip()]
+                    if len(valid_parts) >= 2 and valid_parts[-2] == "books" and valid_parts[-1]:
+                        current_item_id = valid_parts[-1]
+                        # 可选：清理item_id中的非数字部分
+                        # import re
+                        # current_item_id = re.findall(r'\d+', current_item_id)[0] if re.findall(r'\d+', current_item_id) else current_item_id
                 else:
-                    logger.debug(
-                        f"pageUrl is missing for page_view event for user {user_id}. Skipping item_id extraction."
+                    logger.info(
+                        f"pageUrl is missing for {event_type} event (BookDetails) for user {user_id}. Skipping item_id extraction."
                     )
 
+            # 仅当是page_view事件时，才判断停留时间是否触发CF权重提升
+            is_page_view = (event_type == "page_view")
+
             if not current_item_id:
-                logger.debug(
+                logger.info(
                     f"Skipping event: No valid item_id found for event: {value}"
                 )
                 return  # 如果没有有效的 item_id，则不进行后续的推荐更新
@@ -413,7 +447,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
             if offline_recs_json:
                 try:
                     offline_recommendations = json.loads(offline_recs_json)
-                    logger.debug(
+                    logger.info(
                         f"Retrieved {len(offline_recommendations)} offline recommendations for user {user_id}."
                     )
                 except json.JSONDecodeError as e:
@@ -446,11 +480,11 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                 if rec_item_id and rec_item_id not in recent_item_ids:
                     filtered_offline_recs.append(rec_item)
                 else:
-                    logger.debug(
+                    logger.info(
                         f"Filtering out recently viewed item {rec_item_id} from offline recommendations for user {user_id}."
                     )
 
-            logger.debug(
+            logger.info(
                 f"After filtering recent views, {len(filtered_offline_recs)} recommendations remain for user {user_id}."
             )
 
@@ -460,7 +494,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
 
             # 如果当前是图书详情页浏览事件，且停留时间超过阈值，则提升 CF 权重
             if (
-                event_type == "page_view"
+                is_page_view
                 and page_name == "BookDetails"
                 and current_dwell_time is not None
                 and current_dwell_time
@@ -476,7 +510,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                     f"User {user_id} viewed {current_item_id} with high dwell time ({current_dwell_time}s). Boosting CF weight to {realtime_cf_weight:.2f}."
                 )
             else:
-                logger.debug(
+                logger.info(
                     f"User {user_id} event (type: {event_type}, dwell: {current_dwell_time}s) not triggering CF boost. Weights remain default."
                 )
 
@@ -524,15 +558,15 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                         user_profile_content_similarity = self._cosine_similarity(
                             user_profile_vec, rec_book_feature_vec_for_profile
                         )
-                        logger.debug(
+                        logger.info(
                             f"User {user_id} profile to book {rec_book_id} content similarity: {user_profile_content_similarity:.4f}"
                         )
                     else:
-                        logger.debug(
+                        logger.info(
                             f"No book feature vector found for recommended book {rec_book_id} for user profile sim. Content similarity will be 0."
                         )
                 else:
-                    logger.debug(
+                    logger.info(
                         f"User profile ({'None' if user_profile_vec is None else 'Exists'}) or recommended book ID ({'None' if rec_book_id is None else 'Exists'}) is missing for user profile sim. Content similarity skipped."
                     )
 
@@ -552,15 +586,15 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                             current_book_feature_vec,
                             rec_book_feature_vec_for_last_clicked,
                         )
-                        logger.debug(
+                        logger.info(
                             f"Last clicked item ({current_item_id}) to book {rec_book_id} content similarity: {last_clicked_item_content_similarity:.4f}"
                         )
                     else:
-                        logger.debug(
+                        logger.info(
                             f"No book feature vector found for recommended book {rec_book_id} for last clicked sim. Content similarity will be 0."
                         )
                 else:
-                    logger.debug(
+                    logger.info(
                         f"Last clicked item ({'None' if current_item_id is None else current_item_id}) or its features ({'None' if current_book_feature_vec is None else 'Exists'}) or recommended book ID ({'None' if rec_book_id is None else 'Exists'}) is missing for last clicked sim. Content similarity skipped."
                     )
 
@@ -573,7 +607,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                     + (1.0 - FlinkJobConfig.REALTIME_CONTENT_FUSION_ALPHA)
                     * last_clicked_item_content_similarity
                 )
-                logger.debug(
+                logger.info(
                     f"Item {rec_book_id} combined content score: {combined_content_score:.4f} (Profile Sim: {user_profile_content_similarity:.4f}, Last Click Sim: {last_clicked_item_content_similarity:.4f})"
                 )
 
@@ -586,7 +620,7 @@ class UserRecentViewsProcessFunction(KeyedProcessFunction):
                     (1.0 - FlinkJobConfig.SIMILARITY_FUSION_ALPHA) * offline_mixed_score
                 )
 
-                logger.debug(
+                logger.info(
                     f"Item {rec_book_id} realtime_score: {rec_item['realtime_score']:.4f} (Combined Content: {combined_content_score:.4f}, Offline Mix: {offline_mixed_score:.4f})"
                 )
 

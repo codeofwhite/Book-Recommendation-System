@@ -11,20 +11,16 @@ from routes.review_admin_routes import review_bp
 
 app = Flask(__name__)
 
-# 允许跨域请求
 CORS(app)
 
-# --- Configuration ---
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "mysql+pymysql://root:your_mysql_password@localhost/book_engagement"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# 初始化 db 实例
 db.init_app(app)
 
 # --- 注册蓝图 ---
-# 注意：蓝图的 url_prefix 是在蓝图文件内部定义的，这里只需要注册蓝图对象
 app.register_blueprint(book_engagement_bp)
 app.register_blueprint(review_engagement_bp)
 app.register_blueprint(review_content_bp)  

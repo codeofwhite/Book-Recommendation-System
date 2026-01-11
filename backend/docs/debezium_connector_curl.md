@@ -19,6 +19,11 @@ curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\c
 curl -X POST -H "Content-Type: application/json" --data @backend\data-pipeline\cdc\debezium\connectors\clickhouse_user_behavior_sink_connector.json http://localhost:8083/connectors
 ```
 
+# 删除指令
+```bash
+curl -X DELETE http://localhost:8083/connectors/
+```
+
 # 查看所有已创建的Connector列表
 ```bash
 curl http://localhost:8083/connectors

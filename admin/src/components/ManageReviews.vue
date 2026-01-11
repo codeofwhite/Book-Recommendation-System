@@ -1,35 +1,31 @@
 <template>
   <div class="admin-panel-card">
     <div class="header-section">
-      <h2>Manage Reviews</h2>
-      <p>Here you can moderate, approve, or delete user reviews.</p>
+      <h2>评论管理</h2>
+      <p>在此处您可以对用户评论进行审核、批准或删除操作。</p>
     </div>
 
     <div class="filter-bar">
       <select v-model="statusFilter" @change="fetchReviews" class="filter-select">
-        <option value="all">All Reviews</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="all">全部评论</option>
+        <option value="pending">待审核</option>
+        <option value="approved">已通过</option>
+        <option value="rejected">已驳回</option>
       </select>
-      <input type="text" v-model="searchKeyword" @input="debounceSearch" placeholder="Search reviews..."
-        class="search-input" />
-      <button @click="fetchReviews" class="search-btn">🔍 Search</button>
+      <input type="text" v-model="searchKeyword" @input="debounceSearch" placeholder="搜索评论内容..." class="search-input" />
+      <button @click="fetchReviews" class="search-btn">🔍 搜索</button>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
-      <p>Loading reviews...</p>
+      <p>正在加载评论...</p>
     </div>
 
-    <!-- Error State -->
     <div v-if="error" class="error-container">
       <p class="error-message">{{ error }}</p>
-      <button @click="fetchReviews" class="retry-btn">Retry</button>
+      <button @click="fetchReviews" class="retry-btn">重试</button>
     </div>
 
-    <!-- Reviews Container -->
     <div v-if="!loading && !error" class="reviews-container">
       <div v-for="review in reviews" :key="review.id" class="review-card">
         <div class="review-header">
@@ -41,123 +37,123 @@
             </div>
           </div>
           <div class="review-status">
-            <span :class="['status-badge', review.status]">{{ review.status.toUpperCase() }}</span>
+            <span :class="['status-badge', review.status]">
+              {{ review.status === 'pending' ? '待审核' : review.status === 'approved' ? '已通过' : '已驳回' }}
+            </span>
           </div>
         </div>
 
         <div class="review-content">
           <div class="book-info">
-            <strong>Book ID:</strong> {{ review.bookId }}
+            <strong>书籍 ID:</strong> {{ review.bookId }}
           </div>
           <div class="rating">
             <span class="stars">{{ '★'.repeat(Math.floor(review.rating)) }}{{ '☆'.repeat(5 - Math.floor(review.rating))
-              }}</span>
-            <span class="rating-text">({{ review.rating }}/5)</span>
+            }}</span>
+            <span class="rating-text">({{ review.rating }} 分)</span>
           </div>
           <div class="review-text">
             {{ review.content }}
           </div>
           <div class="review-stats">
-            <span class="like-count">👍 {{ review.likeCount }} likes</span>
+            <span class="like-count">👍 {{ review.likeCount }} 赞</span>
           </div>
         </div>
 
         <div class="review-actions">
           <button v-if="review.status === 'pending'" @click="approveReview(review.id)" class="action-btn approve-btn"
             :disabled="updating">
-            ✅ Approve
+            ✅ 通过
           </button>
           <button v-if="review.status === 'pending'" @click="rejectReview(review.id)" class="action-btn reject-btn"
             :disabled="updating">
-            ❌ Reject
+            ❌ 驳回
           </button>
           <button @click="deleteReview(review.id)" class="action-btn delete-btn" :disabled="deleting">
-            ❌ Reject
+            🗑️ 删除
           </button>
           <button @click="viewDetails(review)" class="action-btn details-btn">
-            👁️ Details
+            👁️ 详情
           </button>
           <button @click="viewComments(review.id)" class="action-btn comments-btn">
-            💬 Comments
+            💬 回复
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Empty State -->
     <div v-if="!loading && !error && reviews.length === 0" class="empty-state">
       <div class="empty-icon">📝</div>
-      <p>No reviews found matching your criteria.</p>
-      <button @click="clearFilters" class="clear-filters-btn">Clear Filters</button>
+      <p>未找到符合条件的评论。</p>
+      <button @click="clearFilters" class="clear-filters-btn">重置筛选</button>
     </div>
 
-    <!-- Pagination -->
     <div v-if="pagination && pagination.pages > 1" class="pagination">
       <button @click="goToPage(pagination.current_page - 1)" :disabled="!pagination.has_prev" class="pagination-btn">
-        ← Previous
+        ← 上一页
       </button>
       <span class="pagination-info">
-        Page {{ pagination.current_page }} of {{ pagination.pages }}
-        ({{ pagination.total }} total reviews)
+        第 {{ pagination.current_page }} 页 / 共 {{ pagination.pages }} 页
+        (共 {{ pagination.total }} 条评论)
       </span>
       <button @click="goToPage(pagination.current_page + 1)" :disabled="!pagination.has_next" class="pagination-btn">
-        Next →
+        下一页 →
       </button>
     </div>
 
-    <!-- Details Modal -->
     <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetailsModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Review Details</h3>
+          <h3>评论详情</h3>
           <button class="close-button" @click="closeDetailsModal">×</button>
         </div>
         <div class="modal-body" v-if="selectedReview">
           <div class="detail-row">
-            <strong>Review ID:</strong> {{ selectedReview.id }}
+            <strong>评论 ID:</strong> {{ selectedReview.id }}
           </div>
           <div class="detail-row">
-            <strong>User ID:</strong> {{ selectedReview.userId }}
+            <strong>用户 ID:</strong> {{ selectedReview.userId }}
           </div>
           <div class="detail-row">
-            <strong>Book ID:</strong> {{ selectedReview.bookId }}
+            <strong>书籍 ID:</strong> {{ selectedReview.bookId }}
           </div>
           <div class="detail-row">
-            <strong>Rating:</strong> {{ selectedReview.rating }}/5 stars
+            <strong>评分:</strong> {{ selectedReview.rating }}/5 星
           </div>
           <div class="detail-row">
-            <strong>Status:</strong>
-            <span :class="['status-badge', selectedReview.status]">{{ selectedReview.status.toUpperCase() }}</span>
+            <strong>状态:</strong>
+            <span :class="['status-badge', selectedReview.status]">
+              {{ selectedReview.status === 'pending' ? '待审核' : selectedReview.status === 'approved' ? '已通过' : '已驳回' }}
+            </span>
           </div>
           <div class="detail-row">
-            <strong>Posted:</strong> {{ formatDate(selectedReview.postTime) }}
+            <strong>发布时间:</strong> {{ formatDate(selectedReview.postTime) }}
           </div>
           <div class="detail-row">
-            <strong>Likes:</strong> {{ selectedReview.likeCount }}
+            <strong>点赞数:</strong> {{ selectedReview.likeCount }}
           </div>
           <div class="detail-row">
-            <strong>Review Content:</strong>
+            <strong>评论正文:</strong>
             <div class="review-content-full">{{ selectedReview.content }}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Comments Modal -->
     <div v-if="showCommentsModal" class="modal-overlay" @click="closeCommentsModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Comments for Review</h3>
+          <h3>评论互动列表</h3>
           <button class="close-button" @click="closeCommentsModal">×</button>
         </div>
         <div class="modal-body">
           <div v-if="loadingComments" class="loading-container">
             <div class="loading-spinner"></div>
-            <p>Loading comments...</p>
+            <p>正在加载互动内容...</p>
           </div>
 
           <div v-if="comments.length === 0 && !loadingComments" class="no-comments">
-            <p>No comments found for this review.</p>
+            <p>该评论下暂无互动内容。</p>
           </div>
 
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
@@ -167,7 +163,7 @@
             </div>
             <div class="comment-content">{{ comment.content }}</div>
             <div class="comment-stats">
-              <span class="like-count">👍 {{ comment.likeCount }} likes</span>
+              <span class="like-count">👍 {{ comment.likeCount }} 赞</span>
               <button @click="deleteComment(comment.id)" class="delete-comment-btn">🗑️</button>
             </div>
           </div>

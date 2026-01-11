@@ -1,64 +1,85 @@
 <template>
   <div id="admin-dashboard" :class="{ 'auth-mode': !isAuthenticated }">
-    <!-- Show sidebar and main content only when authenticated -->
     <template v-if="isAuthenticated">
       <aside class="sidebar">
-        <div class="sidebar-header">
-          <h2>📚 Book Admin Portal</h2>
-          <div class="user-info" v-if="currentUser">
-            <div class="user-avatar">{{ currentUser.username.charAt(0).toUpperCase() }}</div>
-            <span class="user-name">{{ currentUser.username }}</span>
-            <button @click="handleLogout" class="logout-button">
-              🚪 Logout
-            </button>
-          </div>
-
+        <div class="sidebar-brand">
+          <span class="brand-icon">📚</span>
+          <span class="brand-text">图书管理系统</span>
         </div>
+
+        <div class="user-profile" v-if="currentUser">
+          <div class="avatar">{{ currentUser.username.charAt(0).toUpperCase() }}</div>
+          <div class="user-details">
+            <p class="role">超级管理员</p>
+            <p class="username">{{ currentUser.username }}</p>
+          </div>
+        </div>
+
         <nav class="sidebar-nav">
+          <div class="nav-group-title">核心管理</div>
           <ul>
             <li>
               <router-link to="/dashboard" active-class="active">
-                📊 Dashboard Overview
+                <i class="icon">📊</i> 控制面板总览
               </router-link>
             </li>
             <li>
               <router-link to="/books" active-class="active">
-                📚 Manage Books
+                <i class="icon">📖</i> 图书资源管理
               </router-link>
             </li>
             <li>
               <router-link to="/add-book" active-class="active">
-                ➕ Add New Book
+                <i class="icon">✨</i> 上架新图书
               </router-link>
             </li>
+          </ul>
+
+          <div class="nav-group-title">系统维护</div>
+          <ul>
             <li>
               <router-link to="/reviews" active-class="active">
-                💬 Manage Reviews
+                <i class="icon">💬</i> 评论审核中心
               </router-link>
             </li>
             <li>
               <router-link to="/users" active-class="active">
-                👥 Manage Users
+                <i class="icon">👤</i> 用户账号管理
               </router-link>
             </li>
           </ul>
         </nav>
+
+        <div class="sidebar-footer">
+          <button @click="handleLogout" class="logout-btn">
+            <span>退出登录</span>
+            <i class="icon-exit">➔</i>
+          </button>
+        </div>
       </aside>
 
       <main class="main-content">
         <header class="main-header">
-          <h1>Welcome, {{ currentUser?.username || 'Administrator' }}!</h1>
-          <div class="header-actions">
+          <div class="header-left">
+            <span class="breadcrumb">后台首页 / {{ currentRouteName }}</span>
+          </div>
+          <div class="header-right">
             <span class="current-time">{{ currentTime }}</span>
           </div>
         </header>
+
         <div class="content-area">
-          <router-view />
+          <div class="page-container">
+            <router-view v-slot="{ Component }">
+              <transition name="fade-transform" mode="out-in">
+                <component :is="Component" />
+              </transition>
+            </router-view>
+          </div>
         </div>
       </main>
     </template>
 
-    <!-- Show router-view directly for login page -->
     <template v-else>
       <div class="auth-wrapper">
         <router-view />
@@ -69,48 +90,47 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
-// Reactive data
 const currentUser = ref(null)
 const currentTime = ref('')
 
-// Computed
 const isAuthenticated = computed(() => {
   const token = localStorage.getItem('adminToken')
   const user = localStorage.getItem('adminUser')
   return !!(token && user)
 })
 
-// Methods
-const loadUserData = () => {
-  const userData = localStorage.getItem('adminUser')
-  if (userData) {
-    try {
-      currentUser.value = JSON.parse(userData)
-    } catch (error) {
-      console.error('Error parsing user data:', error)
-      currentUser.value = null
-    }
+// 根据路由路径映射中文名称
+const currentRouteName = computed(() => {
+  const map = {
+    '/dashboard': '控制面板',
+    '/books': '图书管理',
+    '/add-book': '新增图书',
+    '/reviews': '评论审核',
+    '/users': '用户列表'
   }
-}
+  return map[route.path] || '系统操作'
+})
 
 const updateTime = () => {
   const now = new Date()
-  currentTime.value = now.toLocaleString('en-US', {
-    weekday: 'short',
+  currentTime.value = now.toLocaleString('zh-CN', {
     year: 'numeric',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
   })
 }
 
 const handleLogout = () => {
-  if (confirm('Are you sure you want to logout?')) {
+  if (confirm('确认要退出管理系统吗？')) {
     localStorage.removeItem('adminToken')
     localStorage.removeItem('adminUser')
     currentUser.value = null
@@ -118,86 +138,109 @@ const handleLogout = () => {
   }
 }
 
-// Lifecycle
 let timeInterval = null
-
 onMounted(() => {
-  loadUserData()
+  const userData = localStorage.getItem('adminUser')
+  if (userData) currentUser.value = JSON.parse(userData)
+
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
 })
 
 onUnmounted(() => {
-  if (timeInterval) {
-    clearInterval(timeInterval)
-  }
+  if (timeInterval) clearInterval(timeInterval)
 })
 </script>
 
 <style scoped>
+/* 变量定义 */
+:root {
+  --sidebar-width: 260px;
+  --primary-color: #4361ee;
+  --bg-color: #f8f9fa;
+  --sidebar-bg: #1e1e2d;
+}
+
 #admin-dashboard {
   display: flex;
   min-height: 100vh;
-  font-family: 'Arial', sans-serif;
-  background-color: #f4f7f6;
-  color: #333;
+  background-color: #f0f2f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Sidebar Styles */
+/* 侧边栏设计 */
 .sidebar {
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
-  flex-shrink: 0;
-  background-color: #2c3e50;
-  color: white;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  width: 260px;
+  background-color: #1e1e2d;
+  color: #a2a3b7;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  transition: all 0.3s;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.sidebar-header {
-  text-align: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #34495e;
+.sidebar-brand {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  background-color: #1b1b28;
 }
 
-.sidebar-header h2 {
-  margin: 0 0 16px 0;
-  font-size: 1.4em;
-  color: #ecf0f1;
+.brand-icon {
+  font-size: 24px;
+  margin-right: 12px;
 }
 
-.user-info {
+.brand-text {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.user-profile {
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #2d2d3f;
+  margin-bottom: 10px;
+}
+
+.avatar {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #4361ee, #4cc9f0);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: #3498db;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: white;
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: 1.2rem;
+  margin-right: 15px;
 }
 
-.user-name {
-  font-size: 0.9em;
-  color: #bdc3c7;
+.role {
+  font-size: 0.75rem;
+  color: #565674;
+  margin: 0;
 }
 
-.sidebar-nav {
-  flex-grow: 1;
+.username {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 2px 0 0 0;
+}
+
+.nav-group-title {
+  padding: 15px 25px 10px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #49495e;
+  letter-spacing: 1px;
+  font-weight: bold;
 }
 
 .sidebar-nav ul {
@@ -206,125 +249,124 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.sidebar-nav li {
-  margin-bottom: 8px;
-}
-
 .sidebar-nav a {
-  display: block;
-  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  padding: 12px 25px;
+  color: #a2a3b7;
   text-decoration: none;
-  color: #bdc3c7;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.95em;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
-.sidebar-nav a:hover,
+.sidebar-nav a .icon {
+  margin-right: 12px;
+  font-size: 1.1rem;
+}
+
+.sidebar-nav a:hover {
+  background-color: #242436;
+  color: #fff;
+}
+
 .sidebar-nav a.active {
-  background-color: #34495e;
-  color: #ffffff;
-  transform: translateX(4px);
+  background-color: #242436;
+  color: #4361ee;
+  border-right: 4px solid #4361ee;
 }
 
-.logout-button {
-  width: 40%;
-  padding: 12px 16px;
-  background-color: #e74c3c;
-  color: white;
-  border: none;
+.sidebar-footer {
+  padding: 20px;
+  margin-top: auto;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 12px;
   border-radius: 8px;
+  border: none;
+  background-color: rgba(246, 78, 96, 0.1);
+  color: #f64e60;
   cursor: pointer;
-  font-size: 0.95em;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s;
 }
 
-.logout-button:hover {
-  background-color: #c0392b;
+.logout-btn:hover {
+  background-color: #f64e60;
+  color: #fff;
 }
 
-/* Main Content Styles */
+/* 主内容区设计 */
 .main-content {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .main-header {
-  background-color: #ffffff;
-  padding: 20px 30px;
-  border-bottom: 1px solid #eee;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  height: 70px;
+  background: #fff;
+  padding: 0 30px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  z-index: 10;
 }
 
-.main-header h1 {
-  margin: 0;
-  font-size: 1.6em;
-  color: #2c3e50;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.breadcrumb {
+  color: #7e8299;
+  font-size: 0.9rem;
 }
 
 .current-time {
-  color: #7f8c8d;
-  font-size: 0.9em;
-  font-weight: 500;
+  background: #f3f6f9;
+  padding: 6px 15px;
+  border-radius: 6px;
+  font-family: monospace;
+  color: #3f4254;
+  font-size: 0.85rem;
 }
 
 .content-area {
-  flex-grow: 1;
-  padding: 30px;
-  background-color: #f4f7f6;
+  padding: 25px;
+  min-height: calc(100vh - 70px);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .sidebar {
-    width: 240px;
-  }
-
-  .main-header {
-    padding: 16px 20px;
-  }
-
-  .main-header h1 {
-    font-size: 1.4em;
-  }
-
-  .content-area {
-    padding: 20px;
-  }
+.page-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  min-height: 100%;
 }
 
-/* Basic Router Link Active Class */
-.router-link-exact-active {
-  background-color: #34495e !important;
-  color: #ffffff !important;
+/* 动画效果 */
+.fade-transform-enter-active,
+.fade-transform-leave-active {
+  transition: all 0.3s;
 }
 
-#admin-dashboard.auth-mode {
-  display: block;
+.fade-transform-enter-from {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.fade-transform-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+/* 登录模式覆盖 */
+.auth-mode .auth-wrapper {
   width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.auth-wrapper {
-  width: 100vw;
   height: 100vh;
-  margin: 0;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

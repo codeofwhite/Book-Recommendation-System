@@ -1,128 +1,149 @@
 <template>
-  <div class="admin-panel-card">
-    <div class="header-section">
-      <h2>Manage Books</h2>
-      <p>View, edit, or take down existing book entries.</p>
-    </div>
-
-    <div class="search-filter-bar">
-      <input type="text" v-model="inputSearchKeyword" placeholder="Search by title, author, ISBN..."
-        class="search-input" />
-      <button class="search-button" @click="searchBooks">
-        <span class="search-icon">🔍</span>
-        Search
-      </button>
-    </div>
-
-    <hr class="section-divider">
-    <div class="charts-section">
-      <h3>Book Data Insights</h3>
-
-      <div class="chart-container">
-        <h4>Book Rating Distribution</h4>
-        <v-chart class="chart" :option="ratingDistributionChartOptions" autoresize v-if="allBooks.length > 0" />
-        <p v-else-if="loadingBooks" class="loading-message">Loading rating distribution chart...</p>
-        <p v-else class="no-data-message">No data available for rating distribution.</p>
+  <div class="admin-container">
+    <div class="page-header">
+      <div class="header-content">
+        <h2>图书库管理</h2>
+        <p>检索、编辑或下架系统中的书籍资源</p>
       </div>
-
-      <div class="chart-container">
-        <h4>Top Authors by Book Count (Top 10)</h4>
-        <v-chart class="chart" :option="topAuthorsChartOptions" autoresize v-if="allBooks.length > 0" />
-        <p v-else-if="loadingBooks" class="loading-message">Loading top authors chart...</p>
-        <p v-else class="no-data-message">No data available for top authors.</p>
-      </div>
-    </div>
-    <hr class="section-divider">
-
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Author</th>
-            <th>ISBN</th>
-            <th>Rating</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loadingBooks">
-            <td colspan="6" class="loading-message-cell">Loading books...</td>
-          </tr>
-          <tr v-else-if="errorBooks">
-            <td colspan="6" class="error-message-cell">Error: {{ errorBooks }}</td>
-          </tr>
-          <tr v-else-if="paginatedBooks.length === 0">
-            <td colspan="6" class="no-data-message-cell">No books found.</td>
-          </tr>
-          <tr v-for="book in paginatedBooks" :key="book.bookId" class="table-row">
-            <td>{{ book.bookId }}</td>
-            <td class="title-cell">{{ book.title }}</td>
-            <td>{{ book.author }}</td>
-            <td>{{ book.isbn || 'N/A' }}</td>
-            <td>
-              <span class="rating-badge">{{ book.rating ? book.rating.toFixed(1) : 'N/A' }}</span>
-            </td>
-            <td>
-              <div class="action-buttons">
-                <button class="action-button edit-button" @click="openEditModal(book)">
-                  ✏️ Edit
-                </button>
-                <button class="action-button take-down-button" @click="takeDownBook(book.bookId)">
-                  ⤵️ Take Down
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="pagination">
-      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-btn">
-        ← Previous
-      </button>
-      <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
-      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="pagination-btn">
-        Next →
-      </button>
-    </div>
-
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>Edit Book</h3>
-          <button class="close-button" @click="closeEditModal">×</button>
+      <div class="header-actions">
+        <div class="search-box">
+          <input type="text" v-model="inputSearchKeyword" placeholder="输入书名、作者或 ISBN..." @keyup.enter="searchBooks" />
+          <button class="btn-search" @click="searchBooks">🔍 搜索</button>
         </div>
-        <form @submit.prevent="saveBook" class="edit-form">
-          <div class="form-group">
-            <label>Title:</label>
-            <input type="text" v-model="editingBook.title" required>
-          </div>
-          <div class="form-group">
-            <label>Author:</label>
-            <input type="text" v-model="editingBook.author" required>
-          </div>
-          <div class="form-group">
-            <label>ISBN:</label>
-            <input type="text" v-model="editingBook.isbn">
-          </div>
-          <div class="form-group">
-            <label>Description:</label>
-            <textarea v-model="editingBook.description" rows="4"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Publisher:</label>
-            <input type="text" v-model="editingBook.publisher">
-          </div>
-          <div class="form-actions">
-            <button type="button" class="cancel-button" @click="closeEditModal">Cancel</button>
-            <button type="submit" class="save-button">Save Changes</button>
-          </div>
-        </form>
       </div>
     </div>
+
+    <div class="stats-overview">
+      <div class="stat-card card-shadow">
+        <div class="card-title">
+          <span class="dot green"></span>
+          <h4>评分分布统计</h4>
+        </div>
+        <div class="chart-wrapper">
+          <v-chart class="chart" :option="ratingDistributionChartOptions" autoresize v-if="allBooks.length > 0" />
+          <div v-else class="chart-placeholder">数据加载中...</div>
+        </div>
+      </div>
+
+      <div class="stat-card card-shadow">
+        <div class="card-title">
+          <span class="dot orange"></span>
+          <h4>高产作者排行 (TOP 10)</h4>
+        </div>
+        <div class="chart-wrapper">
+          <v-chart class="chart" :option="topAuthorsChartOptions" autoresize v-if="allBooks.length > 0" />
+          <div v-else class="chart-placeholder">数据加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-section card-shadow">
+      <div class="section-header">
+        <h3>书籍列表</h3>
+        <span class="total-count">共 {{ filteredBooks.length }} 本书籍</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th width="80">ID</th>
+              <th>图书标题</th>
+              <th>作者</th>
+              <th>ISBN</th>
+              <th>评分</th>
+              <th width="200">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="loadingBooks">
+              <td colspan="6" class="status-cell">
+                <div class="loader"></div> 正在同步数据...
+              </td>
+            </tr>
+            <tr v-else-if="paginatedBooks.length === 0">
+              <td colspan="6" class="status-cell">📭 未找到相关书籍</td>
+            </tr>
+            <tr v-for="book in paginatedBooks" :key="book.bookId">
+              <td class="id-text">#{{ book.bookId }}</td>
+              <td>
+                <div class="title-wrap">
+                  <span class="main-title">{{ book.title }}</span>
+                </div>
+              </td>
+              <td><span class="author-tag">{{ book.author }}</span></td>
+              <td class="isbn-text">{{ book.isbn || '---' }}</td>
+              <td>
+                <span :class="['rating-pill', getRatingClass(book.rating)]">
+                  {{ book.rating ? book.rating.toFixed(1) : '无评分' }}
+                </span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-icon edit" @click="openEditModal(book)" title="编辑书籍">
+                    <span class="icon">✏️</span> 编辑
+                  </button>
+                  <button class="btn-icon delete" @click="takeDownBook(book.bookId)" title="下架书籍">
+                    <span class="icon">🗑️</span> 下架
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-container">
+        <div class="page-info">第 {{ currentPage }} / {{ totalPages }} 页</div>
+        <div class="page-controls">
+          <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">上一页</button>
+          <div class="page-numbers">
+            <span v-for="p in totalPages" :key="p" :class="{ active: p === currentPage }" @click="goToPage(p)">{{ p
+              }}</span>
+          </div>
+          <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">下一页</button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="modal">
+      <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+        <div class="modal-window" @click.stop>
+          <div class="modal-head">
+            <h3>修改图书信息</h3>
+            <button class="btn-close" @click="closeEditModal">×</button>
+          </div>
+          <form @submit.prevent="saveBook" class="modal-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>图书标题</label>
+                <input type="text" v-model="editingBook.title" required>
+              </div>
+              <div class="form-group">
+                <label>作者</label>
+                <input type="text" v-model="editingBook.author" required>
+              </div>
+              <div class="form-group">
+                <label>ISBN 编码</label>
+                <input type="text" v-model="editingBook.isbn">
+              </div>
+              <div class="form-group">
+                <label>出版社</label>
+                <input type="text" v-model="editingBook.publisher">
+              </div>
+              <div class="form-group full-width">
+                <label>内容简介</label>
+                <textarea v-model="editingBook.description" rows="3"></textarea>
+              </div>
+            </div>
+            <div class="modal-foot">
+              <button type="button" class="btn-cancel" @click="closeEditModal">取消</button>
+              <button type="submit" class="btn-save">保存更新</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -153,6 +174,13 @@ use([
   GridComponent,
   DatasetComponent // 注册 DatasetComponent
 ]);
+
+const getRatingClass = (rating) => {
+  if (!rating) return 'gray';
+  if (rating >= 4.5) return 'excellent';
+  if (rating >= 3.5) return 'good';
+  return 'average';
+}
 
 const allBooks = ref([])
 const inputSearchKeyword = ref('')
@@ -411,437 +439,341 @@ const topAuthorsChartOptions = computed(() => {
 </script>
 
 <style scoped>
-/* 保持大部分现有样式，只添加/修改与图表和布局相关的部分 */
-
-.admin-panel-card {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+.admin-container {
+  padding: 24px;
+  background-color: #f1f5f9;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
 }
 
-.header-section {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.header-section h2 {
-  color: #2c3e50;
-  font-size: 2.2em;
-  margin-bottom: 10px;
-}
-
-.header-section p {
-  color: #7f8c8d;
-  font-size: 1.1em;
-}
-
-.search-filter-bar {
+/* 顶部 */
+.page-header {
   display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 30px;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
 }
 
-.search-input {
-  padding: 12px 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  width: 400px;
-  font-size: 1em;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+.header-content h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
 }
 
-.search-input:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+.header-content p {
+  color: #64748b;
+  margin: 5px 0 0;
+}
+
+.search-box {
+  display: flex;
+  background: white;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.search-box input {
+  border: none;
+  padding: 8px 16px;
+  width: 280px;
   outline: none;
+  font-size: 0.9rem;
 }
 
-.search-button {
-  padding: 12px 25px;
-  background-color: #3498db;
+.btn-search {
+  background: #3b82f6;
   color: white;
   border: none;
+  padding: 8px 18px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: 600;
 }
 
-.search-button:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
-}
-
-.search-icon {
-  font-size: 1.2em;
-}
-
-/* --- 分隔线 --- */
-.section-divider {
-  border: none;
-  border-top: 1px dashed #e0e0e0;
-  margin: 40px 0;
-  /* 调整间距，将图表与上下区域分隔开 */
-}
-
-/* --- 图表区域 --- */
-.charts-section {
-  margin-top: 20px;
-  /* 与分隔线保持间距 */
+/* 图表区 */
+.stats-overview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  /* 确保至少两列，每列最小450px */
-  gap: 30px;
-  /* 增加图表之间的间距 */
-  padding: 0 20px;
-  /* 稍微内缩，避免太靠近边缘 */
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.charts-section h3 {
-  grid-column: 1 / -1;
-  /* 标题占据所有列 */
-  text-align: center;
-  color: #2c3e50;
-  font-size: 1.8em;
-  margin-bottom: 25px;
-  padding-top: 10px;
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
 }
 
-.chart-container {
-  background-color: #ffffff;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  min-height: 400px;
-  /* 确保图表容器有足够的最小高度 */
+.card-title {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  /* 垂直居中内容 */
   align-items: center;
-  /* 水平居中内容 */
-  transition: box-shadow 0.3s ease;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
-.chart-container:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+.card-title h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #334155;
 }
 
-.chart-container h4 {
-  margin-top: 0;
-  color: #34495e;
-  text-align: center;
-  margin-bottom: 20px;
-  font-size: 1.4em;
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
-.chart {
+.dot.green {
+  background: #10b981;
+}
+
+.dot.orange {
+  background: #f59e0b;
+}
+
+.chart-wrapper {
   height: 300px;
-  /* 图表实际渲染的高度 */
   width: 100%;
-  /* 图表宽度填充容器 */
 }
 
-/* --- 表格区域 --- */
-.table-container {
-  overflow-x: auto;
-  /* 允许表格水平滚动 */
-  margin-top: 30px;
-  margin-bottom: 20px;
-  border: 1px solid #e0e0e0;
-  /* 边框 */
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+/* 表格区 */
+.data-section {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
 }
 
-.data-table {
+.section-header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.total-count {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.modern-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.data-table th,
-.data-table td {
-  padding: 15px 20px;
+.modern-table th {
+  background: #f8fafc;
+  padding: 14px 24px;
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.data-table thead th {
-  background-color: #f8f9fa;
-  color: #555;
-  font-weight: 600;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  font-size: 0.9em;
+  color: #64748b;
+  letter-spacing: 0.05em;
 }
 
-.data-table tbody tr:hover {
-  background-color: #f5f5f5;
+.modern-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  color: #334155;
 }
 
-.data-table tbody tr:last-child td {
-  border-bottom: none;
+.id-text {
+  color: #94a3b8;
+  font-family: monospace;
 }
 
-.title-cell {
-  font-weight: 600;
-  color: #333;
+.main-title {
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.rating-badge {
-  display: inline-block;
-  padding: 5px 10px;
-  background-color: #e0f7fa;
-  color: #007bbd;
-  border-radius: 5px;
-  font-weight: bold;
-  font-size: 0.85em;
+.author-tag {
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
 }
 
-/* --- 操作按钮 --- */
-.action-buttons {
+/* 评分 Pill */
+.rating-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.rating-pill.excellent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.rating-pill.good {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.rating-pill.average {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* 操作按钮 */
+.row-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
-.action-button {
-  padding: 8px 15px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.edit-button {
-  background-color: #28a745;
-  color: white;
-}
-
-.edit-button:hover {
-  background-color: #218838;
-  transform: translateY(-1px);
-}
-
-.take-down-button {
-  background-color: #dc3545;
-  color: white;
-}
-
-.take-down-button:hover {
-  background-color: #c82333;
-  transform: translateY(-1px);
-}
-
-/* --- 分页 --- */
-.pagination {
+.btn-icon {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 15px;
-  margin-top: 30px;
-  margin-bottom: 20px;
-}
-
-.pagination-btn {
-  padding: 10px 20px;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
   cursor: pointer;
-  font-size: 1em;
-  color: #555;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  font-size: 0.8rem;
+  transition: all 0.2s;
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background-color: #e0e0e0;
-  border-color: #bbb;
+.btn-icon.edit:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
-.pagination-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.btn-icon.delete:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
 }
 
-.pagination-info {
-  font-size: 1em;
-  color: #666;
-  font-weight: 500;
-}
-
-/* --- 模态框样式 --- */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 600px;
-  position: relative;
-  animation: modal-fade-in 0.3s ease-out;
-}
-
-@keyframes modal-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modal-header {
+/* 分页 */
+.pagination-container {
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.5em;
-  color: #333;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.8em;
-  cursor: pointer;
-  color: #888;
-  transition: color 0.3s ease;
-}
-
-.close-button:hover {
-  color: #333;
-}
-
-.edit-form .form-group {
-  margin-bottom: 15px;
-}
-
-.edit-form label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #555;
-}
-
-.edit-form input[type="text"],
-.edit-form textarea {
-  width: calc(100% - 22px);
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1em;
-  transition: border-color 0.3s ease;
-}
-
-.edit-form input[type="text"]:focus,
-.edit-form textarea:focus {
-  border-color: #3498db;
-  outline: none;
-  box-shadow: 0 0 5px rgba(52, 152, 219, 0.2);
-}
-
-.edit-form textarea {
-  resize: vertical;
-}
-
-.form-actions {
+.page-controls {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 15px;
-  margin-top: 25px;
 }
 
-.cancel-button,
-.save-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
+.page-numbers {
+  display: flex;
+  gap: 5px;
+}
+
+.page-numbers span {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 1em;
-  font-weight: 500;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-size: 0.85rem;
 }
 
-.cancel-button {
-  background-color: #f0f0f0;
-  color: #555;
-}
-
-.cancel-button:hover {
-  background-color: #e0e0e0;
-}
-
-.save-button {
-  background-color: #007bff;
+.page-numbers span.active {
+  background: #3b82f6;
   color: white;
 }
 
-.save-button:hover {
-  background-color: #0056b3;
-}
-
-/* 消息样式 */
-.loading-message,
-.no-data-message {
-  text-align: center;
-  color: #7f8c8d;
-  font-style: italic;
-  padding: 20px;
+.page-controls button {
+  padding: 6px 12px;
   border-radius: 8px;
-  margin: 20px 0;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
 }
 
-.error-message {
-  color: #e74c3c;
-  background-color: #fce8e6;
-  border: 1px solid #e74c3c;
-  text-align: center;
-  padding: 20px;
+/* 模态框美化 */
+.modal-window {
+  background: white;
+  width: 600px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-head {
+  padding: 20px 24px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-form {
+  padding: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+.modal-form label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #475569;
+}
+
+.modal-form input,
+.modal-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin: 20px 0;
+  box-sizing: border-box;
 }
 
-/* 表格内部的消息样式 */
-.loading-message-cell,
-.error-message-cell,
-.no-data-message-cell {
-  text-align: center !important;
-  font-style: italic;
-  color: #7f8c8d;
-  padding: 20px;
+.modal-foot {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
-.error-message-cell {
-  color: #e74c3c;
+.btn-save {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-cancel {
+  background: #f1f5f9;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.card-shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 </style>

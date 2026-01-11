@@ -19,9 +19,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 10s # 给予启动时间
+      start_period: 10s 
     networks:
-      - book-recommend-network  # 接入公共网络
+      - book-recommend-network  
       
   # --- MinIO Service ---
   minio:
@@ -50,16 +50,16 @@ services:
     build: ../microservices/log-service
     container_name: frontend_log_ingestion
     ports:
-      - "5006:5006" # 为日志服务分配一个端口
+      - "5006:5006" 
     environment:
       KAFKA_BROKER_URL: kafka:29092 # 连接到 Kafka
     depends_on:
       kafka:
-        condition: service_healthy # 确保 Kafka 启动后再启动日志服务
+        condition: service_healthy # Kafka 启动后再启动日志服务
     # volumes: # 如果需要持久化日志文件，可以加上
     #   - ./logs:/app/logs
     networks:
-      - book-recommend-network  # 接入公共网络
+      - book-recommend-network  
 
 networks:
   book-recommend-network:

@@ -16,7 +16,6 @@ from schemas import (
 from config import REC_DB_HOST, REC_DB_NAME, REC_DB_USER, REC_DB_PASSWORD
 import pymysql.cursors  # Import for direct MySQL connection
 
-# 导入新增的 Schema
 from schemas import (
     book_favorite_schema,
     review_favorite_schema,
@@ -59,7 +58,7 @@ def process_user_data(df, epoch_id, spark):
     print(f"Processing user data in batch {epoch_id}...")
 
     # 过滤操作类型并提取数据
-    # 注意：这里先将 raw_registration_date 和 raw_last_login_date 提取为 LongType
+    # 这里先将 raw_registration_date 和 raw_last_login_date 提取为 LongType
     raw_users_df = (
         df.select(
             from_json(col("value").cast("string"), mysql_record_schema).alias("data")
@@ -221,7 +220,6 @@ def process_book_data(df, epoch_id, spark):
             col("book_data.bookId").alias("book_id"),
             col("book_data.title").alias("title"),
             col("book_data.category").alias("category"),
-            # 新增字段映射
             col("book_data.series").alias("series"),
             col("book_data.author").alias("author"),
             col("book_data.rating").alias("rating"),
@@ -340,7 +338,7 @@ def process_book_data(df, epoch_id, spark):
         print(f"Batch {epoch_id} contained no valid book records after filtering.")
 
 
-# --- 新增：处理 BookFavorite 数据 ---
+# --- 处理 BookFavorite 数据 ---
 def process_book_favorite_data(df, epoch_id, spark):
     print(f"Processing book favorite data in batch {epoch_id}...")
     favorite_df = (
@@ -406,7 +404,7 @@ def process_book_favorite_data(df, epoch_id, spark):
         )
 
 
-# --- 新增：处理 ReviewFavorite 数据 ---
+# --- 处理 ReviewFavorite 数据 ---
 def process_review_favorite_data(df, epoch_id, spark):
     print(f"Processing review favorite data in batch {epoch_id}...")
     favorite_df = (

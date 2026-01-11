@@ -5,7 +5,6 @@ from models.trainer import RecommendationTrainer
 import threading
 import time
 from config import Config
-# import schedule # <--- 暂时注释掉 schedule
 import traceback
 from data.data_loader import DataLoader # 确保导入路径正确
 
@@ -141,7 +140,7 @@ def health_check():
     status = "healthy" if redis_status else "unhealthy (Redis)"
     return jsonify({"status": status, "redis_connected": redis_status}), 200
 
-# --- 测试 ClickHouse 数据加载 ---
+# --- 测试 ClickHouse 数据加载，且在 admin 获取用户日志用于可视化 ---
 @app.route('/data/user_behavior_logs', methods=['GET'])
 def get_user_behavior_logs_data():
     """

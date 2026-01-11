@@ -3,7 +3,7 @@ import redis
 import json
 import logging
 import traceback # 用于打印详细的错误堆栈
-from config import Config # 确保正确导入 Config
+from config import Config 
 
 # 配置日志，设置为 INFO 级别
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

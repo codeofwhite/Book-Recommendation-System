@@ -16,14 +16,7 @@
 使用以下命令启动所有服务，并将其置于后台运行：
 
 ```bash
-docker-compose -f auth-service.yml \
-               -f base.yml \
-               -f book-service.yml \
-               -f data-pipeline.yml \
-               -f recommendation.yml \
-               -f storage.yml \
-               -f user-engagement.yml \
-               up -d
+docker-compose -f auth-service.yml -f base.yml -f book-service.yml -f data-pipeline.yml -f recommendation.yml -f storage.yml -f user-engagement.yml up -d
 ```
 
 #### 2.2. 强制重建和刷新（代码更新未生效时使用）
@@ -31,16 +24,13 @@ docker-compose -f auth-service.yml \
 如果在本地修改了代码或 `Dockerfile`，但启动后变动未生效，请使用以下命令进行**强制刷新、重建镜像并重新创建容器**：
 
 ```bash
-docker-compose -f auth-service.yml \
-               -f base.yml \
-               -f book-service.yml \
-               -f data-pipeline.yml \
-               -f recommendation.yml \
-               -f storage.yml \
-               -f user-engagement.yml \
-               up -d --build --force-recreate
+docker-compose -f auth-service.yml -f base.yml -f book-service.yml -f data-pipeline.yml -f recommendation.yml -f storage.yml -f user-engagement.yml up -d --build --force-recreate
 ```
 
+`--force-recreate` 可以不加，加了可能会跑比较久
+```bash
+docker-compose -f auth-service.yml -f base.yml -f book-service.yml -f data-pipeline.yml -f recommendation.yml -f storage.yml -f user-engagement.yml up -d --build 
+```
 > **参数说明：**
 >
 >   * `--build`: 强制重建依赖 `Dockerfile` 的服务镜像。

@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <nav class="main-nav">
-      <div class="project-title">书语相拥（BookHug）</div>
+      <div class="project-title">书语相拥</div>
       <router-link to="/" class="nav-item">主页</router-link>
       <router-link to="/books" class="nav-item">书库</router-link>
       <template v-if="isLoggedIn">
@@ -167,17 +167,21 @@ onUnmounted(() => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #4a5043; /* 低饱和深绿灰，替代原深棕 */
+  color: #4a5043;
+  /* 低饱和深绿灰，替代原深棕 */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f8f9fa; /* 极浅米白，更清爽 */
+  background-color: #f8f9fa;
+  /* 极浅米白，更清爽 */
 }
 
 .main-nav {
   padding: 20px 30px;
-  background-color: #7c9473; /* 莫兰迪蓝绿，替代原深棕 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 阴影减淡，更柔和 */
+  background-color: #7c9473;
+  /* 莫兰迪蓝绿，替代原深棕 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  /* 阴影减淡，更柔和 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -189,7 +193,8 @@ onUnmounted(() => {
   font-family: 'Playfair Display', serif;
   font-size: 2.2em;
   font-weight: bold;
-  color: #f0e6d2; /* 米白色，替代原金色 */
+  color: #f0e6d2;
+  /* 米白色，替代原金色 */
   margin-right: auto;
   padding-right: 40px;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
@@ -207,7 +212,8 @@ onUnmounted(() => {
   }
 
   to {
-    color: #fff8e7; /* 更浅的米白，替代原亮金 */
+    color: #fff8e7;
+    /* 更浅的米白，替代原亮金 */
     transform: scale(1.02);
     opacity: 0.95;
   }
@@ -215,7 +221,8 @@ onUnmounted(() => {
 
 .nav-item {
   font-weight: bold;
-  color: #faf6ed; /* 极浅米白，替代原浅棕 */
+  color: #faf6ed;
+  /* 极浅米白，替代原浅棕 */
   text-decoration: none;
   margin: 0 25px;
   padding: 8px 0;
@@ -224,7 +231,8 @@ onUnmounted(() => {
 }
 
 .nav-item:hover {
-  color: #d4c7b8; /* 暖灰棕，替代原灰棕 */
+  color: #d4c7b8;
+  /* 暖灰棕，替代原灰棕 */
   transform: translateY(-2px);
 }
 
@@ -235,7 +243,8 @@ onUnmounted(() => {
 
 /* Login Button Styles */
 .login-button {
-  background-color: #9da8a3; /* 莫兰迪灰绿，替代原棕 */
+  background-color: #9da8a3;
+  /* 莫兰迪灰绿，替代原棕 */
   color: white;
   padding: 10px 20px;
   border-radius: 5px;
@@ -246,20 +255,24 @@ onUnmounted(() => {
 }
 
 .login-button:hover {
-  background-color: #8a9690; /* 深一点的灰绿，替代原深棕 */
+  background-color: #8a9690;
+  /* 深一点的灰绿，替代原深棕 */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .app-content {
   flex-grow: 1;
   padding: 40px;
-  background-color: #faf6ed; /* 浅米白，比原背景更柔和 */
+  background-color: #faf6ed;
+  /* 浅米白，比原背景更柔和 */
 }
 
 .main-footer {
   padding: 20px;
-  background-color: #7c9473; /* 与导航一致的蓝绿 */
-  color: #faf6ed; /* 极浅米白，替代原浅棕 */
+  background-color: #7c9473;
+  /* 与导航一致的蓝绿 */
+  color: #faf6ed;
+  /* 极浅米白，替代原浅棕 */
   font-size: 0.95em;
   margin-top: auto;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
@@ -278,7 +291,8 @@ onUnmounted(() => {
 }
 
 .footer-nav-item:hover {
-  color: #d4c7b8; /* 与导航hover一致 */
+  color: #d4c7b8;
+  /* 与导航hover一致 */
 }
 
 body {
@@ -292,7 +306,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* 稍浅的遮罩 */
+  background-color: rgba(0, 0, 0, 0.4);
+  /* 稍浅的遮罩 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -301,7 +316,8 @@ body {
 }
 
 .global-popup-content {
-  background-color: #faf6ed; /* 与内容区一致 */
+  background-color: #faf6ed;
+  /* 与内容区一致 */
   border-radius: 8px;
   padding: 30px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
@@ -315,19 +331,22 @@ body {
 .popup-title {
   font-family: 'Playfair Display', serif;
   font-size: 1.8em;
-  color: #7c9473; /* 与导航一致的蓝绿，替代原深棕 */
+  color: #7c9473;
+  /* 与导航一致的蓝绿，替代原深棕 */
   margin-bottom: 15px;
 }
 
 .popup-message {
   font-size: 1.1em;
-  color: #4a5043; /* 与正文一致的深绿灰 */
+  color: #4a5043;
+  /* 与正文一致的深绿灰 */
   margin-bottom: 25px;
   line-height: 1.6;
 }
 
 .popup-close-button {
-  background-color: #9da8a3; /* 与登录按钮一致的灰绿 */
+  background-color: #9da8a3;
+  /* 与登录按钮一致的灰绿 */
   color: white;
   padding: 10px 25px;
   border: none;
@@ -338,7 +357,8 @@ body {
 }
 
 .popup-close-button:hover {
-  background-color: #8a9690; /* 深一点的灰绿 */
+  background-color: #8a9690;
+  /* 深一点的灰绿 */
   transform: translateY(-2px);
 }
 
@@ -391,7 +411,8 @@ body {
   transition: background-color 0.3s ease;
 }
 
-.genre-tag:hover, .genre-tag.active {
+.genre-tag:hover,
+.genre-tag.active {
   background-color: #7c9473;
   color: white;
 }

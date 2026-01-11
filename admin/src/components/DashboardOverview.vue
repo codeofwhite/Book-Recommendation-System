@@ -1,82 +1,111 @@
 <template>
-  <div class="admin-panel-card">
-    <h2>Dashboard Overview</h2>
-    <p>Welcome to your Book Management Dashboard. Here you can see a quick summary of your data.</p>
+  <div class="dashboard-container">
+    <header class="dashboard-welcome">
+      <div class="welcome-text">
+        <h2>控制面板概览</h2>
+        <p>欢迎回来！这是系统当前的实时运行数据摘要。</p>
+      </div>
+    </header>
 
     <div class="stats-grid">
-      <div class="stat-item">
+      <div class="stat-card blue">
+        <div class="stat-content">
+          <span class="label">图书总数</span>
+          <h3 class="number">{{ totalBooks }}</h3>
+          <span class="trend">馆藏资源总量</span>
+        </div>
         <div class="stat-icon">📚</div>
-        <h3>Total Books</h3>
-        <p class="stat-number">{{ totalBooks }}</p>
       </div>
-      <div class="stat-item">
+
+      <div class="stat-card purple">
+        <div class="stat-content">
+          <span class="label">平均评分</span>
+          <h3 class="number">{{ averageRating }}</h3>
+          <span class="trend">用户满意度反馈</span>
+        </div>
         <div class="stat-icon">⭐</div>
-        <h3>Avg. Rating</h3>
-        <p class="stat-number">{{ averageRating }}</p>
       </div>
-      <div class="stat-item">
+
+      <div class="stat-card green">
+        <div class="stat-content">
+          <span class="label">注册用户</span>
+          <h3 class="number">{{ totalUsers }}</h3>
+          <span class="trend">活跃读者群体</span>
+        </div>
         <div class="stat-icon">👥</div>
-        <h3>Total Users</h3>
-        <p class="stat-number">{{ totalUsers }}</p>
       </div>
-      <div class="stat-item">
+
+      <div class="stat-card orange">
+        <div class="stat-content">
+          <span class="label">评论总数</span>
+          <h3 class="number">{{ totalReviews }}</h3>
+          <span class="trend">社交互动数据</span>
+        </div>
         <div class="stat-icon">💬</div>
-        <h3>Total Reviews</h3>
-        <p class="stat-number">{{ totalReviews }}</p>
-      </div>
-      <div class="stat-item">
-        <div class="stat-icon">📈</div>
-        <h3>Total Behavior Logs</h3>
-        <p class="stat-number">{{ totalUserBehaviorLogs }}</p>
       </div>
     </div>
 
-    <hr class="section-divider">
-
-    <div class="charts-section">
-      <h3>User Behavior Insights</h3>
-
-      <div class="chart-container">
-        <h4>Event Type Distribution</h4>
-        <v-chart class="chart" :option="eventTypeChartOptions" autoresize
-          v-if="!loadingBehaviorLogs && userBehaviorLogs.length > 0" />
-        <p v-else-if="loadingBehaviorLogs" class="loading-message">Loading event type chart data...</p>
-        <p v-else-if="errorBehaviorLogs" class="error-message">Error loading chart: {{ errorBehaviorLogs }}</p>
-        <p v-else class="no-data-message">No data available for event type distribution.</p>
+    <div class="charts-grid">
+      <div class="chart-wrapper card-shadow">
+        <div class="chart-header">
+          <h4>用户交互类型分布</h4>
+          <span class="sub-title">实时统计各类操作频次</span>
+        </div>
+        <div class="chart-content">
+          <v-chart class="chart" :option="eventTypeChartOptions" autoresize
+            v-if="!loadingBehaviorLogs && userBehaviorLogs.length > 0" />
+          <div v-else class="chart-placeholder">
+            <span v-if="loadingBehaviorLogs">数据加载中...</span>
+            <span v-else>暂无交互数据</span>
+          </div>
+        </div>
       </div>
 
-      <div class="chart-container">
-        <h4>Daily Activity Trend</h4>
-        <v-chart class="chart" :option="dailyActivityChartOptions" autoresize
-          v-if="!loadingBehaviorLogs && userBehaviorLogs.length > 0" />
-        <p v-else-if="loadingBehaviorLogs" class="loading-message">Loading daily activity chart data...</p>
-        <p v-else-if="errorBehaviorLogs" class="error-message">Error loading chart: {{ errorBehaviorLogs }}</p>
-        <p v-else class="no-data-message">No data available for daily activity trend.</p>
+      <div class="chart-wrapper card-shadow">
+        <div class="chart-header">
+          <h4>活跃趋势分析 (近7日)</h4>
+          <span class="sub-title">用户每日访问与操作波动</span>
+        </div>
+        <div class="chart-content">
+          <v-chart class="chart" :option="dailyActivityChartOptions" autoresize
+            v-if="!loadingBehaviorLogs && userBehaviorLogs.length > 0" />
+          <div v-else class="chart-placeholder">
+            <span v-if="loadingBehaviorLogs">趋势计算中...</span>
+            <span v-else>暂无趋势数据</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <hr class="section-divider">
-
-    <div class="recent-logs-section">
-      <h3>Recent User Behavior Logs (Last 5)</h3>
-      <div v-if="latestUserBehaviorLogs.length > 0">
-        <ul>
-          <li v-for="(log, index) in latestUserBehaviorLogs" :key="index">
-            <span class="log-timestamp">{{ log.timestamp }}:</span>
-            <span class="log-event">{{ log.eventType }}</span>
-            by user <span class="log-user">{{ log.userId }}</span>
-            on book <span class="log-item">{{ log.item_id }}</span>
-          </li>
-        </ul>
+    <div class="bottom-section card-shadow">
+      <div class="section-header">
+        <h4><i class="icon">🕒</i> 最近系统日志</h4>
+        <button class="view-all-btn">查看全部记录</button>
       </div>
-      <div v-else-if="loadingBehaviorLogs">
-        <p class="loading-message">Loading recent user behavior logs...</p>
-      </div>
-      <div v-else-if="errorBehaviorLogs">
-        <p class="error-message">Error: {{ errorBehaviorLogs }}</p>
-      </div>
-      <div v-else>
-        <p class="no-data-message">No user behavior logs found.</p>
+      <div class="logs-table-wrapper">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>时间戳</th>
+              <th>事件类型</th>
+              <th>操作用户</th>
+              <th>关联图书</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(log, index) in latestUserBehaviorLogs" :key="index">
+              <td>{{ formatLogTime(log.timestamp) }}</td>
+              <td><span class="badge" :class="log.eventType">{{ translateEvent(log.eventType) }}</span></td>
+              <td>ID: {{ log.userId }}</td>
+              <td>Item: {{ log.item_id }}</td>
+              <td><span class="status-dot"></span> 成功</td>
+            </tr>
+            <tr v-if="latestUserBehaviorLogs.length === 0">
+              <td colspan="5" class="empty-row">暂无最近活动记录</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -96,7 +125,7 @@ import {
   LegendComponent,
   GridComponent
 } from 'echarts/components';
-import { graphic } from 'echarts/core'; 
+import { graphic } from 'echarts/core';
 
 // 注册 ECharts 必要的组件
 use([
@@ -404,7 +433,21 @@ const dailyActivityChartOptions = computed(() => {
   };
 });
 
+const translateEvent = (event) => {
+  const map = {
+    'click': '点击详情',
+    'view': '页面浏览',
+    'rate': '评分行为',
+    'comment': '发表评论',
+    'search': '关键词搜索'
+  }
+  return map[event] || event
+}
 
+const formatLogTime = (ts) => {
+  const d = new Date(ts)
+  return `${d.getMonth() + 1}-${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`
+}
 
 onMounted(() => {
   fetchBooks()
@@ -415,226 +458,195 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 整个卡片容器 */
-.admin-panel-card {
-  background-color: #ffffff;
-  padding: 30px;
-  /* 增加内边距 */
-  border-radius: 12px;
-  /* 更大的圆角 */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  /* 更明显的阴影 */
-  margin-bottom: 30px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  /* 更改字体 */
-  color: #333;
+.dashboard-container {
+  padding: 10px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-h2 {
-  color: #2c3e50;
-  margin-bottom: 15px;
-  font-size: 1.8em;
-  text-align: center;
-}
-
-p {
-  color: #7f8c8d;
-  line-height: 1.8;
-  margin-bottom: 25px;
-  text-align: center;
-}
-
-/* 指标网格 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-  /* 调整最小宽度 */
-  gap: 25px;
-  /* 增加间距 */
-  margin-top: 30px;
+.dashboard-welcome {
   margin-bottom: 30px;
 }
 
-.stat-item {
-  background: linear-gradient(135deg, #f0f4f8, #e6edf3);
-  /* 渐变背景 */
-  padding: 20px;
-  /* 增加内边距 */
-  border-radius: 10px;
-  /* 更大的圆角 */
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  /* 柔和阴影 */
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  /* 过渡动画 */
-}
-
-.stat-item:hover {
-  transform: translateY(-5px);
-  /* 悬停上浮效果 */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  /* 悬停阴影 */
-}
-
-.stat-icon {
-  font-size: 3em;
-  /* 更大的图标 */
-  margin-bottom: 15px;
-  color: #3498db;
-  /* 图标颜色 */
-}
-
-.stat-item h3 {
-  color: #34495e;
-  margin-bottom: 8px;
-  font-size: 1.3em;
-  font-weight: 600;
-}
-
-.stat-number {
-  font-size: 2.2em;
-  /* 更大的数字 */
+.dashboard-welcome h2 {
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #2980b9;
-  /* 数字颜色 */
-  display: block;
-  /* 确保独占一行 */
-}
-
-/* 分隔线 */
-.section-divider {
-  border: none;
-  border-top: 1px dashed #e0e0e0;
-  /* 虚线分隔 */
-  margin: 40px 0;
-  /* 增加上下间距 */
-}
-
-/* 图表区域 */
-.charts-section {
-  margin-top: 20px;
-  /* 与分隔线间距 */
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-  /* 调整列宽，适应更多内容 */
-  gap: 30px;
-  /* 增加图表之间的间距 */
-}
-
-.charts-section h3 {
-  grid-column: 1 / -1;
-  /* 标题占据所有列 */
-  text-align: center;
-  color: #2c3e50;
-  font-size: 1.6em;
-  margin-bottom: 25px;
-}
-
-.chart-container {
-  background-color: #ffffff;
-  /* 图表背景设置为白色，与卡片背景一致，但有更强的阴影 */
-  padding: 25px;
-  /* 增加内边距 */
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  /* 强阴影 */
-  min-height: 480px;
-  /* 确保图表容器有足够的最小高度 */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  transition: box-shadow 0.3s ease;
-}
-
-.chart-container:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  /* 悬停时更强的阴影 */
-}
-
-.chart-container h4 {
-  margin-top: 0;
-  color: #34495e;
-  text-align: center;
-  margin-bottom: 20px;
-  font-size: 1.4em;
-}
-
-.chart {
-  height: 380px;
-  /* 图表实际渲染的高度，根据容器高度调整 */
-  width: 100%;
-}
-
-/* 消息样式 */
-.loading-message,
-.error-message,
-.no-data-message {
-  text-align: center;
-  color: #7f8c8d;
-  font-style: italic;
-  padding: 20px;
-  border-radius: 8px;
-  margin: 20px 0;
-}
-
-.error-message {
-  color: #e74c3c;
-  background-color: #fce8e6;
-  border: 1px solid #e74c3c;
-}
-
-/* 近期日志样式 */
-.recent-logs-section {
-  margin-top: 40px;
-  padding: 25px;
-  background-color: #fbfcfe;
-  /* 浅色背景 */
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.recent-logs-section h3 {
-  color: #2c3e50;
-  font-size: 1.6em;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.recent-logs-section ul {
-  list-style: none;
-  /* 移除默认列表点 */
-  padding: 0;
+  color: #1a1c23;
   margin: 0;
 }
 
-.recent-logs-section li {
-  background-color: #ffffff;
-  border-left: 5px solid #3498db;
-  /* 左侧强调线 */
-  padding: 12px 15px;
-  margin-bottom: 10px;
+.dashboard-welcome p {
+  color: #718096;
+  margin-top: 5px;
+}
+
+/* 指标卡片重构 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  padding: 24px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-card.blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-card.purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card.green {
+  background: linear-gradient(135deg, #b1f4cf 0%, #53a7f0 100%);
+}
+
+/* 也可以用蓝绿 */
+.stat-card.orange {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-content .label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.stat-content .number {
+  font-size: 2rem;
+  margin: 8px 0;
+  font-weight: 700;
+}
+
+.stat-content .trend {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.3;
+}
+
+/* 图表区 */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.chart-wrapper {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  min-height: 400px;
+}
+
+.chart-header {
+  margin-bottom: 20px;
+}
+
+.chart-header h4 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.chart-header .sub-title {
+  font-size: 0.8rem;
+  color: #a0aec0;
+}
+
+.chart-content {
+  height: 320px;
+  width: 100%;
+}
+
+/* 日志表格 */
+.bottom-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.view-all-btn {
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  font-size: 0.95em;
-  line-height: 1.4;
+  background: transparent;
+  cursor: pointer;
 }
 
-.log-timestamp {
-  font-weight: bold;
-  color: #555;
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.log-event {
+.logs-table th {
+  text-align: left;
+  padding: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #2ecc71;
-  /* 事件类型颜色 */
 }
 
-.log-user,
-.log-item {
-  color: #3498db;
-  /* 用户ID和项目ID颜色 */
+.logs-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+/* 徽章样式 */
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 500;
+}
+
+.badge.click {
+  background: #ebf8ff;
+  color: #3182ce;
+}
+
+.badge.rate {
+  background: #f0fff4;
+  color: #38a169;
+}
+
+.card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #48bb78;
+  border-radius: 50%;
+  margin-right: 5px;
 }
 </style>

@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router"
 
-// Import your component placeholders
 import DashboardOverview from "../components/DashboardOverview.vue"
 import ManageBooks from "../components/ManageBooks.vue"
 import AddBook from "../components/AddBook.vue"
@@ -13,7 +12,7 @@ const routes = [
     path: "/login",
     component: AdminAuth,
     name: "Login",
-    meta: { requiresGuest: true }, // Only accessible when not logged in
+    meta: { requiresGuest: true }, 
   },
   {
     path: "/dashboard",
@@ -56,7 +55,7 @@ const router = createRouter({
   routes,
 })
 
-// Check if user is authenticated
+
 const isAuthenticated = () => {
   const token = localStorage.getItem("adminToken")
   const user = localStorage.getItem("adminUser")
@@ -67,13 +66,11 @@ const isAuthenticated = () => {
 router.beforeEach((to, from, next) => {
   const authenticated = isAuthenticated()
 
-  // If route requires authentication and user is not authenticated
   if (to.meta.requiresAuth && !authenticated) {
     next("/login")
     return
   }
 
-  // If route requires guest (login page) and user is authenticated
   if (to.meta.requiresGuest && authenticated) {
     next("/dashboard")
     return

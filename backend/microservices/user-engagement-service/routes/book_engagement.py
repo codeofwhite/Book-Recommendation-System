@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
-from models import db, BookFavorite, BookLike # 从 models.py 导入 db 和模型
+from models import db, BookFavorite, BookLike 
 
-# 创建一个蓝图
 book_engagement_bp = Blueprint('book_engagement', __name__, url_prefix='/api/books')
 
 # --- 获取书籍总收藏数 ---
@@ -32,7 +31,6 @@ def get_book_favorite_status(book_id):
     else:
         # 如果没有 userId，可以打印一条日志或者直接返回总数，不包含 isFavorited 字段，或者 isFavorited 始终为 False
         print(f"Warning: userId not provided for favorite_status on book {book_id}. Only total count will be returned for personal status.")
-        # return jsonify({"error": "userId is required for personal status", "favoriteCount": favorite_count}), 400 # 如果你仍然希望强制userId
         
     return jsonify({"isFavorited": is_favorited, "favoriteCount": favorite_count}) # favoriteCount 始终返回
 
@@ -75,7 +73,6 @@ def get_book_like_status(book_id):
         is_liked = BookLike.query.filter_by(user_id=user_id, book_id=book_id).first() is not None
     else:
         print(f"Warning: userId not provided for like_status on book {book_id}. Only total count will be returned for personal status.")
-        # return jsonify({"error": "userId is required for personal status", "likeCount": like_count}), 400
 
     return jsonify({"isLiked": is_liked, "likeCount": like_count}) # likeCount 始终返回
 
@@ -104,7 +101,7 @@ def toggle_book_like(book_id):
     like_count = BookLike.query.filter_by(book_id=book_id).count()
     return jsonify({"isLiked": is_liked, "likeCount": like_count})
 
-# 新增：获取用户收藏的书籍列表
+# 获取用户收藏的书籍列表
 @book_engagement_bp.route('/favorite_books', methods=['GET'])
 def get_user_favorite_books():
     user_id = request.args.get('userId')
@@ -113,8 +110,8 @@ def get_user_favorite_books():
 
     # 查询该用户收藏的所有书籍
     favorite_entries = BookFavorite.query.filter_by(user_id=user_id).all()
-    # 提取所有收藏书籍的 book_id
-    # 注意：这里只返回了 book_id。前端可能需要根据这些 book_id 再去 Book Management Service (service-b) 获取书籍的详细信息。
+
+    # 这里只返回了 book_id。前端需要根据这些 book_id 再去 Book Management Service (service-b) 获取书籍的详细信息。
     book_ids = [entry.book_id for entry in favorite_entries]
 
     return jsonify(book_ids)

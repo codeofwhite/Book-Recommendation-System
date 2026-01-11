@@ -3,7 +3,7 @@ from urllib.parse import quote_plus
 
 
 class Config:
-    # 数据库配置 - 现在从环境变量获取，在docker-compose中设置
+    # 数据库配置 - 从环境变量获取，在docker-compose中设置
     DB_USER = os.environ.get("DB_USER", "auth_user")  # 默认使用普通用户
     DB_PASSWORD = os.environ.get("DB_PASSWORD", "auth_password")
     DB_HOST = os.environ.get("DB_HOST", "auth_db")  # 关键变化：使用服务名

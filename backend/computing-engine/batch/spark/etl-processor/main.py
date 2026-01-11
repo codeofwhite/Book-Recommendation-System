@@ -4,7 +4,6 @@ from config import KAFKA_BROKER_URL, SPARK_PACKAGES, SPARK_DRIVER_EXTRA_CLASSPAT
 from schemas import mysql_record_schema, mongodb_kafka_envelope_schema
 from processors import process_user_data, process_book_data
 
-# 导入新增的 Schema
 from schemas import (
     book_favorite_schema,
     review_favorite_schema,
@@ -14,7 +13,6 @@ from schemas import (
     comment_schema,
 )
 
-# 导入新增的处理器函数
 from processors import (
     process_book_favorite_data,
     process_review_favorite_data,
@@ -79,7 +77,7 @@ comment_stream = create_kafka_stream("user_engagement_db_cdc.book_engagement.COM
 
 # --- 启动流式查询 ---
 # 用户数据流
-# 注意：这里将 spark 对象作为额外参数传递给 foreachBatch 函数
+# 我这里将 spark 对象作为额外参数传递给 foreachBatch 函数
 user_query = (
     user_stream.writeStream.foreachBatch(
         lambda df, epoch_id: process_user_data(df, epoch_id, spark)
@@ -90,7 +88,6 @@ user_query = (
 )
 
 # 图书数据流
-# 注意：这里将 spark 对象作为额外参数传递给 foreachBatch 函数
 book_query = (
     book_stream.writeStream.foreachBatch(
         lambda df, epoch_id: process_book_data(df, epoch_id, spark)
@@ -100,7 +97,7 @@ book_query = (
     .start()
 )
 
-# --- 启动流式查询 (新增部分) ---
+# --- 启动流式查询 ---
 book_favorite_query = (
     book_favorite_stream.writeStream.foreachBatch(
         lambda df, epoch_id: process_book_favorite_data(df, epoch_id, spark)

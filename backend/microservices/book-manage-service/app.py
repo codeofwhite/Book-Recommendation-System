@@ -9,7 +9,7 @@ from models.book_model import BookModel
 app = Flask(__name__)
 CORS(app)
 
-# 将配置从Config类加载到Flask应用中（如果需要的话，这里只用作参考）
+# 将配置从Config类加载到Flask应用中（如果需要的话）
 # app.config.from_object(Config)
 
 # 注册Blueprint

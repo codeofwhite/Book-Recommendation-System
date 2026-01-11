@@ -1,30 +1,30 @@
 <template>
   <div class="admin-panel-card">
     <div class="header-section">
-      <h2>Manage Users</h2>
-      <p>View, edit, or manage user accounts.</p>
+      <h2>用户管理</h2>
+      <p>查看、编辑或管理用户账户。</p>
     </div>
 
     <div class="action-bar">
       <button @click="showCreateModal = true" class="create-btn">
-        ➕ Add New User
+        ➕ 添加新用户
       </button>
     </div>
 
     <div class="filter-bar">
-      <input type="text" v-model="searchKeyword" @input="debounceSearch" placeholder="Search users..."
+      <input type="text" v-model="searchKeyword" @input="debounceSearch" placeholder="搜索用户名或邮箱..."
         class="search-input" />
-      <button @click="fetchUsers" class="search-btn">🔍 Search</button>
+      <button @click="fetchUsers" class="search-btn">🔍 搜索</button>
     </div>
 
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
-      <p>Loading users...</p>
+      <p>正在加载用户列表...</p>
     </div>
 
     <div v-if="error" class="error-container">
       <p class="error-message">{{ error }}</p>
-      <button @click="fetchUsers" class="retry-btn">Retry</button>
+      <button @click="fetchUsers" class="retry-btn">重试</button>
     </div>
 
     <div v-if="!loading && !error" class="users-container">
@@ -44,13 +44,13 @@
 
         <div class="user-actions">
           <button @click="editUser(user)" class="action-btn edit-btn">
-            ✏️ Edit
+            ✏️ 编辑
           </button>
           <button @click="viewUserDetails(user)" class="action-btn details-btn">
-            👁️ Details
+            👁️ 详情
           </button>
           <button @click="banUser(user.id)" class="action-btn ban-btn">
-            🚫 Ban User
+            🚫 封禁用户
           </button>
         </div>
       </div>
@@ -58,50 +58,50 @@
 
     <div v-if="!loading && !error && users.length === 0" class="empty-state">
       <div class="empty-icon">👥</div>
-      <p>No users found matching your criteria.</p>
-      <button @click="clearFilters" class="clear-filters-btn">Clear Search</button>
+      <p>未找到匹配的用户。</p>
+      <button @click="clearFilters" class="clear-filters-btn">清空搜索</button>
     </div>
 
     <div v-if="pagination && pagination.pages > 1" class="pagination">
       <button @click="goToPage(pagination.current_page - 1)" :disabled="!pagination.has_prev" class="pagination-btn">
-        ← Previous
+        ← 上一页
       </button>
       <span class="pagination-info">
-        Page {{ pagination.current_page }} of {{ pagination.pages }}
-        ({{ pagination.total }} total users)
+        第 {{ pagination.current_page }} 页 / 共 {{ pagination.pages }} 页
+        (共 {{ pagination.total }} 名用户)
       </span>
       <button @click="goToPage(pagination.current_page + 1)" :disabled="!pagination.has_next" class="pagination-btn">
-        Next →
+        下一页 →
       </button>
     </div>
 
     <div v-if="showCreateModal" class="modal-overlay" @click="closeCreateModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Create New User</h3>
+          <h3>创建新用户</h3>
           <button class="close-button" @click="closeCreateModal">×</button>
         </div>
         <form @submit.prevent="createUser" class="edit-form">
           <div class="form-group">
-            <label>Username:</label>
+            <label>用户名：</label>
             <input type="text" v-model="newUser.username" required>
           </div>
           <div class="form-group">
-            <label>Email:</label>
+            <label>电子邮箱：</label>
             <input type="email" v-model="newUser.email" required>
           </div>
           <div class="form-group">
-            <label>Password:</label>
+            <label>初始密码：</label>
             <input type="password" v-model="newUser.password" required minlength="6">
           </div>
           <div class="form-group">
-            <label>Avatar URL (optional):</label>
+            <label>头像地址 (选填)：</label>
             <input type="url" v-model="newUser.avatar_url">
           </div>
           <div class="form-actions">
-            <button type="button" class="cancel-button" @click="closeCreateModal">Cancel</button>
+            <button type="button" class="cancel-button" @click="closeCreateModal">取消</button>
             <button type="submit" class="save-button" :disabled="creating">
-              {{ creating ? 'Creating...' : 'Create User' }}
+              {{ creating ? '创建中...' : '确认创建' }}
             </button>
           </div>
         </form>
@@ -111,26 +111,26 @@
     <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Edit User</h3>
+          <h3>编辑用户信息</h3>
           <button class="close-button" @click="closeEditModal">×</button>
         </div>
         <form @submit.prevent="saveUser" class="edit-form">
           <div class="form-group">
-            <label>Username:</label>
+            <label>用户名：</label>
             <input type="text" v-model="editingUser.username" required>
           </div>
           <div class="form-group">
-            <label>Email:</label>
+            <label>电子邮箱：</label>
             <input type="email" v-model="editingUser.email" required>
           </div>
           <div class="form-group">
-            <label>Avatar URL:</label>
+            <label>头像地址：</label>
             <input type="url" v-model="editingUser.avatar_url">
           </div>
           <div class="form-actions">
-            <button type="button" class="cancel-button" @click="closeEditModal">Cancel</button>
+            <button type="button" class="cancel-button" @click="closeEditModal">取消</button>
             <button type="submit" class="save-button" :disabled="updating">
-              {{ updating ? 'Saving...' : 'Save Changes' }}
+              {{ updating ? '正在保存...' : '保存更改' }}
             </button>
           </div>
         </form>
@@ -140,24 +140,24 @@
     <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetailsModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>User Details</h3>
+          <h3>用户详情</h3>
           <button class="close-button" @click="closeDetailsModal">×</button>
         </div>
         <div class="modal-body" v-if="selectedUser">
           <div class="detail-section">
-            <h4>User Information</h4>
+            <h4>账户信息</h4>
             <div class="detail-row">
-              <strong>ID:</strong> {{ selectedUser.id }}
+              <strong>用户 ID：</strong> {{ selectedUser.id }}
             </div>
             <div class="detail-row">
-              <strong>Username:</strong> {{ selectedUser.username }}
+              <strong>用户名：</strong> {{ selectedUser.username }}
             </div>
             <div class="detail-row">
-              <strong>Email:</strong> {{ selectedUser.email }}
+              <strong>电子邮箱：</strong> {{ selectedUser.email }}
             </div>
             <div class="detail-row" v-if="selectedUser.avatar_url">
-              <strong>Avatar:</strong>
-              <img :src="selectedUser.avatar_url" alt="Avatar" class="detail-avatar">
+              <strong>头像：</strong>
+              <img :src="selectedUser.avatar_url" alt="头像" class="detail-avatar">
             </div>
           </div>
         </div>

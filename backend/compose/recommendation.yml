@@ -8,15 +8,21 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # 实时层Redis键前缀配置
+      REDIS_REALTIME_RECS_PREFIX: "realtime_rec:user:"
+      REDIS_BOOK_SIMILAR_PREFIX: "book_similar:"
     depends_on:
       redis:
         condition: service_healthy # Ensure Redis is up before starting
       flink-job-submitter: # Ensure Flink job potentially started before this service
-        condition: service_completed_successfully # Or service_healthy if job is long-running
+        condition: service_healthy # service_healthy if job is long-running
+      # 依赖实时层Flink Job提交完成
+      flink-job-submitter-realtime:
+        condition: service_healthy
     networks:
       - book-recommend-network  # 接入公共网络
 
-  # NEW SERVICE: Offline Recommendation Service
+  # Offline Recommendation Service
   offline_recommendation_service:
     build: ../microservices/offline-recommendation-service
     container_name: offline_recommendation_service_app
@@ -53,7 +59,7 @@ services:
         jobmanager.rpc.port: 6123
         rest.address: flink-jobmanager
         rest.port: 8081
-        taskmanager.numberOfTaskSlots: 1
+        taskmanager.numberOfTaskSlots: 2
         python.executable: /usr/bin/python3
     volumes:
       - ../computing-engine/streaming/flink/jobs:/opt/flink/usrlib # Mount Flink Job Python script
@@ -80,7 +86,7 @@ services:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.numberOfTaskSlots: 1
+        taskmanager.numberOfTaskSlots: 2
         python.executable: /usr/bin/python3
     depends_on:
       flink-jobmanager:
@@ -108,8 +114,44 @@ services:
       flink-jobmanager:
         condition: service_healthy
     restart: "no"
+    healthcheck:
+      # 检查 flink 进程是否在运行（流处理作业），或检查作业提交日志是否存在
+      test: ["CMD-SHELL", "ps aux | grep realtime_recommendation_job.py || grep 'JobManager is ready. Submitting PyFlink Job...' /var/log/flink-job-submit.log"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s  # 延长启动周期，给作业提交足够时间
     networks:
       - book-recommend-network  # 接入公共网络
+
+  # 纯实时层Flink Job提交服务
+  flink-job-submitter-realtime:
+    build: ../computing-engine/streaming/flink/custom-images/py
+    container_name: flink-job-submitter-realtime
+    command: >
+      bash -c "
+        echo 'Waiting for Flink JobManager (Real-Time)...' &&
+        until curl -f http://flink-jobmanager:8081/overview; do
+          sleep 5;
+        done &&
+        echo 'JobManager is ready. Submitting Pure Real-Time PyFlink Job...' &&
+        /opt/flink/bin/flink run --jarfile /opt/flink/usrlib/jars/flink-sql-connector-kafka-3.0.0-1.17.jar -py /opt/flink/usrlib/scripts/pure_realtime_recommendation_job.py
+      "
+    volumes:
+      - ../computing-engine/streaming/flink/jars:/opt/flink/usrlib/jars
+      - ../computing-engine/streaming/flink/jobs:/opt/flink/usrlib/scripts  # 挂载实时层Job脚本
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep pure_realtime_recommendation_job.py || grep 'JobManager is ready. Submitting Pure Real-Time PyFlink Job...' /var/log/flink-job-submit-realtime.log"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    networks:
+      - book-recommend-network
 
   # --- Recommendation Service DB ---
   recommendation_db:
@@ -162,8 +204,8 @@ services:
     deploy:
       resources:
         limits: # 硬限制（超限时服务会被杀死）
-          cpus: '2.0'  # 正确缩进：在 limits 内部，比 limits 多 2 个空格
-          memory: 4G   # 正确缩进
+          cpus: '2.0'  
+          memory: 4G   
         reservations:  # 最小保障（启动时至少分配）
           cpus: '1.0'
           memory: 2G

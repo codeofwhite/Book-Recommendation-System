@@ -1,4 +1,3 @@
-<!-- 书籍细节信息页面 -->
 <template>
   <div class="ancient-scroll-page" v-if="book">
     <div class="main-parchment-folio">
@@ -8,40 +7,39 @@
         </div>
         <div class="tome-essential-data">
           <h1 class="tome-grand-title">{{ book.title }}</h1>
-          <h2 v-if="book.series" class="tome-series-chapter">A Volume in The {{ book.series }} Chronicle</h2>
-          <p class="tome-scribe">Penned by {{ book.author }}</p>
+          <h2 v-if="book.series" class="tome-series-chapter">《{{ book.series }}》系列作品</h2>
+          <p class="tome-scribe">执笔者：{{ book.author }}</p>
 
           <div class="celestial-judgement">
             <span class="stars-bestowed">{{ '★'.repeat(Math.round(book.rating)) }}{{ '☆'.repeat(5 -
               Math.round(book.rating))
             }}</span>
-            <span class="whispers-of-appraisal">({{ book.rating }} from {{ book.numRatings }} Judgements)</span>
+            <span class="whispers-of-appraisal">（{{ book.rating }} 分，来自 {{ book.numRatings }} 次评价）</span>
           </div>
 
           <div class="tome-interactive-actions">
             <button @click="toggleLike" :class="{ 'action-button': true, 'liked': isLiked }">
-              <span class="icon">{{ isLiked ? '❤️' : '🤍' }}</span> {{ isLiked ? 'Liked' : 'Like' }} ({{ likeCount }})
+              <span class="icon">{{ isLiked ? '❤️' : '🤍' }}</span> {{ isLiked ? '已喜欢' : '喜欢' }} ({{ likeCount }})
             </button>
             <button @click="toggleCollect" :class="{ 'action-button': true, 'collected': isCollected }">
-              <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? 'Collected' : 'Collect' }}
+              <span class="icon">{{ isCollected ? '✅' : '➕' }}</span> {{ isCollected ? '已收藏' : '收藏' }}
             </button>
             <button v-if="book && book.epubUrl" @click="readOnline" class="action-button">
-              <span class="icon">📖</span> Read Online
+              <span class="icon">📖</span> 在线阅读
             </button>
           </div>
           <div class="tome-provenance-details-grid">
-            <div class="detail-item"><strong>First Inscribed:</strong> {{ book.firstPublishDate || 'Unknown' }}</div>
-            <div class="detail-item"><strong>Published:</strong> {{ book.publishDate }}</div>
-            <div class="detail-item"><strong>Folios:</strong> {{ book.pages }}</div>
-            <div class="detail-item"><strong>Appraisal:</strong> ${{ book.price }}</div>
-            <div class="detail-item" v-if="book.language"><strong>Tongue:</strong> {{ book.language }}</div>
-            <div class="detail-item" v-if="book.isbn"><strong>Cipher (ISBN):</strong> {{ book.isbn }}</div>
-            <div class="detail-item" v-if="book.bookFormat"><strong>Form:</strong> {{ book.bookFormat }}</div>
-            <div class="detail-item" v-if="book.edition"><strong>Edition:</strong> {{ book.edition }}</div>
-            <div class="detail-item" v-if="book.publisher"><strong>Printer:</strong> {{ book.publisher }}</div>
-            <div class="detail-item" v-if="book.bbeScore"><strong>BBE Oracle Score:</strong> {{ book.bbeScore }} (from
-              {{
-                book.bbeVotes }} Voices)</div>
+            <div class="detail-item"><strong>初次撰写:</strong> {{ book.firstPublishDate || '未知' }}</div>
+            <div class="detail-item"><strong>出版日期:</strong> {{ book.publishDate }}</div>
+            <div class="detail-item"><strong>卷轴页数:</strong> {{ book.pages }}</div>
+            <div class="detail-item"><strong>估值:</strong> ￥{{ book.price }}</div>
+            <div class="detail-item" v-if="book.language"><strong>语种:</strong> {{ book.language }}</div>
+            <div class="detail-item" v-if="book.isbn"><strong>编号 (ISBN):</strong> {{ book.isbn }}</div>
+            <div class="detail-item" v-if="book.bookFormat"><strong>装帧:</strong> {{ book.bookFormat }}</div>
+            <div class="detail-item" v-if="book.edition"><strong>版本:</strong> {{ book.edition }}</div>
+            <div class="detail-item" v-if="book.publisher"><strong>出版商:</strong> {{ book.publisher }}</div>
+            <div class="detail-item" v-if="book.bbeScore"><strong>BBE 评分:</strong> {{ book.bbeScore }}（来自 {{
+              book.bbeVotes }} 票）</div>
           </div>
 
           <div class="scholarly-genres-seals">
@@ -51,18 +49,18 @@
       </div>
 
       <div class="tome-narrative-summary">
-        <h3 class="section-heading">The Chronicle's Essence</h3>
+        <h3 class="section-heading">卷轴梗概</h3>
         <p class="summary-parchment">
           {{ displayDescription }}
           <span v-if="shouldShowDescriptionToggle" @click="toggleDescription" class="toggle-text-button">
-            {{ showFullDescription ? 'Show Less' : 'Show More' }}
+            {{ showFullDescription ? '收起' : '展开更多' }}
           </span>
         </p>
       </div>
 
       <div class="tome-additional-annotations">
         <div v-if="book.characters && book.characters.length > 0">
-          <h3 class="section-heading">Notable Figures Within</h3>
+          <h3 class="section-heading">书中人物</h3>
           <div class="characters-of-note">
             <span v-for="character in book.characters" :key="character" class="character-sigil">{{ character
             }}</span>
@@ -70,19 +68,19 @@
         </div>
 
         <div v-if="book.setting && book.setting.length > 0">
-          <h3 class="section-heading">Realms & Locales Described</h3>
+          <h3 class="section-heading">故事疆域与场景</h3>
           <div class="settings-of-the-tale">
             <span v-for="loc in book.setting" :key="loc" class="setting-marker">{{ loc }}</span>
           </div>
         </div>
 
         <div v-if="book.awards && book.awards.length > 0">
-          <h3 class="section-heading">Laurels & Distinctions Awarded</h3>
+          <h3 class="section-heading">荣誉与奖项</h3>
           <ul class="laurels-list">
             <li v-for="(award, index) in displayAwards" :key="index">{{ award }}</li>
             <li v-if="shouldShowAwardsToggle" class="toggle-list-item">
               <a href="#" @click.prevent="toggleAwards" class="toggle-text-button">
-                {{ showAllAwards ? 'Show Less' : 'Show More' }}
+                {{ showAllAwards ? '收起' : '展开更多' }}
               </a>
             </li>
           </ul>
@@ -90,16 +88,16 @@
 
         <div v-if="book.likedPercent || (book.ratingsByStars && Object.keys(book.ratingsByStars).length > 0)"
           class="readership-stats-group">
-          <h3 class="section-heading">Affection & Distribution of Critiques</h3>
+          <h3 class="section-heading">读者偏好与评价分布</h3>
           <div class="stats-content-flex">
             <div v-if="book.likedPercent" class="affection-measure-container">
-              <p class="affection-measure">{{ book.likedPercent }}% of Readers Hold This Tome Dearly.</p>
+              <p class="affection-measure">{{ book.likedPercent }}% 的读者由衷喜爱此书。</p>
             </div>
 
             <div v-if="book.ratingsByStars && Object.keys(book.ratingsByStars).length > 0"
               class="critique-distribution">
               <div v-for="(count, star) in book.ratingsByStars" :key="star" class="star-critique-row">
-                <span>{{ star }} Stars:</span>
+                <span>{{ star }} 星:</span>
                 <div class="star-bar-scroll-container">
                   <div class="star-bar-illumination" :style="{ width: (count / book.numRatings * 100) + '%' }"></div>
                 </div>
@@ -111,24 +109,23 @@
       </div>
 
       <div class="tome-reviews-section">
-        <h3 class="section-heading">Reader's Reflections</h3>
+        <h3 class="section-heading">读者感悟</h3>
 
         <div class="review-submission-form">
-          <h4>Pen Your Own Reflection</h4>
-          <textarea v-model="newReviewContent" placeholder="Share your thoughts on this tome..." rows="5"
-            class="review-textarea"></textarea>
+          <h4>撰写您的读后感</h4>
+          <textarea v-model="newReviewContent" placeholder="在此留下您对本卷的思考..." rows="5" class="review-textarea"></textarea>
           <div class="review-rating-input">
-            <label for="review-rating">Your Appraisal:</label>
+            <label for="review-rating">您的评价：</label>
             <select v-model.number="newReviewRating" id="review-rating" class="review-rating-select">
-              <option value="0" disabled>Select a rating</option>
-              <option v-for="n in 5" :key="n" :value="n">{{ n }} Star{{ n > 1 ? 's' : '' }}</option>
+              <option value="0" disabled>选择星级</option>
+              <option v-for="n in 5" :key="n" :value="n">{{ n }} 星</option>
             </select>
           </div>
-          <button @click="submitReview" class="submit-review-button">Inscribe Your Review</button>
+          <button @click="submitReview" class="submit-review-button">题写评论</button>
         </div>
 
         <div class="existing-reviews-list">
-          <p v-if="bookReviews.length === 0" class="no-reviews-message">No reflections penned yet. Be the first!</p>
+          <p v-if="bookReviews.length === 0" class="no-reviews-message">尚无感悟。期待您墨宝的首评！</p>
           <div v-for="review in bookReviews" :key="review.id" class="review-entry">
             <div class="review-header">
               <img :src="review.reviewerAvatarUrl" alt="Reviewer Avatar" class="reviewer-avatar" />
@@ -141,36 +138,36 @@
               <span class="review-stars">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
               <button v-if="currentUserId === review.userId" @click="deleteReview(review.id)"
                 class="delete-review-button">
-                Delete
+                删除
               </button>
             </div>
             <p class="review-content">{{ review.content }}</p>
             <div class="review-actions">
               <button @click="toggleReviewLike(review)"
                 :class="{ 'review-action-button': true, 'liked': review.isLikedByCurrentUser }">
-                <span class="icon">{{ review.isLikedByCurrentUser ? '❤️' : '🤍' }}</span> Like ({{ review.likeCount }})
+                <span class="icon">{{ review.isLikedByCurrentUser ? '❤️' : '🤍' }}</span> 喜欢 ({{ review.likeCount }})
               </button>
               <button @click="toggleReviewCollect(review)"
                 :class="{ 'review-action-button': true, 'collected': review.isCollectedByCurrentUser }">
-                <span class="icon">{{ review.isCollectedByCurrentUser ? '✅' : '➕' }}</span> Collect ({{
+                <span class="icon">{{ review.isCollectedByCurrentUser ? '✅' : '➕' }}</span> 收藏 ({{
                   review.collectCount }})
               </button>
               <button @click="toggleCommentInput(review.id)" class="review-action-button">
-                <span class="icon">💬</span> Comments
+                <span class="icon">💬</span> 回复
               </button>
             </div>
 
             <div v-if="showCommentInput === review.id" class="comments-section">
               <div class="comment-submission-form">
-                <textarea v-model="newCommentContent" placeholder="Add your comment..." rows="3"
+                <textarea v-model="newCommentContent" placeholder="添加您的评论..." rows="3"
                   class="comment-textarea"></textarea>
-                <button @click="submitComment(review.id)" class="submit-comment-button">Post Comment</button>
+                <button @click="submitComment(review.id)" class="submit-comment-button">发表回复</button>
               </div>
 
               <div class="existing-comments-list">
                 <p v-if="!commentsByReview[review.id] || commentsByReview[review.id].length === 0"
                   class="no-comments-message">
-                  No comments yet. Be the first to comment!
+                  暂无评论。快来发表您的真知灼见吧！
                 </p>
                 <div v-for="comment in commentsByReview[review.id]" :key="comment.id" class="comment-entry">
                   <div class="comment-header">
@@ -183,12 +180,12 @@
                         : '日期无效' }}
                     </span>
                     <button v-if="currentUserId === comment.userId" @click="deleteComment(comment.id, review.id)"
-                      class="delete-comment-button">Delete</button>
+                      class="delete-comment-button">删除</button>
                   </div>
                   <p class="comment-content">{{ comment.content }}</p>
                 </div>
                 <button v-if="commentsByReview[review.id] && commentsByReview[review.id].length >= commentsPerPage"
-                  @click="loadMoreComments(review.id)" class="load-more-comments-button">Load More Comments</button>
+                  @click="loadMoreComments(review.id)" class="load-more-comments-button">加载更多回复</button>
               </div>
             </div>
           </div>
@@ -196,14 +193,14 @@
       </div>
 
       <div class="tome-actions">
-        <button @click="goBack" class="return-to-catalogue-button">Return to the Grand Catalogue</button>
+        <button @click="goBack" class="return-to-catalogue-button">返回大书库</button>
       </div>
     </div>
 
     <div class="scribe-notes-sidebar">
       <div class="oracle-douban-section">
         <div class="sidebar-section-header" @click="toggleDoubanResults">
-          <h2 class="sidebar-section-title">Douban Oracle's Prophecies <span class="toggle-rune">{{ showDoubanResults ?
+          <h2 class="sidebar-section-title">豆瓣神启 (参考) <span class="toggle-rune">{{ showDoubanResults ?
             '▼' : '▶' }}</span></h2>
         </div>
         <transition name="unfurl-scroll">
@@ -220,24 +217,25 @@
               </li>
             </ul>
             <p v-else-if="searched && doubanSearchResults.length === 0" class="no-oracle-findings">
-              The Oracle finds no kindred spirits on Douban.
+              在豆瓣神示中未寻得相关卷轴。
             </p>
           </div>
         </transition>
       </div>
 
-      ---
+      <hr class="sidebar-divider" />
 
       <div class="realtime-recommendations-section">
-        <h3 class="sidebar-section-title">实时推荐：为您量身定制的卷轴</h3>
+        <h3 class="sidebar-section-title">实时推荐：量身定制</h3>
         <p v-if="realtimeRecommendations.length === 0 && !loadingRecommendations" class="no-recommendations-message">
           尚无实时推荐。探索更多书籍以生成个性化推荐！
         </p>
         <p v-else-if="loadingRecommendations" class="loading-message">
-          正在为您生成实时推荐...
+          正在为您探寻同类卷轴...
         </p>
         <ul v-else class="recommendations-list">
-          <li v-for="recBook in realtimeRecommendations" :key="recBook.bookId" class="recommendation-item">
+          <li v-for="recBook in realtimeRecommendations" :key="recBook.bookId" class="recommendation-item"
+            @click="handleBookDetailClick(recBook)">
             <router-link :to="`/books/${recBook.bookId}`" class="recommendation-link">
               <img :src="recBook.coverImg" :alt="recBook.title" class="recommendation-cover" />
               <div class="recommendation-info">
@@ -249,26 +247,26 @@
         </ul>
       </div>
 
-      ---
+      <hr class="sidebar-divider" />
 
       <div class="scribe-notes-section">
-        <h3 class="sidebar-section-title">Further Recommendations</h3>
-        <p class="sidebar-text">更多推荐典籍待您细品...</p>
+        <h3 class="sidebar-section-title">更多建议</h3>
+        <p class="sidebar-text">更多珍贵典籍待您发掘...</p>
       </div>
     </div>
   </div>
 
   <div v-else-if="loading" class="scribe-at-work">
-    The Scribe is diligently retrieving the Tome's details...
+    执笔者正在努力调取典籍详情...
   </div>
   <div v-else class="tome-vanished">
-    Alas, this Tome has vanished from our collection.
+    唉，此卷轴似乎已从大书库中消失。
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import { trackPageView, trackButtonClick } from '../services/logger.js';
+import { trackPageView, trackButtonClick, trackBookClick, trackBookDetailView } from '../services/logger.js';
 
 // Helper function to get user data from localStorage
 const getParsedUserData = () => {
@@ -349,28 +347,54 @@ export default {
     }
   },
   //埋点
-  mounted() {
+  async mounted() {
     this.pageViewStartTime = Date.now();
     this.pageUrlOnMount = window.location.href;
+    await this.fetchRealtimeRecommendations();
+    this.start5sAutoRefresh();
+    console.log("已开启实时推荐列表【每5秒自动刷新】模式");
   },
   beforeUnmount() {
     const endTime = Date.now();
     const dwellTimeInSeconds = Math.round((endTime - this.pageViewStartTime) / 1000);
     trackPageView('BookDetails', dwellTimeInSeconds, this.pageUrlOnMount);
+
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    console.log("已关闭5秒自动刷新定时器");
   },
   // 监听路由参数变化，当 bookId 变化时重新加载数据
   watch: {
     '$route.params.bookId': {
-      handler(newBookId, oldBookId) {
+      async handler(newBookId, oldBookId) {
         // 只有当 bookId 实际发生变化时才重新加载，避免不必要的调用
         if (newBookId !== oldBookId) {
           this.loadBookData();
         }
+        if (this.book && this.book.bookId) {
+          trackBookDetailView(this.book.bookId, window.location.href);
+        }
+        await this.fetchRealtimeRecommendations(); // 上报后立即刷新推荐列表
       },
       immediate: true // 立即执行一次，确保组件初始化时加载数据
     }
   },
   methods: {
+    async handleBookDetailClick(book) {
+      const userId = this.currentUserId;
+      if (!userId || !book || !book.bookId) {
+        console.log("用户未登录/图书信息不全，跳过埋点上报");
+        return;
+      }
+      trackBookClick(userId, book.bookId, new Date().toISOString(), window.location.href);
+      console.log(`【详情页埋点】用户 ${userId} 点击了书籍: ${book.title} (${book.bookId})`);
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        await this.fetchRealtimeRecommendations();
+      }
+    },
     /**
     * 切换评论输入框的显示/隐藏状态
     * @param {string} reviewId - 要切换评论的 reviewId
@@ -964,14 +988,42 @@ export default {
       try {
         const response = await axios.get(`/service-f/realtime_updated_recommendations/${userId}`);
         this.realtimeRecommendations = response.data.recommendations || [];
-        console.log("实时推荐数据:", this.realtimeRecommendations);
+        console.log("实时推荐数据已自动刷新(每5秒):", this.realtimeRecommendations);
 
       } catch (error) {
         console.error('Error fetching realtime recommendations:', error);
         this.realtimeRecommendations = [];
       } finally {
         this.loadingRecommendations = false;
+        this.isRefreshing = false; // 请求完成，释放防抖锁
       }
+    },
+
+    async handleBookClick(book) {
+      trackBookClick(this.user.user_id, book.bookId, new Date().toISOString(), window.location.href);
+      console.log(`用户 ${this.user.user_id} 点击了书籍: ${book.title} (${book.bookId})`);
+      this.showRecommendationTip = false;
+      // 点击时立即刷新一次，无需等5秒，体验更好
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        await this.fetchRealtimeRecommendations();
+      }
+    },
+
+    start5sAutoRefresh() {
+      // 先清除旧定时器，防止重复开启
+      if (this.refreshTimer) clearInterval(this.refreshTimer);
+      // 设置：每5000毫秒 = 5秒 执行一次刷新
+      this.refreshTimer = setInterval(async () => {
+        // 防抖逻辑：如果上一次请求还没完成，就跳过本次刷新
+        if (!this.isRefreshing && this.currentUserId) {
+          this.isRefreshing = true;
+          await this.fetchRealtimeRecommendations();
+        }
+      }, 5000);
+    },
+    async refreshRecommendList() {
+      await this.fetchRealtimeRecommendations();
     },
   },
 };

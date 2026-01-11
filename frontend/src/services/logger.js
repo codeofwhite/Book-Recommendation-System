@@ -20,13 +20,14 @@ export async function trackEvent(eventType, payload = {}, customPageUrl = null) 
 
   // 2. 构建标准化的日志数据结构
   const logData = {
-    userId: userId,
-    sessionId: sessionId,
+    userId: userStore.isLoggedIn ? userStore.user.user_id : null,
+    sessionId: userStore.sessionId,
     eventType: eventType,
     timestamp: new Date().toISOString(),
-    // **【优化】** 优先使用传入的URL，如果未提供，再使用全局的 window.location.href
     pageUrl: customPageUrl || window.location.href,
-    payload: payload,
+    payload: {
+      ...payload,
+    },
   };
 
   // 3. 根据环境决定如何处理日志
@@ -62,7 +63,7 @@ export const trackBookClick = (bookId) => {
  * 跟踪页面浏览事件和停留时长。
  * @param {string} pageName - 被浏览页面的名称 (例如: 'BookList', 'BookDetails')。
  * @param {number} dwellTimeInSeconds - 用户在该页面的总停留时长（单位：秒）。
- * @param {string} pageUrl - 【新增】事件发生时页面的确切URL。
+ * @param {string} pageUrl - 事件发生时页面的确切URL。
  */
 export const trackPageView = (pageName, dwellTimeInSeconds, pageUrl) => {
   // 事件1: 发送“浏览次数”事件 (Page View)
@@ -83,4 +84,19 @@ export const trackButtonClick = (buttonName, pageName, context = {}) => {
     pageName: pageName,
     ...context,
   });
+};
+
+export const trackBookDetailView = (bookId, pageUrl) => {
+  // 构造明确的 payload 对象
+  console.log(`[DEBUG] trackBookDetailView called with bookId=${bookId}`);
+  const payload = {
+    pageName: 'BookDetails',
+    dwellTime: 1,
+    bookId: String(bookId) // 强制转为字符串，防止 Flink 类型解析异常
+  };
+
+  // 调用 trackEvent
+  trackEvent('page_view', payload, pageUrl);
+  
+  console.log(`✅ 发送埋点: bookId=${bookId}, payload内容:`, payload);
 };

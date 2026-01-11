@@ -2,14 +2,13 @@
   <div class="container">
     <div class="left-panel">
       <div class="brand">
-        <h1>BookHug</h1>
-        <p>Discover your next literary adventure with personalized recommendations from classic to contemporary
-          masterpieces.</p>
+        <h1>书遇</h1> 
+        <p>从传世经典到现代名著，通过个性化推荐，发现您的下一次文学奇遇。</p>
       </div>
 
       <div class="quote">
-        <p>"A reader lives a thousand lives before he dies. The man who never reads lives only one."</p>
-        <div class="author">- George R.R. Martin</div>
+        <p>“读书人死前可以经历千种人生，而不读书的人只能活一次。”</p>
+        <div class="author">- 乔治·R·R·马丁</div>
       </div>
 
       <div class="book-icons">
@@ -31,19 +30,19 @@
       <div class="form-container">
         <form @submit.prevent="handleSubmit">
           <div class="form-header">
-            <h2>{{ isRegister ? '创建你的账号' : '欢迎回来' }}</h2>
-            <p>{{ isRegister ? '加入我们，开始你的阅读之旅' : '登录以继续你的文学旅程' }}</p>
+            <h2>{{ isRegister ? '创建您的账号' : '欢迎回来' }}</h2>
+            <p>{{ isRegister ? '加入我们，开启您的阅读之旅' : '登录以继续您的阅读之旅' }}</p>
           </div>
 
           <div class="form-group">
             <i class="fas fa-user"></i>
-            <input type="text" id="username" v-model="username" :placeholder="isRegister ? '用户名' : '用户名或邮箱'" required
+            <input type="text" id="username" v-model="username" :placeholder="isRegister ? '请输入用户名' : '用户名或邮箱'" required
               @focus="handleInputFocus" @blur="handleInputBlur">
           </div>
 
           <div class="form-group" v-if="isRegister">
             <i class="fas fa-envelope"></i>
-            <input type="email" id="email" v-model="email" placeholder="邮箱" required @focus="handleInputFocus"
+            <input type="email" id="email" v-model="email" placeholder="电子邮箱" required @focus="handleInputFocus"
               @blur="handleInputBlur">
           </div>
 
@@ -56,12 +55,12 @@
           <div class="options" v-if="!isRegister">
             <div class="remember">
               <input type="checkbox" id="remember">
-              <label for="remember">记住我</label>
+              <label for="remember">记住账号</label>
             </div>
           </div>
 
           <button type="submit" class="btn" :disabled="loading" @click="handleButtonClick">
-            {{ isRegister ? '注册' : '登录' }}
+            {{ isRegister ? '立即注册' : '登录账号' }}
           </button>
 
           <p v-if="message" :class="{ 'success-message': !isError, 'error-message': isError }" class="message-display">

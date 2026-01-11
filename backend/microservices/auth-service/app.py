@@ -19,6 +19,7 @@ CORS(app)
 # --- 配置上传文件路径 ---
 # 获取当前脚本的绝对路径
 basedir = os.path.abspath(os.path.dirname(__file__))
+
 # 定义头像上传目录
 UPLOAD_FOLDER = os.path.join(basedir, "uploads", "avatars")
 if not os.path.exists(UPLOAD_FOLDER):
@@ -171,7 +172,7 @@ def get_user_info(user_id):
     )
 
 
-# --- 新增：更新用户资料接口 (用于问卷提交) ---
+# --- 更新用户资料接口 (用于问卷提交) ---
 @app.route("/api/users/<int:user_id>/profile", methods=["PUT"])
 def update_user_profile(user_id):
     """
@@ -237,8 +238,8 @@ def update_nickname(user_id):
     if not new_nickname:
         return jsonify({"message": "Nickname is required"}), 400
 
-    # 在你的User模型中，nickname目前就是username
-    # 如果你想区分，你需要给User模型添加一个nickname字段
+    # 在User模型中，nickname目前就是username
+    # 如果想区分，需要给User模型添加一个nickname字段
     # 这里我们假设更新的是username作为nickname
     if (
         User.query.filter_by(username=new_nickname).first()
@@ -313,137 +314,6 @@ def upload_avatar(user_id):
 @app.route("/uploads/avatars/<filename>")
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
-
-
-# --- 假设的收藏管理路由 (需要对应数据库模型) ---
-# 这些API需要你进一步定义数据库模型和业务逻辑
-# 这里只是提供一个骨架，返回模拟数据
-
-
-@app.route("/api/users/<int:user_id>/favorite_books", methods=["GET"])
-def get_favorite_books(user_id):
-    """
-    获取用户收藏的图书列表。
-    目前返回模拟数据。
-    """
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    # 实际应用中，你需要从数据库中查询该用户的收藏图书
-    # 假设你有一个 FavoriteBook 模型，并与 User 关联
-    # favorite_books = FavoriteBook.query.filter_by(user_id=user_id).all()
-    # return jsonify([book.to_dict() for book in favorite_books]), 200
-
-    # 模拟数据
-    mock_books = [
-        {
-            "book_id": 1,
-            "title": "Python编程从入门到实践",
-            "author": "Eric Matthes",
-            "cover_img": "https://via.placeholder.com/100x150?text=Python",
-            "add_time": "2024-01-15T10:00:00Z",
-            "rating": 5,
-        },
-        {
-            "book_id": 2,
-            "title": "深入理解JavaScript",
-            "author": "Kyle Simpson",
-            "cover_img": "https://via.placeholder.com/100x150?text=JS",
-            "add_time": "2024-02-20T14:30:00Z",
-            "rating": 4,
-        },
-    ]
-    return jsonify(mock_books), 200
-
-
-@app.route("/api/users/<int:user_id>/favorite_reviews", methods=["GET"])
-def get_favorite_reviews(user_id):
-    """
-    获取用户收藏的书评列表。
-    目前返回模拟数据。
-    """
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    # 实际应用中，你需要从数据库中查询该用户的收藏书评
-    # 假设你有一个 FavoriteReview 模型，并与 User 关联
-    # favorite_reviews = FavoriteReview.query.filter_by(user_id=user_id).all()
-    # return jsonify([review.to_dict() for review in favorite_reviews]), 200
-
-    # 模拟数据
-    mock_reviews = [
-        {
-            "review_id": 101,
-            "book_auther": "Eric Matthes",
-            "book_title": "Python编程从入门到实践",
-            "title": "非常实用的Python入门书籍",
-            "content": "这本书深入浅出，非常适合初学者，跟着例子一步步做很有成就感。",
-            "rating": 5,
-            "like_count": 25,
-            "add_time": "2024-03-01T09:15:00Z",
-        },
-        {
-            "review_id": 102,
-            "book_title": "深入理解JavaScript",
-            "book_auther": "Kyle Simpson",
-            "title": "JavaScript的深度解析",
-            "content": "对于JavaScript的高级概念讲解得很透彻，需要反复阅读。",
-            "rating": 4,
-            "like_count": 12,
-            "add_time": "2024-04-10T11:45:00Z",
-        },
-    ]
-    return jsonify(mock_reviews), 200
-
-
-@app.route("/api/users/<int:user_id>/favorite_books/<int:book_id>", methods=["DELETE"])
-def remove_favorite_book(user_id, book_id):
-    """
-    从用户收藏中移除一本图书。
-    """
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    # 实际应用中，执行删除收藏图书的逻辑
-    # favorite_book = FavoriteBook.query.filter_by(user_id=user_id, book_id=book_id).first()
-    # if favorite_book:
-    #     db.session.delete(favorite_book)
-    #     db.session.commit()
-    #     return jsonify({'message': 'Book removed from favorites successfully'}), 200
-    # else:
-    #     return jsonify({'message': 'Favorite book not found'}), 404
-
-    print(f"DEBUG: Attempting to remove book {book_id} for user {user_id}")
-    # 模拟删除成功
-    return jsonify({"message": "Book removed from favorites (simulated)"}), 200
-
-
-@app.route(
-    "/api/users/<int:user_id>/favorite_reviews/<int:review_id>", methods=["DELETE"]
-)
-def remove_favorite_review(user_id, review_id):
-    """
-    从用户收藏中移除一条书评。
-    """
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    # 实际应用中，执行删除收藏书评的逻辑
-    # favorite_review = FavoriteReview.query.filter_by(user_id=user_id, review_id=review_id).first()
-    # if favorite_review:
-    #     db.session.delete(favorite_review)
-    #     db.session.commit()
-    #     return jsonify({'message': 'Review removed from favorites successfully'}), 200
-    # else:
-    #     return jsonify({'message': 'Favorite review not found'}), 404
-
-    print(f"DEBUG: Attempting to remove review {review_id} for user {user_id}")
-    # 模拟删除成功
-    return jsonify({"message": "Review removed from favorites (simulated)"}), 200
 
 
 # --- 用户管理接口（整合自 user_routes.py） ---

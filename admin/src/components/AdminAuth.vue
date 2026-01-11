@@ -1,34 +1,66 @@
 <template>
   <div class="auth-container">
+    <div class="bg-decoration">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+    </div>
+
     <div class="auth-card">
       <div class="auth-header">
-        <h2>📚 Book Admin Portal</h2>
-        <p>{{ isLogin ? 'Sign in to your admin account' : 'Create a new admin account' }}</p>
+        <div class="admin-logo">
+          <span class="logo-icon">🔒</span>
+        </div>
+        <h2>图书后台管理系统</h2>
+        <p>Book Administration Portal</p>
       </div>
 
-      <!-- Login Form -->
-      <form v-if="isLogin" @submit.prevent="handleLogin" class="auth-form">
-        <div class="form-group">
-          <label for="email">📧 Name</label>
-          <input type="text" id="email" v-model="loginForm.email" required placeholder="Enter your name">
-        </div>
-        <div class="form-group">
-          <label for="password">🔒 Password</label>
-          <input type="password" id="password" v-model="loginForm.password" required placeholder="Enter your password">
-        </div>
-        <button type="submit" class="auth-button" :disabled="loading">
-          {{ loading ? 'Signing in...' : '🚀 Sign In' }}
-        </button>
-      </form>
+      <div class="auth-body">
+        <form @submit.prevent="handleLogin" class="auth-form">
+          <div class="form-group">
+            <label for="username">管理员账号</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" id="username" v-model="loginForm.email" required placeholder="请输入管理员用户名"
+                :disabled="loading">
+            </div>
+          </div>
 
-      <!-- Error message -->
-      <div v-if="error" class="error-message">
-        ⚠️ {{ error }}
+          <div class="form-group">
+            <label for="password">安全密码</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="password" v-model="loginForm.password" required placeholder="请输入登录密码"
+                :disabled="loading">
+            </div>
+          </div>
+
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox"> 记住登录状态
+            </label>
+            <a href="#" class="forgot-link">忘记密码？</a>
+          </div>
+
+          <button type="submit" class="auth-button" :disabled="loading">
+            <span v-if="loading" class="loader"></span>
+            <span>{{ loading ? '正在验证身份...' : '立即登录' }}</span>
+          </button>
+        </form>
+
+        <transition name="fade">
+          <div v-if="error" class="message-banner error">
+            <span class="msg-icon">⚠️</span> {{ error }}
+          </div>
+        </transition>
+        <transition name="fade">
+          <div v-if="success" class="message-banner success">
+            <span class="msg-icon">✅</span> {{ success }}
+          </div>
+        </transition>
       </div>
 
-      <!-- Success message -->
-      <div v-if="success" class="success-message">
-        ✅ {{ success }}
+      <div class="auth-footer">
+        <p>&copy; 2026 图书管理系统 - 安全加固环境</p>
       </div>
     </div>
   </div>
@@ -40,9 +72,6 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
-
-// Reactive data
-const isLogin = ref(true)
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
@@ -52,59 +81,38 @@ const loginForm = ref({
   password: ''
 })
 
-// Handle login
 const handleLogin = async () => {
   if (loading.value) return
-
   error.value = ''
   success.value = ''
   loading.value = true
 
   try {
-    const response = await axios.post('/api/admin/login', {
-      email: loginForm.value.email,
-      password: loginForm.value.password
-    })
+    // 模拟或真实请求
+    const response = await axios.post('/api/admin/login', loginForm.value)
 
-    // Store auth token
     localStorage.setItem('adminToken', response.data.token)
     localStorage.setItem('adminUser', JSON.stringify(response.data.user))
+    success.value = '身份验证成功，正在进入系统...'
 
-    success.value = 'Login successful! Redirecting...'
-
-    // Redirect to dashboard
     setTimeout(() => {
-      router.push('/dashboard');
-      // 强制刷新页面
-      window.location.reload();
-    }, 1000);
-
+      router.push('/dashboard').then(() => {
+        window.location.reload()
+      })
+    }, 1200)
 
   } catch (err) {
-    console.error('Login error:', err)
-
-    // For demo purposes, allow login with demo credentials
+    // 演示账号 root/root123 的逻辑处理保持一致
     if (loginForm.value.email === 'root' && loginForm.value.password === 'root123') {
-      const mockUser = {
-        id: 1,
-        email: 'root',
-        username: 'root',
-        role: 'admin'
-      }
-
+      const mockUser = { id: 1, username: '超级管理员', role: 'admin' }
       localStorage.setItem('adminToken', 'demo-token-123')
       localStorage.setItem('adminUser', JSON.stringify(mockUser))
-
-      success.value = 'Login successful! Redirecting...'
-
+      success.value = '演示账号登录成功...'
       setTimeout(() => {
-        router.push('/dashboard');
-        // 强制刷新页面
-        window.location.reload();
-      }, 1000);
-
+        router.push('/dashboard').then(() => window.location.reload())
+      }, 1000)
     } else {
-      error.value = err.response?.data?.message || 'Login failed. Please check your credentials.'
+      error.value = '登录失败：账号或密码校验未通过'
     }
   } finally {
     loading.value = false
@@ -113,205 +121,242 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* Reset and ensure full screen coverage */
-* {
-  box-sizing: border-box;
-}
-
+/* 容器设计：深色专业背景 */
 .auth-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-  margin: 0;
-  z-index: 1000;
-  overflow: auto;
+  background-color: #0f172a;
+  /* 深色科技蓝 */
+  background-image:
+    radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.5) 0, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(126, 34, 206, 0.3) 0, transparent 50%);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
+/* 背景装饰 */
+.bg-decoration .circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+}
+
+.circle-1 {
+  width: 400px;
+  height: 400px;
+  background: rgba(59, 130, 246, 0.15);
+  top: -100px;
+  left: -100px;
+}
+
+.circle-2 {
+  width: 300px;
+  height: 300px;
+  background: rgba(147, 51, 234, 0.1);
+  bottom: -50px;
+  right: -50px;
+}
+
+/* 登录卡片 */
 .auth-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
+  position: relative;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 50px 40px;
   width: 100%;
-  max-width: 480px;
-  animation: slideUp 0.5s ease-out;
-  margin: auto;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  max-width: 440px;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 .auth-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
+}
+
+.admin-logo {
+  width: 64px;
+  height: 64px;
+  background: #3b82f6;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
 }
 
 .auth-header h2 {
-  color: #2c3e50;
-  margin-bottom: 8px;
-  font-size: 1.8em;
-  font-weight: 600;
+  color: #1e293b;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .auth-header p {
-  color: #7f8c8d;
-  font-size: 1em;
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-top: 5px;
+  letter-spacing: 1px;
 }
 
+/* 表单设计 */
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
+  gap: 24px;
 }
 
 .form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
   margin-bottom: 8px;
-  font-weight: 500;
-  color: #495057;
-  font-size: 1em;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 18px;
+  color: #94a3b8;
 }
 
 .form-group input {
-  padding: 12px 16px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  font-size: 1em;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   width: 100%;
+  padding: 14px 14px 14px 44px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  background: #f8fafc;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
-.help-text {
-  margin-top: 4px;
-  color: #6c757d;
-  font-size: 0.85em;
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
 }
 
+.remember-me {
+  color: #64748b;
+  cursor: pointer;
+}
+
+.forgot-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* 按钮设计 */
 .auth-button {
-  padding: 14px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  width: 100%;
+  padding: 14px;
+  background: #1e293b;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1em;
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-top: 10px;
-  width: 100%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .auth-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  background: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
 }
 
 .auth-button:disabled {
-  opacity: 0.7;
+  opacity: 0.8;
   cursor: not-allowed;
-  transform: none;
 }
 
-.auth-toggle {
+/* 消息横幅 */
+.message-banner {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.message-banner.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fee2e2;
+}
+
+.message-banner.success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #dcfce7;
+}
+
+.auth-footer {
+  margin-top: 30px;
   text-align: center;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid #e9ecef;
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
-.auth-toggle p {
-  color: #6c757d;
-  margin: 0;
+/* 加载动画 */
+.loader {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ffffff;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  animation: rotation 1s linear infinite;
 }
 
-.toggle-button {
-  background: none;
-  border: none;
-  color: #667eea;
-  cursor: pointer;
-  font-weight: 500;
-  text-decoration: underline;
-}
-
-.toggle-button:hover {
-  color: #764ba2;
-}
-
-.error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-top: 16px;
-  border: 1px solid #f5c6cb;
-}
-
-.success-message {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-top: 16px;
-  border: 1px solid #c3e6cb;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .auth-container {
-    padding: 16px;
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
   }
 
-  .auth-card {
-    padding: 30px 20px;
-    max-width: 100%;
-  }
-
-  .auth-header h2 {
-    font-size: 1.5em;
+  100% {
+    transform: rotate(360deg);
   }
 }
 
-@media (max-width: 480px) {
-  .auth-container {
-    padding: 12px;
-  }
+/* 渐变过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
 
-  .auth-card {
-    padding: 24px 16px;
-  }
-
-  .form-group input {
-    padding: 10px 12px;
-  }
-
-  .auth-button {
-    padding: 12px 16px;
-  }
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
