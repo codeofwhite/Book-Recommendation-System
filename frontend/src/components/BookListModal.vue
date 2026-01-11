@@ -16,12 +16,7 @@
 
         <div class="modal-body">
           <div v-if="books.length > 0" class="book-grid-modal">
-            <div 
-              v-for="book in books" 
-              :key="book.id" 
-              class="book-card-modal"
-              @click="viewBookDetails(book.id)"
-            >
+            <div v-for="book in books" :key="book.id" class="book-card-modal" @click="viewBookDetails(book.id)">
               <div class="book-visual-wrapper">
                 <div class="book-frame">
                   <div class="book-cover-container">
@@ -43,12 +38,13 @@
                     </span>
                   </div>
                 </div>
-                
+
                 <button class="details-button-modal">
                   <span>阅读详情</span>
                   <div class="button-arrow">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   </div>
                 </button>
@@ -230,7 +226,7 @@ const viewBookDetails = (bookId) => {
   overflow: hidden;
   transition: all 0.5s ease;
   transform-style: preserve-3d;
-  box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .book-cover-container {
@@ -247,18 +243,23 @@ const viewBookDetails = (bookId) => {
 
 .cover-shimmer {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
   pointer-events: none;
 }
 
 .book-spine {
   position: absolute;
-  left: 0; top: 0; bottom: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 12px;
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   backdrop-filter: brightness(0.8);
-  box-shadow: inset -2px 0 5px rgba(0,0,0,0.2);
+  box-shadow: inset -2px 0 5px rgba(0, 0, 0, 0.2);
 }
 
 /* 悬停动画 */
@@ -368,37 +369,74 @@ const viewBookDetails = (bookId) => {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* 进场动画 */
 .modal-bounce-enter-active {
   animation: modal-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 .modal-bounce-leave-active {
   animation: modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) reverse;
 }
 
 @keyframes modal-in {
-  0% { opacity: 0; transform: scale(0.9) translateY(20px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* 自定义滚动条 */
-.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
 .modal-body::-webkit-scrollbar-thumb {
   background: rgba(139, 107, 77, 0.2);
   border-radius: 10px;
 }
-.modal-body::-webkit-scrollbar-thumb:hover { background: var(--primary-accent); }
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-accent);
+}
 
 /* 响应式适配 */
 @media (max-width: 640px) {
-  .modal-body { padding: 20px; }
-  .book-grid-modal { grid-template-columns: 1fr 1fr; gap: 20px; }
-  .book-frame { height: 240px; }
-  .modal-header { padding: 20px; }
+  .modal-body {
+    padding: 20px;
+  }
+
+  .book-grid-modal {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .book-frame {
+    height: 240px;
+  }
+
+  .modal-header {
+    padding: 20px;
+  }
 }
 </style>

@@ -466,7 +466,7 @@ class RecommendationTrainer:
             
             avg_loss = total_loss / total_samples
             if (epoch+1) %5 ==0:
-                logging.info(f"Wide&Deep: Epoch [{epoch+1}/{epochs}], Avg Loss: {avg_loss:.6f}")
+                logging.info(f"Wide&Deep: Epoch [{epoch+1}/{epochs}], Avg Loss: {avg_loss * 10:.6f}")
         
         self.wide_deep_model.eval()
         self.model_trained = True
@@ -596,9 +596,7 @@ class RecommendationTrainer:
             current_raw_cf_score = float(normalized_pred_scores[idx]) if user_idx is not None else 0.0
             current_raw_popularity_score = float(popular_scores[idx]) 
             current_wd_score = float(wd_model_scores[idx])
-
-            logging.info(f"Final Rec Item {item_id}: mixed_score={float(mixed_scores[idx]):.4f}, cf_score={current_raw_cf_score:.4f}, wd_score={current_wd_score:.4f}, pop_score={current_raw_popularity_score:.4f}")
-
+            
             if item_id in books_df_str_id.index:
                 book_info = books_df_str_id.loc[item_id]
                 final_recommendations.append({
@@ -667,8 +665,6 @@ class RecommendationTrainer:
             for _, row in popular_items_top_n.iterrows():
                 item_id = row['item_id']
                 score = row['normalized_interaction'] 
-
-                logging.info(f"Debug: Precalc Popular Book: {item_id}, Raw Pop Score: {score:.4f}")
 
                 if item_id in books_df_str_id.index:
                     book_info = books_df_str_id.loc[item_id]

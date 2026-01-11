@@ -97,7 +97,8 @@
           <h3 class="section-title" id="interests-title"><span>兴趣与目标</span></h3>
           <div class="form-group full-width">
             <label for="interest_tags">感兴趣的图书主题</label>
-            <input type="text" id="interest_tags" v-model="profile.interest_tags" placeholder="例如：心理成长、自我提升、职场技能、历史文化" />
+            <input type="text" id="interest_tags" v-model="profile.interest_tags"
+              placeholder="例如：心理成长、自我提升、职场技能、历史文化" />
           </div>
         </section>
 
